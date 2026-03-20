@@ -2,152 +2,65 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PCB BOM 校對工具 (Mobile Ready)</title>
+    <title>PCB用料查詢工具</title>
     <style>
-        :root {
-            --primary-color: #28a745;
-            --bg-color: #f4f7f9;
-        }
-
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
-            margin: 0; 
-            padding: 10px; 
-            background: var(--bg-color); 
-            color: #333;
-        }
-
-        .container { 
-            max-width: 1000px; 
-            margin: auto; 
-            background: white; 
-            padding: 15px; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
-        }
-
-        h2 { 
-            font-size: 1.2rem;
-            color: #333; 
-            border-left: 5px solid var(--primary-color); 
-            padding-left: 12px; 
-            margin: 10px 0 20px 0; 
-        }
-
-        textarea { 
-            width: 100%; 
-            height: 70px; 
-            padding: 12px; 
-            border: 1px solid #ccc; 
-            border-radius: 6px; 
-            font-size: 16px; /* 防止 iOS 自動放大 */
-            box-sizing: border-box; 
-            background: #fff;
-        }
-
-        .hint { color: #888; font-size: 12px; margin-top: 6px; line-height: 1.4; }
+        body { font-family: "Segoe UI", "Microsoft JhengHei", sans-serif; margin: 25px; background: #f4f7f9; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h2 { color: #333; border-left: 5px solid #28a745; padding-left: 15px; margin-bottom: 20px; }
+        textarea { width: 100%; height: 80px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; box-sizing: border-box; }
+        .hint { color: #666; font-size: 13px; margin-top: 5px; }
         
-        /* 按鈕組：在手機上平舖 */
-        .btn-group { 
-            margin-top: 15px; 
-            display: flex; 
-            flex-wrap: wrap; 
-            gap: 8px; 
-        }
-
-        button { 
-            flex: 1; /* 手機上按鈕等寬 */
-            min-width: 120px;
-            background: var(--primary-color); 
-            color: white; 
-            border: none; 
-            padding: 12px; 
-            cursor: pointer; 
-            border-radius: 6px; 
-            font-size: 15px; 
-            font-weight: bold;
-        }
-
+        .btn-group { margin-top: 15px; display: flex; gap: 10px; }
+        button { background: #28a745; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; font-size: 15px; }
+        button:hover { background: #218838; }
         .filter-btn { background: #f39c12; }
+        .filter-btn:hover { background: #e67e22; }
         
-        /* 標籤區域：自動流動佈局 */
-        .match-info { 
-            margin-top: 20px; 
-            font-size: 14px;
-            border-top: 1px dashed #ddd;
-            padding-top: 15px;
-        }
-
-        .tag-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 8px;
-        }
-
+        table { width: 100%; border-collapse: collapse; margin-top: 25px; }
+        th, td { border: 1px solid #e0e0e0; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        .prefix-td { font-weight: bold; color: #28a745; width: 100px; }
+        
         .parent-tag { 
-            position: relative; 
-            padding: 8px 35px 8px 12px; 
-            border-radius: 20px; /* 圓角更適合觸控 */
-            border: 1px solid rgba(0,0,0,0.1); 
-            font-size: 13px;
-            white-space: nowrap;
+            position: relative;
+            cursor: pointer; padding: 6px 35px 6px 12px; border-radius: 4px; margin: 5px; 
+            display: inline-block; transition: all 0.2s; border: 1px solid rgba(0,0,0,0.1);
+            font-weight: 500;
         }
-
-        .del-btn {
-            position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
-            width: 22px; height: 22px; line-height: 20px; text-align: center;
-            background: rgba(0,0,0,0.1); color: #666; border-radius: 50%;
-            font-size: 16px;
-        }
-
-        /* 表格優化：手機上允許橫向捲動 */
-        .table-responsive {
-            width: 100%;
-            overflow-x: auto;
-            margin-top: 20px;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        table { width: 100%; border-collapse: collapse; min-width: 300px; }
-        th, td { border: 1px solid #eee; padding: 10px; text-align: left; font-size: 14px; }
-        th { background: #f8f9fa; color: #666; font-weight: 500; }
-        .prefix-td { font-weight: bold; color: var(--primary-color); width: 60px; }
+        .parent-tag:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         
-        .child-item { 
-            padding: 4px 8px; 
-            border-radius: 4px; 
-            margin: 2px; 
-            display: inline-block; 
-            font-size: 13px;
-            background: #f0f0f0;
+        .del-btn {
+            position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
+            width: 20px; height: 20px; line-height: 18px; text-align: center;
+            background: rgba(217, 83, 79, 0.1); color: #d9534f; border-radius: 50%;
+            font-size: 16px; font-weight: bold; transition: all 0.2s;
         }
-        .common-part { background-color: #ffcccc; color: #d9534f; font-weight: bold; }
-
-        .reset-btn { 
-            background: #6c757d; color: white; border: none; 
-            padding: 6px 12px; border-radius: 4px; font-size: 12px; margin-top: 10px;
-        }
+        .del-btn:hover { background: #d9534f; color: white; }
+        
+        .child-item { padding: 2px 6px; border-radius: 3px; margin: 2px; display: inline-block; border: 1px solid rgba(0,0,0,0.05); }
+        .common-part { background-color: #ffcccc; color: #d9534f; font-weight: bold; border: 1px solid #ffb3b3; } 
+        
+        .match-info { margin-top: 20px; font-weight: bold; color: #555; line-height: 2.5; }
+        .reset-btn { background: #6c757d; color: white; border: none; margin-left: 10px; padding: 5px 12px; font-size: 12px; border-radius: 3px; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>BOM 核心校對</h2>
-    <textarea id="inputSearch" placeholder="輸入編號 (例: 45802)"></textarea>
-    <div class="hint">系統會**擷取**第二與第三區段進行比對。</div>
-    
+    <h2>BOM 查詢</h2>
+    <p>輸入母件編號：</p>
+    <textarea id="inputSearch" placeholder="例如輸入 8401"></textarea>
+    <div class="hint">* 不用打PC、"-"、軟體，會自動比對 PC-00XX-XX 格式，排除非零開頭的誤標。</div>
+    <div class="hint">* 輸入04274會帶出PC-0427-4X所有的母件。</div>
+    <div class="hint">* 點擊母件會單獨列出用料。</div>
+
     <div class="btn-group">
         <button onclick="runFuzzyQuery()">搜尋全部</button>
-        <button class="filter-btn" id="btnOnlyCommon" onclick="toggleCommonOnly()" style="display:none;">僅看共用</button>
+        <button class="filter-btn" id="btnOnlyCommon" onclick="toggleCommonOnly()" style="display:none;">僅顯示共用料</button>
     </div>
 
     <div id="matchStatus" class="match-info"></div>
-    
-    <div class="table-responsive">
-        <div id="resultArea"></div>
-    </div>
+    <div id="resultArea"></div>
 </div>
 
 <script>
