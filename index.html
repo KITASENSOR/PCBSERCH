@@ -20,7 +20,14 @@
         table { width: 100%; border-collapse: collapse; margin-top: 25px; }
         th, td { border: 1px solid #e0e0e0; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
-        .prefix-td { font-weight: bold; color: #28a745; width: 100px; }
+
+        .prefix-td { 
+            font-weight: bold; 
+            color: #28a745; 
+            width: 1%;           
+            white-space: nowrap;  
+            padding-right: 20px;  
+        }
         
         .parent-tag { 
             position: relative;
@@ -65,37 +72,22 @@
 </div>
 
 <script>
-    // CSV 資料網址
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTCXT3zLzXbfrprksE92KR0EM6qXnteT_aGAjYFVIpRiwDV7Pg_BIFoIQMG8fpnTd6m8dCAYYBnuaxX/pub?output=csv";
-
-    // 原始資料庫
     let rawData = {};
-
     const palette = ["#e3f2fd", "#f1f8e9", "#fff3e0", "#f3e5f5", "#e0f2f1", "#e8eaf6", "#eeeeee", "#fce4ec", "#f9fbe7", "#efebe9"];
-
     let currentGroups = []; 
     let isCommonOnlyMode = false;
-
     const naturalSort = (a, b) => a.localeCompare(b, undefined, { numeric: true });
 
-    // 初始化：從試算表抓取資料
     async function fetchCSV() {
         try {
-            // 加入快取清除機制，避免抓到舊資料
             const response = await fetch(csvUrl + "&t=" + new Date().getTime());
             if (!response.ok) throw new Error('網路回應不正常');
-            
             const data = await response.text();
-            
-            // 處理 CSV 內容
             const rows = data.split(/\r?\n/).filter(row => row.trim() !== "");
             const newDb = {};
             
-            rows.forEach((row, index) => {
-                // 跳過第一行標題（如果你試算表第一行是「母件」、「用料」的話）
-                if (index === 0 && row.includes("PC-")) { /* 視情況決定是否跳過 */ }
-
-                // 使用正則運算式拆分，處理可能包含引號的內容
+            rows.forEach(row => {
                 const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); 
                 if (cols.length >= 2) {
                     const key = cols[0].replace(/"/g, '').trim();
@@ -104,33 +96,32 @@
                 }
             });
 
-            if (Object.keys(newDb).length === 0) throw new Error('解析後無資料');
-
             rawData = newDb;
             document.getElementById('matchStatus').innerText = "資料同步完成。";
             document.getElementById('btnSearch').disabled = false;
         } catch (error) {
             console.error("Error fetching CSV:", error);
-            document.getElementById('matchStatus').innerText = "載入失敗：" + error.message;
+            document.getElementById('matchStatus').innerText = "載入失敗：Failed to fetch (請嘗試上傳至 GitHub Pages 測試)";
         }
     }
 
-    // 執行資料抓取
     fetchCSV();
 
-    // 核心邏輯：將輸入的數字字串與編號的「核心區段」進行比對
+    // 最佳化後的比對邏輯
     function checkPositionalMatch(fullID, queryStr) {
         const parts = fullID.split('-');
         if (parts.length < 3) return false;
-
-        const coreID = (parts[1] + parts[2]).replace(/\D/g, ''); 
         
+        // 核心 ID (例如 PC-0427-41 -> 042741)
+        const coreID = (parts[1] + parts[2]).replace(/\D/g, ''); 
         let cleanQuery = queryStr.replace(/\D/g, '');
 
+        // 如果輸入 5 位數 (例如 04274)，比對 coreID 的前 5 位
         if (cleanQuery.length === 5) {
-            cleanQuery = "0" + cleanQuery;
+            return coreID.startsWith(cleanQuery);
         }
-
+        
+        // 如果輸入 6 位數，執行完全比對
         return coreID === cleanQuery;
     }
 
@@ -150,13 +141,9 @@
         const input = document.getElementById('inputSearch').value.trim();
         const keywords = input.split(/[\s,]+/).filter(k => k !== "");
         if (keywords.length === 0) return;
-
         isCommonOnlyMode = false;
+        const matchedIDs = Object.keys(rawData).filter(key => keywords.some(kw => checkPositionalMatch(key, kw)));
         
-        const matchedIDs = Object.keys(rawData).filter(key => {
-            return keywords.some(kw => checkPositionalMatch(key, kw));
-        });
-
         const groups = {};
         matchedIDs.forEach(id => {
             const base = getBaseID(id);
@@ -167,13 +154,11 @@
             }
             groups[groupKey].members.push(id);
         });
-
         currentGroups = Object.values(groups).map((g, i) => ({
             ...g,
             color: palette[i % palette.length],
             displayName: g.members.length > 1 ? `${g.base}-XX` : g.members[0]
         }));
-
         updateUI();
     }
 
@@ -202,18 +187,15 @@
             resultDiv.innerHTML = "";
             return;
         }
-
         let statusHtml = "母件：";
         currentGroups.forEach(g => {
             const isSelected = displayGroups.length === 1 && displayGroups[0] === g;
             statusHtml += `<span class="parent-tag" style="background-color: ${g.color}; border: ${isSelected ? '2px solid #333' : '1px solid #ccc'}" onclick="filterGroup('${g.id}')">${g.displayName}<span class="del-btn" onclick="removeGroup('${g.id}', event)">×</span></span>`;
         });
-        
         if (displayGroups.length < currentGroups.length) {
             statusHtml += `<button class="reset-btn" onclick="isCommonOnlyMode=false;updateUI()">恢復清單</button>`;
         }
         statusDiv.innerHTML = statusHtml;
-
         const masterMap = {};
         displayGroups.forEach(g => {
             g.content.split(',').forEach(fullStr => {
@@ -224,8 +206,7 @@
                 masterMap[prefix][code].push(g);
             });
         });
-
-        let html = `<table><thead><tr><th>類別</th><th>子件明細</th></tr></thead><tbody>`;
+        let html = `<table><thead><tr><th style="width: 1%">類別</th><th>子件明細</th></tr></thead><tbody>`;
         Object.keys(masterMap).sort().forEach(pre => {
             const codesObj = masterMap[pre];
             const sortedCodes = Object.keys(codesObj).sort(naturalSort);
@@ -245,6 +226,5 @@
         if (target) renderView([target]);
     }
 </script>
-
 </body>
 </html>
