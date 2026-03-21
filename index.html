@@ -21,12 +21,13 @@
         th, td { border: 1px solid #e0e0e0; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
 
+        /* 修改處：縮小類別欄位寬度 */
         .prefix-td { 
             font-weight: bold; 
             color: #28a745; 
-            width: 1%;           
-            white-space: nowrap;  
-            padding-right: 20px;  
+            width: 1%;           /* 強制縮小到最小可能寬度 */
+            white-space: nowrap;  /* 防止文字換行 */
+            padding-right: 20px;  /* 保留一點點呼吸空間 */
         }
         
         .parent-tag { 
@@ -107,21 +108,12 @@
 
     fetchCSV();
 
-    // 最佳化後的比對邏輯
     function checkPositionalMatch(fullID, queryStr) {
         const parts = fullID.split('-');
         if (parts.length < 3) return false;
-        
-        // 核心 ID (例如 PC-0427-41 -> 042741)
         const coreID = (parts[1] + parts[2]).replace(/\D/g, ''); 
         let cleanQuery = queryStr.replace(/\D/g, '');
-
-        // 如果輸入 5 位數 (例如 04274)，比對 coreID 的前 5 位
-        if (cleanQuery.length === 5) {
-            return coreID.startsWith(cleanQuery);
-        }
-        
-        // 如果輸入 6 位數，執行完全比對
+        if (cleanQuery.length === 5) cleanQuery = "0" + cleanQuery;
         return coreID === cleanQuery;
     }
 
@@ -143,7 +135,6 @@
         if (keywords.length === 0) return;
         isCommonOnlyMode = false;
         const matchedIDs = Object.keys(rawData).filter(key => keywords.some(kw => checkPositionalMatch(key, kw)));
-        
         const groups = {};
         matchedIDs.forEach(id => {
             const base = getBaseID(id);
