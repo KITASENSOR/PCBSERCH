@@ -105,36 +105,24 @@
 
     fetchCSV();
 
-    // 重新設計的比對邏輯
+    // 再次最佳化的智慧比對邏輯
     function checkSmartMatch(fullID, queryStr) {
         // 標準化資料庫 ID (移除 PC 與橫線)
         const normalizedID = fullID.replace(/PC-/g, '').replace(/-/g, '').toUpperCase();
         
-        // 標準化輸入字串：只要開頭不是 0，統一幫使用者補 0 以符合 PC-0XXX 格式
+        // 標準化輸入字串：自動補 0
         let cleanQuery = queryStr.replace(/-/g, '').toUpperCase();
         if (cleanQuery.length > 0 && !cleanQuery.startsWith('0')) {
             cleanQuery = "0" + cleanQuery;
         }
 
-        // 規則 1：精確匹配 (完全一樣就回傳 EXACT)
+        // 規則 1：完全一致 (連長度都一樣)
         if (normalizedID === cleanQuery) return "EXACT";
         
-        // 規則 2：開頭匹配 (包含 4274 帶出 42742A 的情境)
+        // 規則 2：開頭匹配 (支援 4274 -> 42742A 以及 42742 -> 42742A)
         if (normalizedID.startsWith(cleanQuery)) return "FUZZY";
 
         return null;
-    }
-
-    function getBaseID(fullID) {
-        const parts = fullID.split('-');
-        return parts.length > 3 ? parts.slice(0, 3).join('-') : fullID;
-    }
-
-    function formatCode(codeStr) {
-        let clean = codeStr.replace(/^0+/, '');
-        if (clean === "" || /^[a-zA-Z]/.test(clean)) return clean || "0";
-        let match = clean.match(/^(\d+)(.*)$/);
-        return match ? match[1].padStart(2, '0') + match[2] : clean;
     }
 
     function runFuzzyQuery() {
@@ -143,26 +131,36 @@
         if (keywords.length === 0) return;
         isCommonOnlyMode = false;
 
+        // 收集所有匹配結果
         const results = Object.keys(rawData).map(key => {
-            const matchType = keywords.reduce((acc, kw) => {
+            let bestType = null;
+            keywords.forEach(kw => {
                 const type = checkSmartMatch(key, kw);
-                if (type === "EXACT") return "EXACT"; // 優先權最高
-                return acc || type;
-            }, null);
-            return { key, matchType };
+                if (type === "EXACT") bestType = "EXACT";
+                else if (type === "FUZZY" && bestType !== "EXACT") bestType = "FUZZY";
+            });
+            return { key, matchType: bestType };
         }).filter(r => r.matchType !== null);
 
-        // 邏輯最佳化：如果輸入的關鍵字中有完全匹配的結果，則只顯示完全匹配項
-        // 但如果只是輸入部分編號（模糊搜尋），則顯示所有符合開頭的結果
+        // 邏輯修正：
+        // 如果使用者輸入的字串長度較短 (模糊搜尋)，我們應該顯示所有 FUZZY 匹配。
+        // 只有當使用者輸入了「包含後綴」的完整字串時，才執行過濾。
         let matchedIDs = [];
         const hasExact = results.some(r => r.matchType === "EXACT");
         
-        if (hasExact) {
+        // 關鍵判斷：如果結果中包含比輸入更長的編號，代表這是一個系列搜尋，不應啟動精確過濾
+        const isSeriesSearch = results.some(r => {
+            const normalizedInput = keywords[0].startsWith('0') ? keywords[0] : "0" + keywords[0];
+            return r.key.replace(/PC-/g, '').replace(/-/g, '').length > normalizedInput.length;
+        });
+
+        if (hasExact && !isSeriesSearch) {
             matchedIDs = results.filter(r => r.matchType === "EXACT").map(r => r.key);
         } else {
             matchedIDs = results.map(r => r.key);
         }
         
+        // 接下來的群組化與 UI 更新邏輯維持不變...
         const groups = {};
         matchedIDs.forEach(id => {
             const base = getBaseID(id);
