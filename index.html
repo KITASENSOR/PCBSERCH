@@ -1,47 +1,100 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <title>PCB用料查詢工具</title>
-    <style>
-        body { font-family: "Segoe UI", "Microsoft JhengHei", sans-serif; margin: 25px; background: #f4f7f9; }
-        .container { max-width: 1000px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        h2 { color: #333; border-left: 5px solid #28a745; padding-left: 15px; margin-bottom: 20px; }
-        textarea { width: 100%; height: 80px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; box-sizing: border-box; }
-        .hint { color: #666; font-size: 13px; margin-top: 5px; }
+<html lang="zh-TW"> <head>
+    <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <title>PCB用料查詢工具</title> <style>
+        /* 設定全域字體與背景顏色 */
+        body { font-family: "Segoe UI", "Microsoft JhengHei", sans-serif; margin: 15px; background: #f4f7f9; }
         
-        .btn-group { margin-top: 15px; display: flex; gap: 10px; }
-        button { background: #28a745; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; font-size: 15px; }
+        /* 主容器樣式：改為寬度 95% 以適應手機，最大 1000px */
+        .container { 
+            width: 95%;
+            max-width: 1000px; 
+            margin: auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+            box-sizing: border-box;
+        }
+
+        /* 標題樣式：左側加入綠色邊框區隔 */
+        h2 { color: #333; border-left: 5px solid #28a745; padding-left: 15px; margin-bottom: 20px; font-size: 1.5rem; }
+
+        /* 輸入框樣式：設定為滿版寬度與圓角 */
+        textarea { width: 100%; height: 80px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; box-sizing: border-box; }
+
+        /* 提示文字樣式：使用灰色小字 */
+        .hint { color: #666; font-size: 13px; margin-top: 5px; line-height: 1.4; }
+
+        /* 按鈕群組佈局：使用 Flex 並允許換行以適應窄螢幕 */
+        .btn-group { margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+        /* 通用按鈕樣式：增加 padding 使手機更好點擊 */
+        button { background: #28a745; color: white; border: none; padding: 12px 20px; cursor: pointer; border-radius: 5px; font-size: 15px; flex: 1; min-width: 120px; }
+        
+        /* 按鈕停留效果：顏色加深 */
         button:hover { background: #218838; }
+
+        /* 過濾按鈕樣式：橘色背景 */
         .filter-btn { background: #f39c12; }
         .filter-btn:hover { background: #e67e22; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 25px; }
-        th, td { border: 1px solid #e0e0e0; padding: 12px; text-align: left; }
+
+        /* 表格樣式：滿版寬度並合併邊框 */
+        table { width: 100%; border-collapse: collapse; margin-top: 25px; table-layout: fixed; }
+
+        /* 單元格樣式：設定間距與淡灰色邊框 */
+        th, td { border: 1px solid #e0e0e0; padding: 10px; text-align: left; word-wrap: break-word; }
+
+        /* 表頭樣式：淺灰色背景 */
         th { background: #f8f9fa; }
-        .prefix-td { font-weight: bold; color: #28a745; width: 100px; }
-        
+
+        /* 類別欄位樣式：在電腦版固定寬度 */
+        .prefix-td { font-weight: bold; color: #28a745; width: 80px; }
+
+        /* 母件標籤區域樣式：讓標籤可以整齊排列 */
+        #matchStatus { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+        /* 母件標籤樣式：包含陰影過渡效果 */
         .parent-tag { 
             position: relative;
-            cursor: pointer; padding: 6px 35px 6px 12px; border-radius: 4px; margin: 5px; 
+            cursor: pointer; padding: 8px 35px 8px 12px; border-radius: 4px; 
             display: inline-block; transition: all 0.2s; border: 1px solid rgba(0,0,0,0.1);
-            font-weight: 500;
+            font-weight: 500; font-size: 14px;
         }
+
+        /* 標籤停留效果：微幅上移 */
         .parent-tag:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        
+
+        /* 刪除按鈕樣式：標籤內的紅圈「×」 */
         .del-btn {
             position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
-            width: 20px; height: 20px; line-height: 18px; text-align: center;
+            width: 24px; height: 24px; line-height: 22px; text-align: center;
             background: rgba(217, 83, 79, 0.1); color: #d9534f; border-radius: 50%;
-            font-size: 16px; font-weight: bold; transition: all 0.2s;
+            font-size: 18px; font-weight: bold; transition: all 0.2s;
         }
         .del-btn:hover { background: #d9534f; color: white; }
-        
-        .child-item { padding: 2px 6px; border-radius: 3px; margin: 2px; display: inline-block; border: 1px solid rgba(0,0,0,0.05); }
+
+        /* 子件項目樣式：圓角小方塊 */
+        .child-item { padding: 4px 8px; border-radius: 3px; margin: 2px; display: inline-block; border: 1px solid rgba(0,0,0,0.05); font-size: 14px; }
+
+        /* 共用料樣式：醒目的粉紅底紅字 */
         .common-part { background-color: #ffcccc; color: #d9534f; font-weight: bold; border: 1px solid #ffb3b3; } 
-        
-        .match-info { margin-top: 20px; font-weight: bold; color: #555; line-height: 2.5; }
-        .reset-btn { background: #6c757d; color: white; border: none; margin-left: 10px; padding: 5px 12px; font-size: 12px; border-radius: 3px; cursor: pointer; }
+
+        /* 比對資訊樣式：設定資訊間距 */
+        .match-info { margin-top: 20px; font-weight: bold; color: #555; }
+
+        /* 重置按鈕樣式：灰色小按鈕 */
+        .reset-btn { background: #6c757d; color: white; border: none; padding: 8px 12px; font-size: 13px; border-radius: 3px; cursor: pointer; flex: none; }
+
+        /* 📱 手機版專屬微調：針對寬度小於 600px 的螢幕 */
+        @media (max-width: 600px) {
+            body { margin: 10px; }
+            .container { padding: 15px; }
+            h2 { font-size: 1.2rem; }
+            th, td { padding: 8px 5px; font-size: 14px; }
+            .prefix-td { width: 65px; }
+            button { padding: 10px; font-size: 14px; }
+        }
     </style>
 </head>
 <body>
@@ -49,7 +102,7 @@
 <div class="container">
     <h2>BOM 查詢</h2>
     <p>輸入母件編號：</p>
-    <textarea id="inputSearch" placeholder="例如輸入 8401"></textarea>
+    <textarea id="inputSearch" placeholder="例如輸入 42731"></textarea>
     <div class="hint">* 不用打PC、"-"、軟體，會自動比對 PC-00XX-XX 格式，排除非零開頭的誤標。</div>
     <div class="hint">* 輸入04274會帶出PC-0427-4X所有的母件。</div>
     <div class="hint">* 點擊母件會單獨列出用料。</div>
@@ -64,7 +117,7 @@
 </div>
 
 <script>
-    // 原始資料庫
+    // 原始資料庫：存放 BOM 的 JSON 資料
     const rawData = {
         "PC-0222-01": "CN-0003,EC-0011,EC-0014,EC-0023,EC-0024,ED-0039,EI-0029,EI-0030,EL-0055,EL-0056,EO-0058,EO-0065,ER-0090,ER-0099,ER-0102,ER-0103,ER-0129,ER-0130,ER-0131,ET-0039",
 "PC-0223-01": "CN-0004,EC-0011,EC-0013,EC-0023,EC-0025,ED-0030,ED-0031,ED-0038,EI-0018,EI-0031,EI-0033,ER-0093,ER-0094,ER-0095,ER-0096,ER-0097,ER-0099,ER-0100,ER-0104,ER-0114,ER-0132,ER-0133,ER-0135,ER-0144,ET-0008,ET-0030,ET-0040",
@@ -2585,38 +2638,43 @@
 "PC-0626-01-01": "I-0596_1H018"
     };
 
-   const palette = ["#e3f2fd", "#f1f8e9", "#fff3e0", "#f3e5f5", "#e0f2f1", "#e8eaf6", "#eeeeee", "#fce4ec", "#f9fbe7", "#efebe9"];
+    // 視覺色票：用於區分不同母件的標籤顏色
+    const palette = ["#e3f2fd", "#f1f8e9", "#fff3e0", "#f3e5f5", "#e0f2f1", "#e8eaf6", "#eeeeee", "#fce4ec", "#f9fbe7", "#efebe9"];
 
+    // 狀態變數：存放目前搜尋結果與模式
     let currentGroups = []; 
     let isCommonOnlyMode = false;
 
+    // 自然排序函數：確保數字字串按大小排列而非首字母
     const naturalSort = (a, b) => a.localeCompare(b, undefined, { numeric: true });
 
-    // 核心邏輯：將輸入的數字字串與編號的「核心區段」進行比對
+    // 核心比對邏輯：將輸入字串與編號的核心區段進行比對
     function checkPositionalMatch(fullID, queryStr) {
-        const parts = fullID.split('-');
+        const parts = fullID.split('-'); // 依「-」拆分編號
         if (parts.length < 3) return false;
 
-        // 提取核心區段：第二區塊(0458)與第三區塊(02)
+        // 提取核心區段：組合第二與第三區塊並過濾掉非數字字元
         const coreID = (parts[1] + parts[2]).replace(/\D/g, ''); 
         
-        // 處理輸入：移除所有非數字
+        // 清理使用者輸入：移除所有非數字
         let cleanQuery = queryStr.replace(/\D/g, '');
 
-        // 自動校準補零 (針對 45802 -> 045802)
+        // 自動校準補零：針對 5 位數輸入補成 6 位數核心格式
         if (cleanQuery.length === 5) {
             cleanQuery = "0" + cleanQuery;
         }
 
-        // 執行精確核心比對
+        // 執行完全比對
         return coreID === cleanQuery;
     }
 
+    // 取得基礎 ID：截取編號前三節用於群組化
     function getBaseID(fullID) {
         const parts = fullID.split('-');
         return parts.length > 3 ? parts.slice(0, 3).join('-') : fullID;
     }
 
+    // 格式化料號：最佳化子件代碼的呈現方式（包含去零與補齊兩位）
     function formatCode(codeStr) {
         let clean = codeStr.replace(/^0+/, '');
         if (clean === "" || /^[a-zA-Z]/.test(clean)) return clean || "0";
@@ -2624,17 +2682,20 @@
         return match ? match[1].padStart(2, '0') + match[2] : clean;
     }
 
+    // 執行模糊查詢主函式
     function runFuzzyQuery() {
         const input = document.getElementById('inputSearch').value.trim();
-        const keywords = input.split(/[\s,]+/).filter(k => k !== "");
+        const keywords = input.split(/[\s,]+/).filter(k => k !== ""); // 拆分關鍵字
         if (keywords.length === 0) return;
 
-        isCommonOnlyMode = false;
+        isCommonOnlyMode = false; // 重設模式
         
+        // 篩選符合條件的母件 ID
         const matchedIDs = Object.keys(rawData).filter(key => {
             return keywords.some(kw => checkPositionalMatch(key, kw));
         });
 
+        // 進行群組化處理
         const groups = {};
         matchedIDs.forEach(id => {
             const base = getBaseID(id);
@@ -2646,32 +2707,37 @@
             groups[groupKey].members.push(id);
         });
 
+        // 整理群組並分配視覺顏色
         currentGroups = Object.values(groups).map((g, i) => ({
             ...g,
             color: palette[i % palette.length],
             displayName: g.members.length > 1 ? `${g.base}-XX` : g.members[0]
         }));
 
-        updateUI();
+        updateUI(); // 更新介面
     }
 
+    // 移除特定母件群組標籤
     function removeGroup(groupId, event) {
-        event.stopPropagation();
+        event.stopPropagation(); // 阻止點擊事件冒泡到標籤本身
         currentGroups = currentGroups.filter(g => g.id !== groupId);
         updateUI();
     }
 
+    // 切換僅顯示共用料模式
     function toggleCommonOnly() {
         isCommonOnlyMode = !isCommonOnlyMode;
         document.getElementById('btnOnlyCommon').innerText = isCommonOnlyMode ? "顯示全部料件" : "僅顯示共用料";
         updateUI();
     }
 
+    // 更新介面顯示狀態
     function updateUI() {
         document.getElementById('btnOnlyCommon').style.display = currentGroups.length > 1 ? 'inline-block' : 'none';
         renderView(currentGroups);
     }
 
+    // 渲染結果視圖：產生標籤與表格 HTML
     function renderView(displayGroups) {
         const statusDiv = document.getElementById('matchStatus');
         const resultDiv = document.getElementById('resultArea');
@@ -2681,6 +2747,7 @@
             return;
         }
 
+        // 產生母件標籤 HTML
         let statusHtml = "母件：";
         currentGroups.forEach(g => {
             const isSelected = displayGroups.length === 1 && displayGroups[0] === g;
@@ -2692,6 +2759,7 @@
         }
         statusDiv.innerHTML = statusHtml;
 
+        // 將子件按類別 (Prefix) 重新分類與排序
         const masterMap = {};
         displayGroups.forEach(g => {
             g.content.split(',').forEach(fullStr => {
@@ -2703,13 +2771,15 @@
             });
         });
 
-        let html = `<table><thead><tr><th>類別</th><th>子件明細</th></tr></thead><tbody>`;
+        // 產生結果表格 HTML
+        let html = `<table><thead><tr><th style="width: 25%">類別</th><th>子件明細</th></tr></thead><tbody>`;
         Object.keys(masterMap).sort().forEach(pre => {
             const codesObj = masterMap[pre];
             const sortedCodes = Object.keys(codesObj).sort(naturalSort);
             let codeHtmlList = sortedCodes.map(c => {
                 const owners = codesObj[c];
                 const isCommon = displayGroups.length > 1 && owners.length === displayGroups.length;
+                // 判斷是否為共用料或一般料，並決定是否在目前模式下顯示
                 return isCommon ? `<span class="child-item common-part">${c}</span>` : (!isCommonOnlyMode ? `<span class="child-item" style="background-color: ${owners[0].color}">${c}</span>` : '');
             }).filter(h => h !== '');
             if (codeHtmlList.length > 0) html += `<tr><td class="prefix-td">${pre}</td><td>${codeHtmlList.join('')}</td></tr>`;
@@ -2717,6 +2787,7 @@
         resultDiv.innerHTML = html + `</tbody></table>`;
     }
 
+    // 過濾並單獨顯示特定群組的用料
     function filterGroup(groupId) {
         isCommonOnlyMode = false;
         const target = currentGroups.find(g => g.id === groupId);
