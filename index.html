@@ -25,7 +25,6 @@
         .filter-btn { background: #f39c12; }
         .filter-btn:hover { background: #e67e22; }
         
-        /* 新增：清空按鈕的專屬樣式（灰色） */
         .clear-btn { background: #6c757d; }
         .clear-btn:hover { background: #5a6268; }
         
@@ -127,7 +126,7 @@
 <script>
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTCXT3zLzXbfrprksE92KR0EM6qXnteT_aGAjYFVIpRiwDV7Pg_BIFoIQMG8fpnTd6m8dCAYYBnuaxX/pub?output=csv";
     let rawData = {};
-    let productData = {}; // 儲存 C, D, E 欄的資料
+    let productData = {}; 
     const palette = [
     "#90caf9", "#c5e1a5", "#ffcc80", "#e1bee7", "#80cbc4", 
     "#c5cae9", "#cfd8dc", "#f48fb1", "#e6ee9c", "#bcaaa4"  
@@ -136,7 +135,6 @@
     let isCommonOnlyMode = false;
     const naturalSort = (a, b) => a.localeCompare(b, undefined, { numeric: true });
 
-    // 切換視圖功能
     function toggleView(viewType) {
         if (viewType === 'BOM') {
             document.getElementById('viewBOM').style.display = 'block';
@@ -159,14 +157,12 @@
             rows.forEach(row => {
                 const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); 
                 
-                // BOM 查詢資料庫 (A, B 欄)
                 if (cols.length >= 2) {
                     const key = cols[0] ? cols[0].replace(/"/g, '').trim() : '';
                     const val = cols[1] ? cols[1].replace(/"/g, '').trim() : '';
                     if (key) newDb[key] = val;
                 }
 
-                // 成品查詢資料庫 (C, D, E 欄位索引為 2, 3, 4)
                 if (cols.length >= 5) {
                     const pKey = cols[2] ? cols[2].replace(/"/g, '').trim() : '';
                     const pChild = cols[3] ? cols[3].replace(/"/g, '').trim() : '';
@@ -196,9 +192,6 @@
 
     fetchCSV();
 
-    // ==========================================
-    // 清空搜尋功能
-    // ==========================================
     function clearBOMSearch() {
         document.getElementById('inputSearch').value = '';
         document.getElementById('resultArea').innerHTML = '';
@@ -214,9 +207,6 @@
         document.getElementById('productMatchStatus').innerText = '';
     }
 
-    // ==========================================
-    // BOM 查詢原有邏輯
-    // ==========================================
     function checkSmartMatch(fullID, queryStr) {
         const normalizedID = fullID.replace(/PC-/g, '').replace(/-/g, '').toUpperCase();
         let cleanQuery = queryStr.replace(/-/g, '').toUpperCase();
@@ -377,7 +367,7 @@
     }
 
     // ==========================================
-    // 成品查詢邏輯
+    // 成品查詢邏輯 (新增合併用料相同母件的邏輯)
     // ==========================================
     function runProductQuery() {
         const input = document.getElementById('inputProductSearch').value.trim().toUpperCase();
@@ -388,7 +378,6 @@
             return;
         }
 
-        // 進行模糊比對找出符合的成品母件
         const matchedKeys = Object.keys(productData).filter(key => key.toUpperCase().includes(input));
 
         if (matchedKeys.length === 0) {
@@ -397,20 +386,41 @@
             return;
         }
 
+        // 1. 將查詢到的母件依據「子件+廠商」的內容進行分組合併
+        const groups = {};
+        
+        matchedKeys.forEach(key => {
+            const items = productData[key];
+            
+            // 將子件與廠商組合成字串，並排序後作為此母件的「特徵值(Signature)」
+            // 這樣即使兩台機器料號順序建反了，只要內容一樣就會被歸在同一組
+            const signatureStr = items.map(item => `${item.child}|${item.vendor}`).sort().join('||');
+
+            if (!groups[signatureStr]) {
+                groups[signatureStr] = {
+                    keys: [],
+                    items: items // 保留這組的用料明細以便顯示
+                };
+            }
+            groups[signatureStr].keys.push(key);
+        });
+
         let statusHtml = "成品母件：";
         matchedKeys.forEach(key => {
             statusHtml += `<span class="parent-tag" style="background-color: #cfd8dc; cursor: default;">${key}</span>`;
         });
         statusDiv.innerHTML = statusHtml;
 
-        // 產生垂直列表與廠商表格
-        let html = `<table><thead><tr><th style="width: 1%">成品母件</th><th>子件清單與廠商</th></tr></thead><tbody>`;
+        let html = `<table><thead><tr><th style="width: 15%; white-space: nowrap;">成品母件</th><th>子件清單與廠商</th></tr></thead><tbody>`;
         
-        matchedKeys.forEach(key => {
-            const items = productData[key];
+        // 2. 依據合併後的群組來渲染表格
+        Object.values(groups).forEach(group => {
             
-            // 將此母件底下的子件排列為直排清單，並在右側顯示廠商
-            let listHtml = items.map(item => {
+            // 左側：將被合併在同一組的母件編號換行顯示
+            const keysHtml = group.keys.map(k => `<div style="margin-bottom: 6px; font-weight: bold; color: #28a745;">${k}</div>`).join('');
+
+            // 右側：顯示共用的子件與廠商清單
+            let listHtml = group.items.map(item => {
                 return `
                     <div style="display: flex; align-items: center; padding: 6px 0; border-bottom: 1px dashed #eee;">
                         <div style="flex: 1;"><span class="child-item" style="background-color: #f8f9fa;" onclick="this.classList.toggle('dimmed')">${item.child}</span></div>
@@ -418,7 +428,7 @@
                     </div>`;
             }).join('');
 
-            html += `<tr><td class="prefix-td" style="vertical-align: top;">${key}</td><td>${listHtml}</td></tr>`;
+            html += `<tr><td class="prefix-td" style="vertical-align: top; white-space: normal;">${keysHtml}</td><td>${listHtml}</td></tr>`;
         });
         
         html += `</tbody></table>`;
