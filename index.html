@@ -127,6 +127,7 @@
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTCXT3zLzXbfrprksE92KR0EM6qXnteT_aGAjYFVIpRiwDV7Pg_BIFoIQMG8fpnTd6m8dCAYYBnuaxX/pub?output=csv";
     let rawData = {};
     let productData = {}; 
+    let subProductData = {}; 
     const palette = [
     "#90caf9", "#c5e1a5", "#ffcc80", "#e1bee7", "#80cbc4", 
     "#c5cae9", "#cfd8dc", "#f48fb1", "#e6ee9c", "#bcaaa4"  
@@ -153,16 +154,19 @@
             const rows = data.split(/\r?\n/).filter(row => row.trim() !== "");
             const newDb = {};
             const newProductDb = {};
+            const newSubProductDb = {};
             
             rows.forEach(row => {
                 const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); 
                 
+                // A, B 欄
                 if (cols.length >= 2) {
                     const key = cols[0] ? cols[0].replace(/"/g, '').trim() : '';
                     const val = cols[1] ? cols[1].replace(/"/g, '').trim() : '';
                     if (key) newDb[key] = val;
                 }
 
+                // C, D, E 欄
                 if (cols.length >= 5) {
                     const pKey = cols[2] ? cols[2].replace(/"/g, '').trim() : '';
                     const pChild = cols[3] ? cols[3].replace(/"/g, '').trim() : '';
@@ -175,10 +179,24 @@
                         }
                     }
                 }
+
+                // F, G 欄
+                if (cols.length >= 7) {
+                    const subParent = cols[5] ? cols[5].replace(/"/g, '').trim() : '';
+                    const subChild = cols[6] ? cols[6].replace(/"/g, '').trim() : '';
+                    
+                    if (subParent && subChild) {
+                        if (!newSubProductDb[subParent]) newSubProductDb[subParent] = [];
+                        if (!newSubProductDb[subParent].includes(subChild)) {
+                            newSubProductDb[subParent].push(subChild);
+                        }
+                    }
+                }
             });
 
             rawData = newDb;
             productData = newProductDb;
+            subProductData = newSubProductDb;
 
             document.getElementById('matchStatus').innerText = "資料同步完成。";
             document.getElementById('productMatchStatus').innerText = "資料同步完成。";
@@ -205,6 +223,38 @@
         document.getElementById('inputProductSearch').value = '';
         document.getElementById('productResultArea').innerHTML = '';
         document.getElementById('productMatchStatus').innerText = '';
+    }
+
+    function toggleSubProduct(childId, element) {
+        element.classList.toggle('dimmed');
+        const parentRow = element.parentElement.parentElement;
+        const outerDiv = parentRow.parentElement;
+        let subDiv = outerDiv.querySelector('.sub-result-area');
+        
+        if (!subDiv) {
+            const subItems = subProductData[childId];
+            if (subItems && subItems.length > 0) {
+                subDiv = document.createElement('div');
+                subDiv.className = 'sub-result-area';
+                subDiv.style.padding = '8px 12px';
+                subDiv.style.margin = '4px 0 8px 15px';
+                subDiv.style.backgroundColor = '#f1f8ff';
+                subDiv.style.borderLeft = '3px solid #17a2b8';
+                subDiv.style.borderRadius = '0 4px 4px 0';
+                subDiv.style.fontSize = '13px';
+                
+                let subHtml = `<div style="color: #555; margin-bottom: 5px; font-weight: bold;">↳ <span style="color: #17a2b8;">${childId}</span> 的次級子件：</div>`;
+                subItems.forEach(sub => {
+                    subHtml += `<span class="child-item" style="background-color: #fff; border-color: #b8daff; cursor: default;">${sub}</span> `;
+                });
+                subDiv.innerHTML = subHtml;
+                outerDiv.appendChild(subDiv);
+            }
+        }
+        
+        if (subDiv) {
+            subDiv.style.display = element.classList.contains('dimmed') ? 'block' : 'none';
+        }
     }
 
     function checkSmartMatch(fullID, queryStr) {
@@ -367,7 +417,40 @@
     }
 
     // ==========================================
-    // 成品查詢邏輯 (新增合併用料相同母件的邏輯)
+    // 產生合併名稱的邏輯 (用 XX 替換相異處)
+    // ==========================================
+    function generateCommonName(keys) {
+        if (!keys || keys.length === 0) return "";
+        if (keys.length === 1) return keys[0];
+
+        // 將每個字串以 "-" 切割成陣列
+        const splitKeys = keys.map(k => k.split('-'));
+        // 找出最長的有幾段
+        const maxLen = Math.max(...splitKeys.map(k => k.length));
+        const resultParts = [];
+
+        for (let i = 0; i < maxLen; i++) {
+            const firstPart = splitKeys[0][i];
+            let isSame = true;
+            // 檢查是否每個 key 在這個位置的字串都一樣
+            for (let j = 1; j < splitKeys.length; j++) {
+                if (splitKeys[j][i] !== firstPart) {
+                    isSame = false;
+                    break;
+                }
+            }
+            // 如果都一樣，就保留；如果不同（或某些 key 沒有這一段），就替換為 XX
+            if (isSame && firstPart !== undefined) {
+                resultParts.push(firstPart);
+            } else {
+                resultParts.push('XX');
+            }
+        }
+        return resultParts.join('-');
+    }
+
+    // ==========================================
+    // 成品查詢邏輯
     // ==========================================
     function runProductQuery() {
         const input = document.getElementById('inputProductSearch').value.trim().toUpperCase();
@@ -386,45 +469,50 @@
             return;
         }
 
-        // 1. 將查詢到的母件依據「子件+廠商」的內容進行分組合併
         const groups = {};
         
+        // 1. 根據「子件與廠商」將母件分組
         matchedKeys.forEach(key => {
             const items = productData[key];
-            
-            // 將子件與廠商組合成字串，並排序後作為此母件的「特徵值(Signature)」
-            // 這樣即使兩台機器料號順序建反了，只要內容一樣就會被歸在同一組
             const signatureStr = items.map(item => `${item.child}|${item.vendor}`).sort().join('||');
 
             if (!groups[signatureStr]) {
                 groups[signatureStr] = {
                     keys: [],
-                    items: items // 保留這組的用料明細以便顯示
+                    items: items 
                 };
             }
             groups[signatureStr].keys.push(key);
         });
 
+        // 2. 為每個群組產生合併後的共同名稱 (XX)
+        Object.values(groups).forEach(group => {
+            group.commonName = generateCommonName(group.keys);
+        });
+
+        // 3. 渲染上方的標籤 (使用共同名稱)
         let statusHtml = "成品母件：";
-        matchedKeys.forEach(key => {
-            statusHtml += `<span class="parent-tag" style="background-color: #cfd8dc; cursor: default;">${key}</span>`;
+        Object.values(groups).forEach(group => {
+            // 加入 title 屬性，游標停上可查看原始母件清單
+            statusHtml += `<span class="parent-tag" style="background-color: #cfd8dc; cursor: default;" title="${group.keys.join('\n')}">${group.commonName}</span>`;
         });
         statusDiv.innerHTML = statusHtml;
 
+        // 4. 渲染下方的表格 (使用共同名稱)
         let html = `<table><thead><tr><th style="width: 15%; white-space: nowrap;">成品母件</th><th>子件清單與廠商</th></tr></thead><tbody>`;
         
-        // 2. 依據合併後的群組來渲染表格
         Object.values(groups).forEach(group => {
-            
-            // 左側：將被合併在同一組的母件編號換行顯示
-            const keysHtml = group.keys.map(k => `<div style="margin-bottom: 6px; font-weight: bold; color: #28a745;">${k}</div>`).join('');
+            // 左側顯示為合併後的名稱
+            const keysHtml = `<div style="margin-bottom: 6px; font-weight: bold; color: #28a745;" title="${group.keys.join('\n')}">${group.commonName}</div>`;
 
-            // 右側：顯示共用的子件與廠商清單
             let listHtml = group.items.map(item => {
+                const safeChild = item.child.replace(/'/g, "\\'");
                 return `
-                    <div style="display: flex; align-items: center; padding: 6px 0; border-bottom: 1px dashed #eee;">
-                        <div style="flex: 1;"><span class="child-item" style="background-color: #f8f9fa;" onclick="this.classList.toggle('dimmed')">${item.child}</span></div>
-                        <div style="flex: 1; color: #555; font-weight: 500;">${item.vendor}</div>
+                    <div>
+                        <div style="display: flex; align-items: center; padding: 6px 0; border-bottom: 1px dashed #eee;">
+                            <div style="flex: 1;"><span class="child-item" style="background-color: #f8f9fa;" onclick="toggleSubProduct('${safeChild}', this)">${item.child}</span></div>
+                            <div style="flex: 1; color: #555; font-weight: 500;">${item.vendor}</div>
+                        </div>
                     </div>`;
             }).join('');
 
