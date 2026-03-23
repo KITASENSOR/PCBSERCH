@@ -27,6 +27,15 @@
         
         .clear-btn { background: #6c757d; }
         .clear-btn:hover { background: #5a6268; }
+
+        /* 新增：固定料按鈕與標籤樣式 */
+        .fixed-btn { background: #8e44ad; }
+        .fixed-btn:hover { background: #732d91; }
+        .fixed-badge {
+            font-size: 10px; color: #fff; background-color: #8e44ad;
+            padding: 1px 5px; border-radius: 4px; margin-left: 6px; vertical-align: middle;
+            font-weight: normal;
+        }
         
         table { width: 100%; border-collapse: collapse; margin-top: 25px; }
         th, td { border: 1px solid #e0e0e0; padding: 12px; text-align: left; }
@@ -119,6 +128,7 @@
         <button id="btnSearch" onclick="runFuzzyQuery()" disabled>搜尋全部</button>
         <button class="clear-btn" onclick="clearBOMSearch()">清空搜尋</button>
         <button class="filter-btn" id="btnOnlyCommon" onclick="toggleCommonFilter()" style="display:none;">僅顯示共用料</button>
+        <button class="filter-btn fixed-btn" id="btnFixedFilter" onclick="toggleFixedFilter()" style="display:none;">固定料：顯示全部</button>
     </div>
 
     <div id="matchStatus" class="match-info">資料載入中...</div>
@@ -131,8 +141,8 @@
         <button class="switch-btn" onclick="toggleView('BOM')">← 切換回 BOM 查詢</button>
     </div>
     <p>輸入母件編號：</p>
-    <textarea id="inputProductSearch" placeholder="例如輸入 KP48, P48E 或 KP43010"></textarea>
-    <div class="hint">* 自動忽略所有橫線與空白，並智慧比對連續字串（支援 KT、KP 等前綴寬容）。</div>
+    <textarea id="inputProductSearch" placeholder="例如輸入 KP48 或 P48E"></textarea>
+    <div class="hint">* 自動忽略所有橫線與空白，並智慧比對連續字串（支援 KP 等前綴寬容）。</div>
 
     <div class="btn-group">
         <button id="btnProductSearch" onclick="runProductQuery()" disabled>搜尋成品</button>
@@ -148,6 +158,8 @@
     let rawData = {};
     let productData = {}; 
     let subProductData = {}; 
+    let fixedFeederParts = new Set(); // 儲存 H 欄的固定料名單
+
     const palette = [
     "#90caf9", "#c5e1a5", "#ffcc80", "#e1bee7", "#80cbc4", 
     "#c5cae9", "#cfd8dc", "#f48fb1", "#e6ee9c", "#bcaaa4"  
@@ -156,6 +168,8 @@
     
     // 0=顯示全部, 1=僅顯示共用, 2=排除共用
     let filterMode = 0; 
+    // 0=顯示全部, 1=僅顯示固定料, 2=排除固定料
+    let fixedFilterMode = 0;
     
     const naturalSort = (a, b) => a.localeCompare(b, undefined, { numeric: true });
 
@@ -178,6 +192,7 @@
             const newDb = {};
             const newProductDb = {};
             const newSubProductDb = {};
+            const newFixedFeederParts = new Set();
             
             rows.forEach(row => {
                 const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); 
@@ -212,11 +227,20 @@
                         }
                     }
                 }
+
+                // 抓取 H 欄 (固定料名單)
+                if (cols.length >= 8) {
+                    const feederPart = cols[7] ? cols[7].replace(/"/g, '').trim() : '';
+                    if (feederPart) {
+                        newFixedFeederParts.add(feederPart);
+                    }
+                }
             });
 
             rawData = newDb;
             productData = newProductDb;
             subProductData = newSubProductDb;
+            fixedFeederParts = newFixedFeederParts;
 
             document.getElementById('matchStatus').innerText = "資料同步完成。";
             document.getElementById('productMatchStatus').innerText = "資料同步完成。";
@@ -236,8 +260,11 @@
         document.getElementById('matchStatus').innerText = '';
         currentGroups = [];
         filterMode = 0;
+        fixedFilterMode = 0;
         document.getElementById('btnOnlyCommon').innerText = "僅顯示共用料";
         document.getElementById('btnOnlyCommon').style.display = 'none';
+        document.getElementById('btnFixedFilter').innerText = "固定料：顯示全部";
+        document.getElementById('btnFixedFilter').style.display = 'none';
     }
 
     function clearProductSearch() {
@@ -304,7 +331,9 @@
         if (keywords.length === 0) return;
         
         filterMode = 0;
+        fixedFilterMode = 0;
         document.getElementById('btnOnlyCommon').innerText = "僅顯示共用料";
+        document.getElementById('btnFixedFilter').innerText = "固定料：顯示全部";
 
         const results = Object.keys(rawData).map(key => {
             let bestType = null;
@@ -383,25 +412,32 @@
     function toggleCommonFilter() {
         filterMode = (filterMode + 1) % 3;
         const btn = document.getElementById('btnOnlyCommon');
-        
-        if (filterMode === 0) {
-            btn.innerText = "僅顯示共用料";
-        } else if (filterMode === 1) {
-            btn.innerText = "排除共用料";
-        } else if (filterMode === 2) {
-            btn.innerText = "顯示全部料件";
-        }
+        if (filterMode === 0) btn.innerText = "僅顯示共用料";
+        else if (filterMode === 1) btn.innerText = "排除共用料";
+        else if (filterMode === 2) btn.innerText = "顯示全部料件";
+        updateUI();
+    }
+
+    function toggleFixedFilter() {
+        fixedFilterMode = (fixedFilterMode + 1) % 3;
+        const btn = document.getElementById('btnFixedFilter');
+        if (fixedFilterMode === 0) btn.innerText = "固定料：顯示全部";
+        else if (fixedFilterMode === 1) btn.innerText = "固定料：僅顯示";
+        else if (fixedFilterMode === 2) btn.innerText = "固定料：排除";
         updateUI();
     }
 
     function resetFilter() {
         filterMode = 0;
+        fixedFilterMode = 0;
         document.getElementById('btnOnlyCommon').innerText = "僅顯示共用料";
+        document.getElementById('btnFixedFilter').innerText = "固定料：顯示全部";
         updateUI();
     }
 
     function updateUI() {
         document.getElementById('btnOnlyCommon').style.display = currentGroups.length > 1 ? 'inline-block' : 'none';
+        document.getElementById('btnFixedFilter').style.display = currentGroups.length > 0 ? 'inline-block' : 'none';
         renderView(currentGroups);
     }
 
@@ -422,14 +458,17 @@
             statusHtml += `<button class="reset-btn" onclick="resetFilter()">恢復清單</button>`;
         }
         statusDiv.innerHTML = statusHtml;
+        
+        // 改善：將 masterMap 儲存完整字串，以便比對固定料
         const masterMap = {};
         displayGroups.forEach(g => {
             g.content.split(',').forEach(fullStr => {
                 const [prefix, ...rest] = fullStr.split('-');
                 const code = formatCode(rest.join('-'));
                 if (!masterMap[prefix]) masterMap[prefix] = {};
-                if (!masterMap[prefix][code]) masterMap[prefix][code] = [];
-                masterMap[prefix][code].push(g);
+                if (!masterMap[prefix][code]) masterMap[prefix][code] = { owners: [], fullStrs: [] };
+                masterMap[prefix][code].owners.push(g);
+                masterMap[prefix][code].fullStrs.push(fullStr);
             });
         });
         
@@ -439,14 +478,23 @@
             const sortedCodes = Object.keys(codesObj).sort(naturalSort);
             
             let codeHtmlList = sortedCodes.map(c => {
-                const owners = codesObj[c];
-                const isCommon = displayGroups.length > 1 && owners.length === displayGroups.length;
+                const owners = codesObj[c].owners;
+                const fullStrs = codesObj[c].fullStrs;
                 
+                const isCommon = displayGroups.length > 1 && owners.length === displayGroups.length;
+                // 判斷該子件是否存在於固定料資料庫中
+                const isFixed = fullStrs.some(str => fixedFeederParts.has(str));
+                
+                // 套用固定料過濾規則
+                if (fixedFilterMode === 1 && !isFixed) return '';
+                if (fixedFilterMode === 2 && isFixed) return '';
+
                 const tooltipText = "使用的母件：\n" + owners.map(o => o.displayName).join('\n');
+                const fixedBadgeHtml = isFixed ? `<span class="fixed-badge">固</span>` : '';
 
                 if (isCommon) {
                     if (filterMode === 2) return '';
-                    return `<span class="child-item common-part" title="${tooltipText}" onclick="this.classList.toggle('dimmed')">${c}</span>`;
+                    return `<span class="child-item common-part" title="${tooltipText}" onclick="this.classList.toggle('dimmed')">${c}${fixedBadgeHtml}</span>`;
                 } else {
                     if (filterMode === 1) return '';
 
@@ -461,7 +509,7 @@
                         }).join(', ');
                         bgStyle = `background: linear-gradient(to right, ${stops}); color: #333; border: 1px solid #999;`;
                     }
-                    return `<span class="child-item" style="${bgStyle}" title="${tooltipText}" onclick="this.classList.toggle('dimmed')">${c}</span>`;
+                    return `<span class="child-item" style="${bgStyle}" title="${tooltipText}" onclick="this.classList.toggle('dimmed')">${c}${fixedBadgeHtml}</span>`;
                 }
                 return '';
             }).filter(h => h !== '');
@@ -473,7 +521,9 @@
 
     function filterGroup(groupId) {
         filterMode = 0;
+        fixedFilterMode = 0;
         document.getElementById('btnOnlyCommon').innerText = "僅顯示共用料";
+        document.getElementById('btnFixedFilter').innerText = "固定料：顯示全部";
         const target = currentGroups.find(g => g.id === groupId);
         if (target) renderView([target]);
     }
@@ -504,9 +554,6 @@
         return resultParts.join('-');
     }
 
-    // ==========================================
-    // 升級後的成品查詢邏輯 (滑動視窗連續匹配，動態忽略前綴)
-    // ==========================================
     function runProductQuery() {
         const rawInput = document.getElementById('inputProductSearch').value.trim();
         const resultArea = document.getElementById('productResultArea');
@@ -516,35 +563,21 @@
             return;
         }
 
-        // 1. 忽略 "-", "_" 與空白，轉大寫
         const cleanInput = rawInput.replace(/[-\s_]/g, '').toUpperCase();
-
         const matchedKeys = Object.keys(productData).filter(key => {
-            // 資料庫中的母件也一併忽略所有符號
             const cleanKey = key.replace(/[-\s_]/g, '').toUpperCase();
-            
-            // 規則 A：互相包含 (完全命中，或輸入字串是資料庫字串的一部分)
             if (cleanKey.includes(cleanInput) || cleanInput.includes(cleanKey)) {
                 return true;
             }
-
-            // 規則 B：寬容前綴拔除 (左側滑動視窗)
-            // 如果輸入了 KP48E 但資料庫是 48E010
-            // 嘗試從左側拔除字元 (如拔掉 K, P)，尋找連續匹配的字串
             for (let i = 1; i <= cleanInput.length - 2; i++) {
                 let subInput = cleanInput.substring(i);
-
-                // 情況 1：拔除前綴後，正好是資料庫母件的開頭 (例：KP48 -> 48 命中 48E010)
                 if (cleanKey.startsWith(subInput)) {
                     return true;
                 }
-
-                // 情況 2：拔除前綴後，字串夠長 (>=3) 且包含在資料庫母件中 (例：KP43010 -> P43010 命中 P43010XXXX)
                 if (subInput.length >= 3 && cleanKey.includes(subInput)) {
                     return true;
                 }
             }
-
             return false;
         });
 
