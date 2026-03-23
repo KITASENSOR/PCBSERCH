@@ -79,7 +79,18 @@
             .header-row h2 { margin-bottom: 5px; }
             .btn-group { flex-direction: column; gap: 8px; }
             button { width: 100%; padding: 12px 20px; }
-            .parent-tag { margin: 5px 2px; }
+            
+            /* 調整手機版母件標籤高度與大小 */
+            .parent-tag { 
+                margin: 3px 2px; 
+                padding: 2px 24px 2px 8px; /* 縮小上下內距 */
+                font-size: 13px; /* 微調字體大小 */
+            }
+            
+            /* 同步縮小刪除按鈕 (X) 以配合變矮的標籤 */
+            .del-btn {
+                width: 16px; height: 16px; line-height: 14px; font-size: 12px; right: 4px;
+            }
             
             table, thead, tbody, th, td, tr { display: block; width: 100%; box-sizing: border-box; }
             thead { display: none; }
@@ -495,9 +506,6 @@
         return resultParts.join('-');
     }
 
-    // ==========================================
-    // 改善後的成品查詢邏輯 (忽略所有橫線、底線與空白，並寬容K代碼)
-    // ==========================================
     function runProductQuery() {
         const rawInput = document.getElementById('inputProductSearch').value.trim();
         const resultArea = document.getElementById('productResultArea');
@@ -507,16 +515,11 @@
             return;
         }
 
-        // 1. 忽略 "-", "_" 與空白，轉大寫
         const cleanInput = rawInput.replace(/[-\s_]/g, '').toUpperCase();
-        
-        // 2. 處理 'K' 開頭的寬容邏輯
         const inputWithoutK = (cleanInput.startsWith('K') && cleanInput.length > 1) ? cleanInput.substring(1) : null;
 
         const matchedKeys = Object.keys(productData).filter(key => {
-            // 資料庫中的母件也一併忽略所有符號
             const cleanKey = key.replace(/[-\s_]/g, '').toUpperCase();
-            
             return cleanKey.includes(cleanInput) || (inputWithoutK && cleanKey.includes(inputWithoutK));
         });
 
