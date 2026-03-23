@@ -28,7 +28,6 @@
         .clear-btn { background: #6c757d; }
         .clear-btn:hover { background: #5a6268; }
 
-        /* 新增：固定料按鈕與標籤樣式 */
         .fixed-btn { background: #8e44ad; }
         .fixed-btn:hover { background: #732d91; }
         .fixed-badge {
@@ -141,8 +140,8 @@
         <button class="switch-btn" onclick="toggleView('BOM')">← 切換回 BOM 查詢</button>
     </div>
     <p>輸入母件編號：</p>
-    <textarea id="inputProductSearch" placeholder="例如輸入 KP48 或 P48E"></textarea>
-    <div class="hint">* 自動忽略所有橫線與空白，並智慧比對連續字串（支援 KP 等前綴寬容）。</div>
+    <textarea id="inputProductSearch" placeholder="例如輸入 KP48 或 50EP011"></textarea>
+    <div class="hint">* 自動忽略橫線與空白。採「有前無後」邏輯：若完整字串命中，將優先顯示並隔離雜訊。</div>
 
     <div class="btn-group">
         <button id="btnProductSearch" onclick="runProductQuery()" disabled>搜尋成品</button>
@@ -158,7 +157,7 @@
     let rawData = {};
     let productData = {}; 
     let subProductData = {}; 
-    let fixedFeederParts = new Set(); // 儲存 H 欄的固定料名單
+    let fixedFeederParts = new Set(); 
 
     const palette = [
     "#90caf9", "#c5e1a5", "#ffcc80", "#e1bee7", "#80cbc4", 
@@ -166,9 +165,7 @@
     ];
     let currentGroups = []; 
     
-    // 0=顯示全部, 1=僅顯示共用, 2=排除共用
     let filterMode = 0; 
-    // 0=顯示全部, 1=僅顯示固定料, 2=排除固定料
     let fixedFilterMode = 0;
     
     const naturalSort = (a, b) => a.localeCompare(b, undefined, { numeric: true });
@@ -228,7 +225,6 @@
                     }
                 }
 
-                // 抓取 H 欄 (固定料名單)
                 if (cols.length >= 8) {
                     const feederPart = cols[7] ? cols[7].replace(/"/g, '').trim() : '';
                     if (feederPart) {
@@ -459,7 +455,6 @@
         }
         statusDiv.innerHTML = statusHtml;
         
-        // 改善：將 masterMap 儲存完整字串，以便比對固定料
         const masterMap = {};
         displayGroups.forEach(g => {
             g.content.split(',').forEach(fullStr => {
@@ -482,10 +477,8 @@
                 const fullStrs = codesObj[c].fullStrs;
                 
                 const isCommon = displayGroups.length > 1 && owners.length === displayGroups.length;
-                // 判斷該子件是否存在於固定料資料庫中
                 const isFixed = fullStrs.some(str => fixedFeederParts.has(str));
                 
-                // 套用固定料過濾規則
                 if (fixedFilterMode === 1 && !isFixed) return '';
                 if (fixedFilterMode === 2 && isFixed) return '';
 
@@ -554,6 +547,9 @@
         return resultParts.join('-');
     }
 
+    // ==========================================
+    // 精煉版成品查詢邏輯 (有前無後，階層式降級搜尋)
+    // ==========================================
     function runProductQuery() {
         const rawInput = document.getElementById('inputProductSearch').value.trim();
         const resultArea = document.getElementById('productResultArea');
@@ -564,22 +560,21 @@
         }
 
         const cleanInput = rawInput.replace(/[-\s_]/g, '').toUpperCase();
-        const matchedKeys = Object.keys(productData).filter(key => {
+        const inputWithoutK = (cleanInput.startsWith('K') && cleanInput.length > 1) ? cleanInput.substring(1) : null;
+
+        // 第一階段：嚴格比對輸入的完整字串 (包含或被包含)
+        let matchedKeys = Object.keys(productData).filter(key => {
             const cleanKey = key.replace(/[-\s_]/g, '').toUpperCase();
-            if (cleanKey.includes(cleanInput) || cleanInput.includes(cleanKey)) {
-                return true;
-            }
-            for (let i = 1; i <= cleanInput.length - 2; i++) {
-                let subInput = cleanInput.substring(i);
-                if (cleanKey.startsWith(subInput)) {
-                    return true;
-                }
-                if (subInput.length >= 3 && cleanKey.includes(subInput)) {
-                    return true;
-                }
-            }
-            return false;
+            return cleanKey.includes(cleanInput) || cleanInput.startsWith(cleanKey);
         });
+
+        // 第二階段 (有前無後)：只有在第一階段「完全找不到」時，才啟動 K 代碼寬容尋找
+        if (matchedKeys.length === 0 && inputWithoutK) {
+            matchedKeys = Object.keys(productData).filter(key => {
+                const cleanKey = key.replace(/[-\s_]/g, '').toUpperCase();
+                return cleanKey.includes(inputWithoutK) || inputWithoutK.startsWith(cleanKey);
+            });
+        }
 
         if (matchedKeys.length === 0) {
             statusDiv.innerText = "查無此成品編號。";
