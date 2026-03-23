@@ -122,8 +122,8 @@
         <button class="switch-btn" onclick="toggleView('BOM')">← 切換回 BOM 查詢</button>
     </div>
     <p>輸入母件編號：</p>
-    <textarea id="inputProductSearch" placeholder="例如輸入 P48E"></textarea>
-    <div class="hint">* 輸入母件編號，查詢該成品底下包含的子件與對應廠商。</div>
+    <textarea id="inputProductSearch" placeholder="例如輸入 KP48 或 P48E"></textarea>
+    <div class="hint">* 支援省略橫線 "-"，且容許公司代碼 "K" 的彈性比對。</div>
 
     <div class="btn-group">
         <button id="btnProductSearch" onclick="runProductQuery()" disabled>搜尋成品</button>
@@ -145,7 +145,7 @@
     ];
     let currentGroups = []; 
     
-    // 新增：0=顯示全部, 1=僅顯示共用, 2=排除共用
+    // 0=顯示全部, 1=僅顯示共用, 2=排除共用
     let filterMode = 0; 
     
     const naturalSort = (a, b) => a.localeCompare(b, undefined, { numeric: true });
@@ -371,7 +371,6 @@
         updateUI();
     }
 
-    // 三段式過濾按鈕邏輯
     function toggleCommonFilter() {
         filterMode = (filterMode + 1) % 3;
         const btn = document.getElementById('btnOnlyCommon');
@@ -386,7 +385,6 @@
         updateUI();
     }
 
-    // 重置過濾器的輔助函數
     function resetFilter() {
         filterMode = 0;
         document.getElementById('btnOnlyCommon').innerText = "僅顯示共用料";
@@ -438,11 +436,9 @@
                 const tooltipText = "使用的母件：\n" + owners.map(o => o.displayName).join('\n');
 
                 if (isCommon) {
-                    // 如果目前是排除共用料模式 (filterMode = 2)，則隱藏共用料
                     if (filterMode === 2) return '';
                     return `<span class="child-item common-part" title="${tooltipText}" onclick="this.classList.toggle('dimmed')">${c}</span>`;
                 } else {
-                    // 如果目前是僅顯示共用料模式 (filterMode = 1)，則隱藏非共用料
                     if (filterMode === 1) return '';
 
                     let bgStyle = "";
@@ -499,16 +495,30 @@
         return resultParts.join('-');
     }
 
+    // ==========================================
+    // 改善後的成品查詢邏輯 (忽略所有橫線、底線與空白，並寬容K代碼)
+    // ==========================================
     function runProductQuery() {
-        const input = document.getElementById('inputProductSearch').value.trim().toUpperCase();
+        const rawInput = document.getElementById('inputProductSearch').value.trim();
         const resultArea = document.getElementById('productResultArea');
         const statusDiv = document.getElementById('productMatchStatus');
         
-        if (!input) {
+        if (!rawInput) {
             return;
         }
 
-        const matchedKeys = Object.keys(productData).filter(key => key.toUpperCase().includes(input));
+        // 1. 忽略 "-", "_" 與空白，轉大寫
+        const cleanInput = rawInput.replace(/[-\s_]/g, '').toUpperCase();
+        
+        // 2. 處理 'K' 開頭的寬容邏輯
+        const inputWithoutK = (cleanInput.startsWith('K') && cleanInput.length > 1) ? cleanInput.substring(1) : null;
+
+        const matchedKeys = Object.keys(productData).filter(key => {
+            // 資料庫中的母件也一併忽略所有符號
+            const cleanKey = key.replace(/[-\s_]/g, '').toUpperCase();
+            
+            return cleanKey.includes(cleanInput) || (inputWithoutK && cleanKey.includes(inputWithoutK));
+        });
 
         if (matchedKeys.length === 0) {
             statusDiv.innerText = "查無此成品編號。";
