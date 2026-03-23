@@ -80,14 +80,12 @@
             .btn-group { flex-direction: column; gap: 8px; }
             button { width: 100%; padding: 12px 20px; }
             
-            /* 調整手機版母件標籤高度與大小 */
             .parent-tag { 
                 margin: 3px 2px; 
-                padding: 2px 24px 2px 8px; /* 縮小上下內距 */
-                font-size: 13px; /* 微調字體大小 */
+                padding: 2px 24px 2px 8px; 
+                font-size: 13px; 
             }
             
-            /* 同步縮小刪除按鈕 (X) 以配合變矮的標籤 */
             .del-btn {
                 width: 16px; height: 16px; line-height: 14px; font-size: 12px; right: 4px;
             }
@@ -133,8 +131,8 @@
         <button class="switch-btn" onclick="toggleView('BOM')">← 切換回 BOM 查詢</button>
     </div>
     <p>輸入母件編號：</p>
-    <textarea id="inputProductSearch" placeholder="例如輸入 KP48 或 P48E"></textarea>
-    <div class="hint">* 支援省略橫線 "-"，且容許公司代碼 "K" 的彈性比對。</div>
+    <textarea id="inputProductSearch" placeholder="例如輸入 KP48, P48E 或 KP43010"></textarea>
+    <div class="hint">* 自動忽略所有橫線與空白，並智慧比對連續字串（支援 KT、KP 等前綴寬容）。</div>
 
     <div class="btn-group">
         <button id="btnProductSearch" onclick="runProductQuery()" disabled>搜尋成品</button>
@@ -506,6 +504,9 @@
         return resultParts.join('-');
     }
 
+    // ==========================================
+    // 升級後的成品查詢邏輯 (滑動視窗連續匹配，動態忽略前綴)
+    // ==========================================
     function runProductQuery() {
         const rawInput = document.getElementById('inputProductSearch').value.trim();
         const resultArea = document.getElementById('productResultArea');
@@ -515,12 +516,36 @@
             return;
         }
 
+        // 1. 忽略 "-", "_" 與空白，轉大寫
         const cleanInput = rawInput.replace(/[-\s_]/g, '').toUpperCase();
-        const inputWithoutK = (cleanInput.startsWith('K') && cleanInput.length > 1) ? cleanInput.substring(1) : null;
 
         const matchedKeys = Object.keys(productData).filter(key => {
+            // 資料庫中的母件也一併忽略所有符號
             const cleanKey = key.replace(/[-\s_]/g, '').toUpperCase();
-            return cleanKey.includes(cleanInput) || (inputWithoutK && cleanKey.includes(inputWithoutK));
+            
+            // 規則 A：互相包含 (完全命中，或輸入字串是資料庫字串的一部分)
+            if (cleanKey.includes(cleanInput) || cleanInput.includes(cleanKey)) {
+                return true;
+            }
+
+            // 規則 B：寬容前綴拔除 (左側滑動視窗)
+            // 如果輸入了 KP48E 但資料庫是 48E010
+            // 嘗試從左側拔除字元 (如拔掉 K, P)，尋找連續匹配的字串
+            for (let i = 1; i <= cleanInput.length - 2; i++) {
+                let subInput = cleanInput.substring(i);
+
+                // 情況 1：拔除前綴後，正好是資料庫母件的開頭 (例：KP48 -> 48 命中 48E010)
+                if (cleanKey.startsWith(subInput)) {
+                    return true;
+                }
+
+                // 情況 2：拔除前綴後，字串夠長 (>=3) 且包含在資料庫母件中 (例：KP43010 -> P43010 命中 P43010XXXX)
+                if (subInput.length >= 3 && cleanKey.includes(subInput)) {
+                    return true;
+                }
+            }
+
+            return false;
         });
 
         if (matchedKeys.length === 0) {
