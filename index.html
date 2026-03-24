@@ -31,13 +31,13 @@
         .fixed-btn { background: #8e44ad; }
         .fixed-btn:hover { background: #732d91; }
         
-        /* 改善：將固定料的標記改為紫色加粗外框 */
+        /* 固定料外框加粗 (設定為 3px) */
         .fixed-item {
             border: 4px solid #8e44ad !important;
             box-sizing: border-box;
         }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 25px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { border: 1px solid #e0e0e0; padding: 12px; text-align: left; }
         th { background: #f8f9fa; }
 
@@ -78,6 +78,16 @@
         .child-item.dimmed { background-color: #e0e0e0 !important; color: #888 !important; border-color: #ccc !important; opacity: 0.6; }
 
         .match-info { margin-top: 20px; font-weight: bold; color: #555; line-height: 2.5; }
+        
+        /* 數量統計文字樣式 */
+        .count-info {
+            font-weight: bold;
+            color: #e67e22;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            font-size: 15px;
+        }
+
         .reset-btn { background: #6c757d; color: white; border: none; margin-left: 10px; padding: 5px 12px; font-size: 12px; border-radius: 3px; cursor: pointer; }
 
         /* ----- 手機版螢幕適應設定 ----- */
@@ -132,6 +142,7 @@
     </div>
 
     <div id="matchStatus" class="match-info">資料載入中...</div>
+    <div id="itemCount" class="count-info"></div>
     <div id="resultArea"></div>
 </div>
 
@@ -255,6 +266,7 @@
         document.getElementById('inputSearch').value = '';
         document.getElementById('resultArea').innerHTML = '';
         document.getElementById('matchStatus').innerText = '';
+        document.getElementById('itemCount').innerText = ''; // 清空數量統計
         currentGroups = [];
         filterMode = 0;
         fixedFilterMode = 0;
@@ -441,11 +453,15 @@
     function renderView(displayGroups) {
         const statusDiv = document.getElementById('matchStatus');
         const resultArea = document.getElementById('resultArea');
+        const countDiv = document.getElementById('itemCount');
+        
         if (currentGroups.length === 0) {
             statusDiv.innerText = "查無此核心編號。";
+            countDiv.innerText = "";
             resultArea.innerHTML = "";
             return;
         }
+        
         let statusHtml = "母件：";
         currentGroups.forEach(g => {
             const isSelected = displayGroups.length === 1 && displayGroups[0] === g;
@@ -469,6 +485,8 @@
         });
         
         let html = `<table><thead><tr><th style="width: 1%">類別</th><th>子件明細</th></tr></thead><tbody>`;
+        let visibleCount = 0; // 新增：用於統計實際顯示的料件數量
+        
         Object.keys(masterMap).sort().forEach(pre => {
             const codesObj = masterMap[pre];
             const sortedCodes = Object.keys(codesObj).sort(naturalSort);
@@ -480,19 +498,21 @@
                 const isCommon = displayGroups.length > 1 && owners.length === displayGroups.length;
                 const isFixed = fullStrs.some(str => fixedFeederParts.has(str));
                 
+                // 套用固定料過濾規則
                 if (fixedFilterMode === 1 && !isFixed) return '';
                 if (fixedFilterMode === 2 && isFixed) return '';
 
                 const tooltipText = "使用的母件：\n" + owners.map(o => o.displayName).join('\n');
-                
-                // 依據是否為固定料加入對應的 class
                 const fixedClass = isFixed ? " fixed-item" : "";
 
+                // 檢查共用料過濾規則，若未被過濾，則將計數器 +1 並產生 HTML
                 if (isCommon) {
                     if (filterMode === 2) return '';
+                    visibleCount++;
                     return `<span class="child-item common-part${fixedClass}" title="${tooltipText}" onclick="this.classList.toggle('dimmed')">${c}</span>`;
                 } else {
                     if (filterMode === 1) return '';
+                    visibleCount++;
 
                     let bgStyle = "";
                     if (owners.length === 1) {
@@ -512,7 +532,10 @@
 
             if (codeHtmlList.length > 0) html += `<tr><td class="prefix-td">${pre}</td><td>${codeHtmlList.join('')}</td></tr>`;
         });
+        
         resultArea.innerHTML = html + `</tbody></table>`;
+        // 將計算出的數量顯示在畫面上
+        countDiv.innerText = `數量：${visibleCount}`;
     }
 
     function filterGroup(groupId) {
