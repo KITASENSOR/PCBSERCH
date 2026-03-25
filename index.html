@@ -31,7 +31,7 @@
         .fixed-btn { background: #8e44ad; }
         .fixed-btn:hover { background: #732d91; }
         
-        /* 固定料外框加粗 (設定為 3px) */
+        /* 固定料外框加粗設定為 4px */
         .fixed-item {
             border: 4px solid #8e44ad !important;
             box-sizing: border-box;
@@ -90,12 +90,34 @@
 
         .reset-btn { background: #6c757d; color: white; border: none; margin-left: 10px; padding: 5px 12px; font-size: 12px; border-radius: 3px; cursor: pointer; }
 
+        /* ===== 排程與條碼浮動視窗樣式 ===== */
+        .clickable-link { color: #007bff; text-decoration: underline; cursor: pointer; font-weight: 500; }
+        .clickable-link:hover { color: #0056b3; }
+        
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: white; padding: 30px; border-radius: 10px; text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3); position: relative; min-width: 300px;
+        }
+        .modal-close {
+            position: absolute; top: 10px; right: 15px; cursor: pointer; font-size: 24px; color: #888; line-height: 1;
+        }
+        .modal-close:hover { color: #333; }
+
         /* ----- 手機版螢幕適應設定 ----- */
         @media screen and (max-width: 600px) {
             body { margin: 10px; }
             .container { padding: 15px; }
             .header-row { flex-direction: column; align-items: stretch; gap: 15px; }
             .header-row h2 { margin-bottom: 5px; }
+            
+            /* 調整手機版按鈕堆疊 */
+            .header-buttons { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+            .header-buttons .switch-btn { width: 100%; margin-bottom: 0 !important; }
+
             .btn-group { flex-direction: column; gap: 8px; }
             button { width: 100%; padding: 12px 20px; }
             
@@ -120,13 +142,17 @@
             }
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 </head>
 <body>
 
 <div class="container" id="viewBOM">
     <div class="header-row">
         <h2>BOM 查詢</h2>
-        <button class="switch-btn" onclick="toggleView('PRODUCT')">切換至成品查詢 →</button>
+        <div class="header-buttons" style="text-align: right;">
+            <button class="switch-btn" style="margin-bottom: 8px; display: inline-block;" onclick="toggleView('SCHEDULE')">切換至排程查詢 →</button><br>
+            <button class="switch-btn" onclick="toggleView('PRODUCT')">切換至成品查詢 →</button>
+        </div>
     </div>
     <p>輸入母件編號：</p>
     <textarea id="inputSearch" placeholder="例如輸入 42242"></textarea>
@@ -149,7 +175,10 @@
 <div class="container" id="viewPRODUCT" style="display: none;">
     <div class="header-row">
         <h2>成品查詢</h2>
-        <button class="switch-btn" onclick="toggleView('BOM')">← 切換回 BOM 查詢</button>
+        <div class="header-buttons" style="text-align: right;">
+            <button class="switch-btn" style="margin-bottom: 8px; display: inline-block;" onclick="toggleView('SCHEDULE')">切換至排程查詢 →</button><br>
+            <button class="switch-btn" onclick="toggleView('BOM')">← 切換回 BOM 查詢</button>
+        </div>
     </div>
     <p>輸入母件編號：</p>
     <textarea id="inputProductSearch" placeholder="例如輸入 KP48 或 50EP011"></textarea>
@@ -164,12 +193,34 @@
     <div id="productResultArea"></div>
 </div>
 
+<div class="container" id="viewSCHEDULE" style="display: none;">
+    <div class="header-row">
+        <h2>生產排程</h2>
+        <div class="header-buttons" style="text-align: right;">
+            <button class="switch-btn" style="margin-bottom: 8px; display: inline-block;" onclick="toggleView('PRODUCT')">切換至成品查詢 →</button><br>
+            <button class="switch-btn" onclick="toggleView('BOM')">← 切換回 BOM 查詢</button>
+        </div>
+    </div>
+    <p>以下為最新排程清單：</p>
+    <div class="hint">* 點擊「製令單號」可產生條碼供掃描，點擊「產品型號」將自動跳轉至 BOM 展開用料。</div>
+    <div id="scheduleResultArea"></div>
+</div>
+
+<div id="barcodeOverlay" class="modal-overlay" onclick="closeBarcode(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <span class="modal-close" onclick="closeBarcode(event)">&times;</span>
+        <h3 id="barcodeTitle" style="margin-top: 0; color: #333;">製令單號</h3>
+        <svg id="barcodeSvg"></svg>
+    </div>
+</div>
+
 <script>
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTCXT3zLzXbfrprksE92KR0EM6qXnteT_aGAjYFVIpRiwDV7Pg_BIFoIQMG8fpnTd6m8dCAYYBnuaxX/pub?output=csv";
     let rawData = {};
     let productData = {}; 
     let subProductData = {}; 
     let fixedFeederParts = new Set(); 
+    let scheduleData = []; // 新增排程資料庫
 
     const palette = [
     "#90caf9", "#c5e1a5", "#ffcc80", "#e1bee7", "#80cbc4", 
@@ -183,13 +234,9 @@
     const naturalSort = (a, b) => a.localeCompare(b, undefined, { numeric: true });
 
     function toggleView(viewType) {
-        if (viewType === 'BOM') {
-            document.getElementById('viewBOM').style.display = 'block';
-            document.getElementById('viewPRODUCT').style.display = 'none';
-        } else {
-            document.getElementById('viewBOM').style.display = 'none';
-            document.getElementById('viewPRODUCT').style.display = 'block';
-        }
+        document.getElementById('viewBOM').style.display = (viewType === 'BOM') ? 'block' : 'none';
+        document.getElementById('viewPRODUCT').style.display = (viewType === 'PRODUCT') ? 'block' : 'none';
+        document.getElementById('viewSCHEDULE').style.display = (viewType === 'SCHEDULE') ? 'block' : 'none';
     }
 
     async function fetchCSV() {
@@ -206,12 +253,14 @@
             rows.forEach(row => {
                 const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); 
                 
+                // BOM 查詢資料
                 if (cols.length >= 2) {
                     const key = cols[0] ? cols[0].replace(/"/g, '').trim() : '';
                     const val = cols[1] ? cols[1].replace(/"/g, '').trim() : '';
                     if (key) newDb[key] = val;
                 }
 
+                // 成品查詢資料
                 if (cols.length >= 5) {
                     const pKey = cols[2] ? cols[2].replace(/"/g, '').trim() : '';
                     const pChild = cols[3] ? cols[3].replace(/"/g, '').trim() : '';
@@ -225,6 +274,7 @@
                     }
                 }
 
+                // 次級子件展開資料
                 if (cols.length >= 7) {
                     const subParent = cols[5] ? cols[5].replace(/"/g, '').trim() : '';
                     const subChild = cols[6] ? cols[6].replace(/"/g, '').trim() : '';
@@ -237,10 +287,22 @@
                     }
                 }
 
+                // 固定料清單
                 if (cols.length >= 8) {
                     const feederPart = cols[7] ? cols[7].replace(/"/g, '').trim() : '';
                     if (feederPart) {
                         newFixedFeederParts.add(feederPart);
+                    }
+                }
+
+                // 抓取 I(8), J(9), K(10) 欄 (製令單號、產品型號、上線日)
+                if (cols.length >= 11) {
+                    const orderNo = cols[8] ? cols[8].replace(/"/g, '').trim() : '';
+                    const prodModel = cols[9] ? cols[9].replace(/"/g, '').trim() : '';
+                    const onlineDate = cols[10] ? cols[10].replace(/"/g, '').trim() : '';
+                    
+                    if (orderNo || prodModel || onlineDate) {
+                        scheduleData.push({ orderNo, prodModel, onlineDate });
                     }
                 }
             });
@@ -254,6 +316,9 @@
             document.getElementById('productMatchStatus').innerText = "資料同步完成。";
             document.getElementById('btnSearch').disabled = false;
             document.getElementById('btnProductSearch').disabled = false;
+            
+            // 資料載入完成後，直接繪製排程表
+            renderSchedule();
         } catch (error) {
             document.getElementById('matchStatus').innerText = "載入失敗：Failed to fetch";
             document.getElementById('productMatchStatus').innerText = "載入失敗：Failed to fetch";
@@ -266,7 +331,7 @@
         document.getElementById('inputSearch').value = '';
         document.getElementById('resultArea').innerHTML = '';
         document.getElementById('matchStatus').innerText = '';
-        document.getElementById('itemCount').innerText = ''; // 清空數量統計
+        document.getElementById('itemCount').innerText = ''; 
         currentGroups = [];
         filterMode = 0;
         fixedFilterMode = 0;
@@ -485,7 +550,7 @@
         });
         
         let html = `<table><thead><tr><th style="width: 1%">類別</th><th>子件明細</th></tr></thead><tbody>`;
-        let visibleCount = 0; // 新增：用於統計實際顯示的料件數量
+        let visibleCount = 0; 
         
         Object.keys(masterMap).sort().forEach(pre => {
             const codesObj = masterMap[pre];
@@ -498,14 +563,12 @@
                 const isCommon = displayGroups.length > 1 && owners.length === displayGroups.length;
                 const isFixed = fullStrs.some(str => fixedFeederParts.has(str));
                 
-                // 套用固定料過濾規則
                 if (fixedFilterMode === 1 && !isFixed) return '';
                 if (fixedFilterMode === 2 && isFixed) return '';
 
                 const tooltipText = "使用的母件：\n" + owners.map(o => o.displayName).join('\n');
                 const fixedClass = isFixed ? " fixed-item" : "";
 
-                // 檢查共用料過濾規則，若未被過濾，則將計數器 +1 並產生 HTML
                 if (isCommon) {
                     if (filterMode === 2) return '';
                     visibleCount++;
@@ -534,7 +597,6 @@
         });
         
         resultArea.innerHTML = html + `</tbody></table>`;
-        // 將計算出的數量顯示在畫面上
         countDiv.innerText = `數量：${visibleCount}`;
     }
 
@@ -649,6 +711,67 @@
         
         html += `</tbody></table>`;
         resultArea.innerHTML = html;
+    }
+
+    // ==========================================
+    // 排程系統與條碼互動邏輯
+    // ==========================================
+    function renderSchedule() {
+        const resultArea = document.getElementById('scheduleResultArea');
+        if (scheduleData.length <= 1) { // 略過可能只有標題的狀況
+            resultArea.innerHTML = "<div class='match-info'>尚無排程資料。</div>";
+            return;
+        }
+        
+        let html = `<table><thead><tr><th style="width: 25%;">上線日</th><th style="width: 35%;">製令單號</th><th>產品型號</th></tr></thead><tbody>`;
+        // 略過第一行標題列
+        const dataToRender = scheduleData.slice(1); 
+        
+        dataToRender.forEach(item => {
+            // 略過完全空白的列
+            if(!item.orderNo && !item.prodModel && !item.onlineDate) return; 
+            
+            html += `<tr>
+                <td>${item.onlineDate}</td>
+                <td><span class="clickable-link" onclick="showBarcode('${item.orderNo}')" title="點擊顯示條碼">${item.orderNo}</span></td>
+                <td><span class="clickable-link" onclick="jumpToBOM('${item.prodModel}')" title="點擊查詢此型號用料">${item.prodModel}</span></td>
+            </tr>`;
+        });
+        html += `</tbody></table>`;
+        resultArea.innerHTML = html;
+    }
+
+    function showBarcode(orderNo) {
+        if(!orderNo) return;
+        document.getElementById('barcodeTitle').innerText = orderNo;
+        document.getElementById('barcodeOverlay').style.display = 'flex';
+        
+        // 呼叫 JsBarcode 渲染條碼
+        JsBarcode("#barcodeSvg", orderNo, {
+            format: "CODE128",
+            width: 2.5,
+            height: 80,
+            displayValue: true,
+            fontSize: 18,
+            margin: 10
+        });
+    }
+
+    function closeBarcode(event) {
+        if(event) event.preventDefault();
+        document.getElementById('barcodeOverlay').style.display = 'none';
+    }
+
+    function jumpToBOM(prodModel) {
+        if(!prodModel) return;
+        // 1. 切換到 BOM 頁面
+        toggleView('BOM');
+        // 2. 清空既有搜尋狀態
+        clearBOMSearch();
+        // 3. 將型號填入搜尋框
+        document.getElementById('inputSearch').value = prodModel;
+        // 4. 自動觸發 BOM 查詢
+        runFuzzyQuery();
     }
 </script>
 </body>
