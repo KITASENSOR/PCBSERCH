@@ -83,7 +83,7 @@
         .line-badge { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 13px; font-weight: bold; color: white; text-align: center; }
         .line-badge-mobile { position: absolute; top: 0; left: 0; padding: 2px 6px; font-size: 11px; font-weight: bold; color: white; border-radius: 0 0 6px 0; z-index: 2; }
 
-        /* ===== 換線資料庫查詢專屬樣式 (極簡 A/B 兩欄版) ===== */
+        /* ===== 換線資料庫查詢專屬樣式 (滑動式 A/B 兩欄版) ===== */
         .co-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px; }
         .co-box { border: 1px solid #ced4da; padding: 20px; border-radius: 8px; background: #fdfdfd; }
         .co-box h4 { margin-top: 0; margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
@@ -91,15 +91,26 @@
         .co-input-group input { flex: 2; }
         .co-input-group select { flex: 1; cursor: pointer; }
         
+        /* 滑動切換按鈕區塊 */
+        .toggle-wrapper { display: flex; background: #e9ecef; border-radius: 8px; position: relative; margin: 20px auto; width: 100%; max-width: 700px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
+        .toggle-btn { flex: 1; padding: 12px 5px; text-align: center; z-index: 1; cursor: pointer; font-weight: bold; color: #7f8c8d; border: none; background: none; transition: color 0.3s; font-size: 15px; }
+        .toggle-btn.active { color: #fff; }
+        .toggle-indicator { position: absolute; top: 0; left: 0; height: 100%; width: 50%; background: #34495e; border-radius: 8px; transition: left 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); z-index: 0; }
+
+        /* 滑動視圖區塊 */
+        .slider-viewport { width: 100%; overflow: hidden; position: relative; padding: 5px 0; }
+        .slider-track { display: flex; width: 200%; transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .slider-panel { width: 50%; flex-shrink: 0; padding: 0 10px; box-sizing: border-box; }
+
         .co-workstations { display: flex; flex-direction: row; gap: 20px; margin-top: 15px; }
         .co-ws-col { flex: 1; background: #fdfdfd; border-radius: 8px; border: 2px solid #bdc3c7; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .co-ws-title { text-align: center; font-size: 20px; font-weight: bold; color: #2c3e50; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #ecf0f1; }
+        .co-ws-title { text-align: center; font-size: 18px; font-weight: bold; color: #2c3e50; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #ecf0f1; }
         
-        .co-item { padding: 12px; margin-bottom: 8px; border-radius: 6px; font-weight: bold; text-align: center; color: #fff; font-size: 16px; letter-spacing: 0.5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: default; word-break: break-all; }
-        .co-item:hover { opacity: 0.9; }
-        .act-keep { background-color: #27ae60; border: 1px solid #2ecc71; } /* 綠色：留下 */
-        .act-swap { background-color: #f39c12; border: 1px solid #f1c40f; color: #fff; } /* 黃色：交換 */
-        .act-remove { background-color: #c0392b; border: 1px solid #e74c3c; } /* 紅色：退下 */
+        .co-item { padding: 12px; margin-bottom: 8px; border-radius: 6px; font-weight: bold; text-align: center; color: #fff; font-size: 16px; letter-spacing: 0.5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: default; word-break: break-all; transition: opacity 0.2s; }
+        .co-item:hover { opacity: 0.8; }
+        .act-keep { background-color: #27ae60; border: 1px solid #2ecc71; } /* 綠色：留下 / 同面 */
+        .act-swap { background-color: #f39c12; border: 1px solid #f1c40f; color: #fff; } /* 黃色：交換 / 另一面 */
+        .act-remove { background-color: #c0392b; border: 1px solid #e74c3c; } /* 紅色：退下 / 全新上料 */
 
         @media screen and (min-width: 601px) { .mobile-only { display: none !important; } }
 
@@ -124,15 +135,16 @@
             .sl-cell.order-col { padding-top: 20px; }
             .sl-cell .clickable-link { font-size: clamp(11px, 3.5vw, 15px); word-break: break-all; display: block; width: 100%; }
 
-            /* 手機版換線比對：保持左右並排排列 */
+            /* 手機版換線比對：強制左右並排排列 */
             .co-grid { grid-template-columns: 1fr; gap: 10px; }
-            .co-workstations { flex-direction: row; gap: 8px; } /* 保持左右並排 */
-            .co-ws-col { padding: 10px 5px; } /* 縮小左右內距爭取空間 */
-            .co-ws-title { font-size: 16px; margin-bottom: 10px; padding-bottom: 5px; }
-            .co-item { font-size: 13px; padding: 8px 4px; margin-bottom: 6px; } /* 縮小文字與區塊確保料號可見 */
+            .co-workstations { flex-direction: row; gap: 6px; margin-top: 10px; } /* 強制左右並排 */
+            .co-ws-col { padding: 8px 4px; } /* 縮小左右內距爭取空間 */
+            .co-ws-title { font-size: 15px; margin-bottom: 10px; padding-bottom: 5px; }
+            .co-item { font-size: 12px; padding: 8px 2px; margin-bottom: 6px; } /* 縮小文字與區塊確保料號完整可見 */
             
             /* 手機版縮小圖例說明區塊 */
-            .legend-container span { padding: 4px 8px !important; font-size: 13px; margin: 2px !important; }
+            .legend-container span { padding: 4px 6px !important; font-size: 12px; margin: 2px !important; }
+            .toggle-btn { font-size: 12px; padding: 10px 2px; }
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
@@ -200,9 +212,9 @@
     
     <div class="co-grid">
         <div class="co-box" style="border-top: 4px solid #e74c3c;">
-            <h4 style="color:#c0392b;">📤 機台現有產品 (留機料)</h4>
+            <h4 style="color:#c0392b;">📤 機台現有產品 (換下)</h4>
             <div class="co-input-group">
-                <input type="text" id="coOldModel" placeholder="輸入型號 (例: 0084-17)">
+                <input type="text" id="coOldModel" placeholder="輸入型號 (例: 0422-42)">
                 <select id="coOldSide">
                     <option value="A">A 面</option>
                     <option value="B">B 面</option>
@@ -212,9 +224,9 @@
         </div>
         
         <div class="co-box" style="border-top: 4px solid #3498db;">
-            <h4 style="color:#2980b9;">📥 準備生產產品 (下個工單)</h4>
+            <h4 style="color:#2980b9;">📥 準備生產產品 (換上)</h4>
             <div class="co-input-group">
-                <input type="text" id="coNewModel" placeholder="輸入型號 (例: 0084-18)">
+                <input type="text" id="coNewModel" placeholder="輸入型號 (例: 0422-40)">
                 <select id="coNewSide">
                     <option value="A">A 面</option>
                     <option value="B">B 面</option>
@@ -366,12 +378,32 @@
     function jumpToBOM(prodModel) { if(!prodModel) return; toggleView('BOM'); clearBOMSearch(); document.getElementById('inputSearch').value = prodModel; runFuzzyQuery(); }
 
     // ==========================================
-    // 換線比對系統：極簡色塊版 (A工作站 / B工作站)
+    // 換線比對系統：滑動切換版 (左右雙視角)
     // ==========================================
     function clearChangeover() {
         document.getElementById('coOldModel').value = '';
         document.getElementById('coNewModel').value = '';
         document.getElementById('changeoverResultArea').innerHTML = '';
+    }
+
+    // 控制左右滑動分頁
+    function switchTab(tabIndex) {
+        const track = document.getElementById('sliderTrack');
+        const indicator = document.getElementById('toggleIndicator');
+        const btn0 = document.getElementById('btnTab0');
+        const btn1 = document.getElementById('btnTab1');
+
+        if (tabIndex === 0) {
+            track.style.transform = 'translateX(0%)';
+            indicator.style.left = '0%';
+            btn0.classList.add('active');
+            btn1.classList.remove('active');
+        } else {
+            track.style.transform = 'translateX(-50%)';
+            indicator.style.left = '50%';
+            btn1.classList.add('active');
+            btn0.classList.remove('active');
+        }
     }
 
     function runChangeoverAnalysis() {
@@ -399,89 +431,147 @@
         const newModel = matchModel(newModelRaw);
 
         if (!feederDB[oldModel] || !feederDB[oldModel][oldSide]) {
-            resultArea.innerHTML = `<div class='match-info' style='color:#e74c3c;'>❌ 資料庫中找不到機台現有產品的料站資料：${oldModel} (${oldSide} 面)。</div>`;
+            resultArea.innerHTML = `<div class='match-info' style='color:#e74c3c;'>❌ 找不到機台現有產品的資料：${oldModel} (${oldSide} 面)。</div>`;
             return;
         }
         if (!feederDB[newModel] || !feederDB[newModel][newSide]) {
-            resultArea.innerHTML = `<div class='match-info' style='color:#e74c3c;'>❌ 資料庫中找不到準備生產產品的料站資料：${newModel} (${newSide} 面)。</div>`;
+            resultArea.innerHTML = `<div class='match-info' style='color:#e74c3c;'>❌ 找不到準備生產產品的資料：${newModel} (${newSide} 面)。</div>`;
             return;
         }
 
         const oldStations = feederDB[oldModel][oldSide];
         const newStations = feederDB[newModel][newSide];
+        
+        // 取得其他面的資料 (用來判斷黃色：來自另一面)
+        const allOldSides = Object.keys(feederDB[oldModel]);
+        const otherOldSides = allOldSides.filter(s => s !== oldSide);
+        let partsInOtherSides = [];
+        otherOldSides.forEach(os => {
+            partsInOtherSides = partsInOtherSides.concat(Object.values(feederDB[oldModel][os]));
+        });
+
+        // ----------------------------------------------------
+        // 【視角 1】計算：現在機台上的料怎麼處理 (Teardown)
+        // ----------------------------------------------------
         const oldStationsKeys = Object.keys(oldStations).sort(naturalSort);
-
+        const teardownActionMap = {}; 
         const fulfilledNewStations = new Set();
-        const actionMap = {}; 
 
-        // 1. 第一階段：確認「留下」
+        // 1. 綠色 (留下)
         for (const st of oldStationsKeys) {
             const part = oldStations[st];
             if (newStations[st] === part) {
-                actionMap[st] = { part: part, css: 'act-keep' };
+                teardownActionMap[st] = { part: part, css: 'act-keep' };
                 fulfilledNewStations.add(st);
             }
         }
-
-        // 2. 第二階段：確認「交換」或「退下」
+        // 2. 黃色 (移位) 或 紅色 (退下)
         for (const st of oldStationsKeys) {
-            if (actionMap[st]) continue; 
-
+            if (teardownActionMap[st]) continue; 
             const part = oldStations[st];
             let swapped = false;
-
             for (const [newSt, newPart] of Object.entries(newStations)) {
                 if (newPart === part && !fulfilledNewStations.has(newSt)) {
-                    actionMap[st] = { part: part, css: 'act-swap' };
+                    teardownActionMap[st] = { part: part, css: 'act-swap' };
                     fulfilledNewStations.add(newSt);
                     swapped = true;
                     break;
                 }
             }
-
             if (!swapped) {
-                actionMap[st] = { part: part, css: 'act-remove' };
+                teardownActionMap[st] = { part: part, css: 'act-remove' };
             }
         }
 
-        // 3. 分配至 A工作站 (<100) 與 B工作站 (>=100)
-        const listA = [];
-        const listB = [];
-        
-        oldStationsKeys.forEach(st => {
-            const match = st.match(/\d+/);
-            const num = match ? parseInt(match[0]) : 0;
-            if (num >= 100) listB.push(st);
-            else listA.push(st);
+        // ----------------------------------------------------
+        // 【視角 2】計算：下一張工單的料從哪裡來 (Setup)
+        // ----------------------------------------------------
+        const newStationsKeys = Object.keys(newStations).sort(naturalSort);
+        const setupActionMap = {};
+        const oldPartsSameSide = Object.values(oldStations);
+
+        newStationsKeys.forEach(st => {
+            const part = newStations[st];
+            let cssClass = 'act-remove'; // 預設紅色：全新上料 (找不到)
+
+            if (oldPartsSameSide.includes(part)) {
+                cssClass = 'act-keep'; // 綠色：沿用同面
+            } else if (partsInOtherSides.includes(part)) {
+                cssClass = 'act-swap'; // 黃色：來自另一面
+            }
+
+            setupActionMap[st] = { part: part, css: cssClass };
         });
 
-        const renderBlocks = (list) => {
-            return list.map(st => {
-                const data = actionMap[st];
-                return `<div class="co-item ${data.css}" title="原站別: ${st} (已隱藏)">${data.part}</div>`;
-            }).join('');
+        // 通用的 A/B 工作站渲染器
+        const renderWorkstations = (keysList, actionMap) => {
+            const listA = [];
+            const listB = [];
+            keysList.forEach(st => {
+                const match = st.match(/\d+/);
+                const num = match ? parseInt(match[0]) : 0;
+                if (num >= 100) listB.push(st);
+                else listA.push(st);
+            });
+
+            const renderBlocks = (list) => {
+                return list.map(st => {
+                    const data = actionMap[st];
+                    return `<div class="co-item ${data.css}" title="原站別: ${st} (已隱藏)">${data.part}</div>`;
+                }).join('');
+            };
+
+            return `
+            <div class="co-workstations">
+                <div class="co-ws-col">
+                    <div class="co-ws-title">A 工作站</div>
+                    ${listA.length > 0 ? renderBlocks(listA) : '<div style="text-align:center; color:#999; padding:20px;">無料站</div>'}
+                </div>
+                <div class="co-ws-col">
+                    <div class="co-ws-title">B 工作站</div>
+                    ${listB.length > 0 ? renderBlocks(listB) : '<div style="text-align:center; color:#999; padding:20px;">無料站</div>'}
+                </div>
+            </div>`;
         };
 
-        // 渲染結果 UI
+        // 組合最終 HTML (包含滑動結構)
         let html = `
-        <div class="legend-container" style="text-align: center; margin-top: 20px;">
-            <span style="display:inline-block; padding:6px 15px; margin:0 5px; border-radius:4px; background:#27ae60; color:white; font-weight:bold;">🟢 留下</span>
-            <span style="display:inline-block; padding:6px 15px; margin:0 5px; border-radius:4px; background:#f39c12; color:white; font-weight:bold;">🟡 交換</span>
-            <span style="display:inline-block; padding:6px 15px; margin:0 5px; border-radius:4px; background:#c0392b; color:white; font-weight:bold;">🔴 退下</span>
+        <div class="toggle-wrapper">
+            <div class="toggle-indicator" id="toggleIndicator"></div>
+            <button class="toggle-btn active" id="btnTab0" onclick="switchTab(0)">⬅️ 換下：機台現狀</button>
+            <button class="toggle-btn" id="btnTab1" onclick="switchTab(1)">換上：物料來源 ➡️</button>
         </div>
-        
-        <div class="co-workstations">
-            <div class="co-ws-col">
-                <div class="co-ws-title">A 工作站</div>
-                ${listA.length > 0 ? renderBlocks(listA) : '<div style="text-align:center; color:#999; padding:20px;">無料站</div>'}
-            </div>
-            <div class="co-ws-col">
-                <div class="co-ws-title">B 工作站</div>
-                ${listB.length > 0 ? renderBlocks(listB) : '<div style="text-align:center; color:#999; padding:20px;">無料站</div>'}
+
+        <div class="slider-viewport">
+            <div class="slider-track" id="sliderTrack">
+                
+                <div class="slider-panel" id="panelTeardown">
+                    <div class="legend-container" style="text-align: center; margin-bottom: 10px;">
+                        <span style="display:inline-block; padding:6px 15px; margin:0 5px; border-radius:4px; background:#27ae60; color:white; font-weight:bold;">🟢 留下</span>
+                        <span style="display:inline-block; padding:6px 15px; margin:0 5px; border-radius:4px; background:#f39c12; color:white; font-weight:bold;">🟡 交換</span>
+                        <span style="display:inline-block; padding:6px 15px; margin:0 5px; border-radius:4px; background:#c0392b; color:white; font-weight:bold;">🔴 退下</span>
+                    </div>
+                    <div style="text-align:center; font-size:14px; color:#666; margin-bottom:10px;">(依目前 <b>${oldModel} ${oldSide}面</b> 的實際站位順序排列)</div>
+                    ${renderWorkstations(oldStationsKeys, teardownActionMap)}
+                </div>
+
+                <div class="slider-panel" id="panelSetup">
+                    <div class="legend-container" style="text-align: center; margin-bottom: 10px;">
+                        <span style="display:inline-block; padding:6px 15px; margin:0 5px; border-radius:4px; background:#27ae60; color:white; font-weight:bold;">🟢 上一張同面料</span>
+                        <span style="display:inline-block; padding:6px 15px; margin:0 5px; border-radius:4px; background:#f39c12; color:white; font-weight:bold;">🟡 上一張另一面</span>
+                        <span style="display:inline-block; padding:6px 15px; margin:0 5px; border-radius:4px; background:#c0392b; color:white; font-weight:bold;">🔴 全新上料</span>
+                    </div>
+                    <div style="text-align:center; font-size:14px; color:#666; margin-bottom:10px;">(依下張工單 <b>${newModel} ${newSide}面</b> 的目標站位順序排列)</div>
+                    ${renderWorkstations(newStationsKeys, setupActionMap)}
+                </div>
+
             </div>
         </div>`;
 
         resultArea.innerHTML = html;
+        
+        // 執行完畢後重置回第一個面板
+        switchTab(0);
     }
 </script>
 </body>
