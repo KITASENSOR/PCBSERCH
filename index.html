@@ -53,6 +53,9 @@
         .child-item { cursor: pointer; padding: 4px 8px; border-radius: 4px; margin: 3px; display: inline-block; border: 1px solid rgba(0,0,0,0.05); transition: all 0.2s; font-weight: 500; }
         .common-part { background-color: #ffcccc; color: #d9534f; font-weight: bold; border: 1px solid #ffb3b3; } 
         .child-item.dimmed { background-color: #e0e0e0 !important; color: #888 !important; border-color: #ccc !important; opacity: 0.6; }
+        
+        /* 隱藏元素的通用類別 */
+        .hidden-item { display: none !important; }
 
         .match-info { margin-top: 20px; font-weight: bold; color: #555; line-height: 2.5; }
         .count-info { font-weight: bold; color: #e67e22; margin-top: 5px; margin-bottom: 5px; font-size: 15px; }
@@ -88,6 +91,11 @@
         .filter-tab:hover { background: #dcdde1; }
         .filter-tab.active { background: #34495e; color: white; }
 
+        /* 排程比對 - 表格中的標籤顏色 */
+        .sch-add { background-color: #e74c3c !important; color: white !important; border-color: #c0392b !important; }
+        .sch-remove { background-color: #3498db !important; color: white !important; border-color: #2980b9 !important; }
+        .sch-keep { background-color: #27ae60 !important; color: white !important; border-color: #2ecc71 !important; }
+
         /* ===== 換線資料庫查詢專屬樣式 ===== */
         .co-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px; }
         .co-box { border: 1px solid #ced4da; padding: 20px; border-radius: 8px; background: #fdfdfd; }
@@ -107,14 +115,16 @@
         .slider-track { display: flex; width: 200%; transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); }
         .slider-panel { width: 50%; flex-shrink: 0; padding: 0 10px; box-sizing: border-box; }
 
-        /* 換線比對料號顏色設定 (BOM 子件風格) */
-        .child-item.act-keep { background-color: #27ae60 !important; color: white !important; border: 1px solid #2ecc71 !important; } 
-        .child-item.act-swap { background-color: #f39c12 !important; color: white !important; border: 1px solid #f1c40f !important; } 
-        .child-item.act-remove { background-color: #c0392b !important; color: white !important; border: 1px solid #e74c3c !important; } 
-
-        .action-card { border-radius: 8px; padding: 15px; margin-top: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .action-title { font-size: 16px; font-weight: bold; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
-        .action-item { display: inline-block; background: white; padding: 6px 12px; border-radius: 4px; margin: 4px; border: 1px solid rgba(0,0,0,0.1); font-size: 14px; font-weight: 500; }
+        /* A/B 左右工作站樣式 (專為換線比對保留) */
+        .co-workstations { display: flex; flex-direction: row; gap: 20px; margin-top: 15px; }
+        .co-ws-col { flex: 1; background: #fdfdfd; border-radius: 8px; border: 2px solid #bdc3c7; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .co-ws-title { text-align: center; font-size: 18px; font-weight: bold; color: #2c3e50; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #ecf0f1; }
+        
+        .co-item { padding: 12px; margin-bottom: 8px; border-radius: 6px; font-weight: bold; text-align: center; color: #fff; font-size: 16px; letter-spacing: 0.5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: default; word-break: break-all; transition: opacity 0.2s; }
+        .co-item:hover { opacity: 0.8; }
+        .act-keep { background-color: #27ae60; border: 1px solid #2ecc71; } 
+        .act-swap { background-color: #f39c12; border: 1px solid #f1c40f; color: #fff; } 
+        .act-remove { background-color: #c0392b; border: 1px solid #e74c3c; } 
 
         @media screen and (min-width: 601px) { .mobile-only { display: none !important; } }
 
@@ -147,6 +157,11 @@
             td { border: none; padding: 10px; }
             .prefix-td { border-bottom: 1px dashed #e0e0e0; padding-bottom: 8px; margin-bottom: 5px; }
 
+            .co-workstations { flex-direction: row; gap: 6px; margin-top: 10px; } 
+            .co-ws-col { padding: 8px 4px; } 
+            .co-ws-title { font-size: 15px; margin-bottom: 10px; padding-bottom: 5px; }
+            .co-item { font-size: 12px; padding: 8px 2px; margin-bottom: 6px; } 
+            
             .legend-container span { padding: 4px 6px !important; font-size: 12px; margin: 2px !important; }
             .toggle-btn { font-size: 12px; padding: 10px 2px; }
             .filter-tab { padding: 8px 2px; font-size: 13px; }
@@ -210,7 +225,7 @@
     
     <div class="sched-co-container">
         <h3 class="sched-co-title">排程批次用料對比</h3>
-        <p style="font-size: 14px; color: #666; margin-bottom: 15px;">選擇排程中的型號加入清單，系統將自動展開底層 BOM 並比對兩者的備料差異。</p>
+        <p style="font-size: 14px; color: #666; margin-bottom: 15px;">選擇排程中的型號加入清單，系統將自動展開底層 BOM 並以表格呈現備料差異。</p>
         
         <div class="co-grid">
             <div class="co-box" style="border-top: 4px solid #27ae60; padding: 15px;">
@@ -266,7 +281,7 @@
     
     <div class="co-grid">
         <div class="co-box" style="border-top: 4px solid #e74c3c;">
-            <h4 style="color:#c0392b;">📤 機台現有產品 (換下)</h4>
+            <h4 style="color:#c0392b;">📤 機台現狀 (換下)</h4>
             <div class="co-input-group">
                 <input type="text" id="coOldModel" placeholder="輸入型號 (例: 0422-42)">
                 <select id="coOldSide">
@@ -278,7 +293,7 @@
         </div>
         
         <div class="co-box" style="border-top: 4px solid #3498db;">
-            <h4 style="color:#2980b9;">📥 準備生產產品 (換上)</h4>
+            <h4 style="color:#2980b9;">📥 物料來源 (換上)</h4>
             <div class="co-input-group">
                 <input type="text" id="coNewModel" placeholder="輸入型號 (例: 0422-40)">
                 <select id="coNewSide">
@@ -414,9 +429,6 @@
 
     fetchCSV();
 
-    // ==========================================
-    // BOM 查詢邏輯
-    // ==========================================
     function clearBOMSearch() { document.getElementById('inputSearch').value = ''; document.getElementById('resultArea').innerHTML = ''; document.getElementById('matchStatus').innerText = ''; document.getElementById('itemCount').innerText = ''; currentGroups = []; filterMode = 0; fixedFilterMode = 0; document.getElementById('btnOnlyCommon').style.display = 'none'; document.getElementById('btnFixedFilter').style.display = 'none'; }
     function checkSmartMatch(fullID, queryStr) { const normalizedID = fullID.replace(/PC-/gi, '').replace(/[-\s_]/g, '').toUpperCase(); let cleanQuery = queryStr.replace(/PC-/gi, '').replace(/[-\s_]/g, '').toUpperCase(); if (cleanQuery.length > 0 && /^[1-9]/.test(cleanQuery)) cleanQuery = "0" + cleanQuery; if (normalizedID === cleanQuery) return "EXACT"; if (normalizedID.startsWith(cleanQuery) || normalizedID.includes(cleanQuery)) return "FUZZY"; return null; }
     function formatCode(codeStr) { let clean = codeStr.replace(/^0+/, ''); if (clean === "" || /^[a-zA-Z]/.test(clean)) return clean || "0"; let match = clean.match(/^(\d+)(.*)$/); return match ? match[1].padStart(2, '0') + match[2] : clean; }
@@ -438,7 +450,7 @@
     function runProductQuery() { const rawInput = document.getElementById('inputProductSearch').value.trim(); const resultArea = document.getElementById('productResultArea'); const statusDiv = document.getElementById('productMatchStatus'); if (!rawInput) return; const cleanInput = rawInput.replace(/[-\s_]/g, '').toUpperCase(); const inputWithoutK = (cleanInput.startsWith('K') && cleanInput.length > 1) ? cleanInput.substring(1) : null; let matchedKeys = Object.keys(productData).filter(key => { const cleanKey = key.replace(/[-\s_]/g, '').toUpperCase(); return cleanKey.includes(cleanInput) || cleanInput.startsWith(cleanKey); }); if (matchedKeys.length === 0 && inputWithoutK) { matchedKeys = Object.keys(productData).filter(key => { const cleanKey = key.replace(/[-\s_]/g, '').toUpperCase(); return cleanKey.includes(inputWithoutK) || inputWithoutK.startsWith(cleanKey); }); } if (matchedKeys.length === 0) { statusDiv.innerText = "查無此成品編號。"; resultArea.innerHTML = ""; return; } const groups = {}; matchedKeys.forEach(key => { const items = productData[key]; const signatureStr = items.map(item => `${item.child}|${item.vendor}`).sort().join('||'); if (!groups[signatureStr]) groups[signatureStr] = { keys: [], items: items }; groups[signatureStr].keys.push(key); }); Object.values(groups).forEach(group => { group.commonName = generateCommonName(group.keys); }); let statusHtml = "成品母件："; Object.values(groups).forEach(group => { statusHtml += `<span class="parent-tag" style="background-color: #cfd8dc; cursor: default;" title="${group.keys.join('\n')}">${group.commonName}</span>`; }); statusDiv.innerHTML = statusHtml; let html = `<table><thead><tr><th style="width: 15%; white-space: nowrap;">成品母件</th><th>子件清單與廠商</th></tr></thead><tbody>`; Object.values(groups).forEach(group => { const keysHtml = `<div class="product-parent-title" title="${group.keys.join('\n')}">${group.commonName}</div>`; let listHtml = group.items.map(item => { const safeChild = item.child.replace(/'/g, "\\'"); return `<div><div style="display: flex; align-items: center; padding: 6px 0; border-bottom: 1px dashed #eee;"><div style="flex: 1;"><span class="child-item" style="background-color: #f8f9fa;" onclick="toggleSubProduct('${safeChild}', this)">${item.child}</span></div><div style="flex: 1; color: #555; font-weight: 500;">${item.vendor}</div></div></div>`; }).join(''); html += `<tr><td class="prefix-td" style="vertical-align: top;">${keysHtml}</td><td>${listHtml}</td></tr>`; }); html += `</tbody></table>`; resultArea.innerHTML = html; }
 
     // ==========================================
-    // 排程系統與用料對比邏輯
+    // 排程系統 & "BOM表格版"的排程批次對比邏輯
     // ==========================================
     function renderSchedule() { 
         const resultArea = document.getElementById('scheduleResultArea'); 
@@ -476,6 +488,7 @@
         document.getElementById('modelModalTitle').innerText = target === 'COMPLETED' ? '選擇加入【✅ 已完成清單】' : '選擇加入【🚀 未完成清單】';
         
         let uniqueScheduledModels = [...new Set(scheduleData.slice(1).map(item => item.prodModel).filter(m => m))];
+        
         if (target === 'UNCOMPLETED') uniqueScheduledModels = uniqueScheduledModels.filter(m => !completedModels.includes(m));
         else if (target === 'COMPLETED') uniqueScheduledModels = uniqueScheduledModels.filter(m => !uncompletedModels.includes(m));
         
@@ -486,7 +499,6 @@
             </label>`;
         });
         document.getElementById('modelChecklist').innerHTML = html || '<div style="color:#888;">目前無可加入的型號</div>';
-        
         document.getElementById('modelSelectModal').style.display = 'flex';
     }
 
@@ -532,16 +544,31 @@
         return parts;
     }
 
+    // 控制排程用料對比的四段過濾開關
     function setCompareFilter(filter) {
         document.querySelectorAll('.filter-tab').forEach(el => el.classList.remove('active'));
         const activeTab = document.getElementById('tab-' + filter);
         if (activeTab) activeTab.classList.add('active');
-        const cardAdd = document.getElementById('card-add'); const cardRemove = document.getElementById('card-remove'); const cardKeep = document.getElementById('card-keep');
-        if (cardAdd) cardAdd.style.display = (cardAdd.getAttribute('data-count') > 0 && (filter === 'ALL' || filter === 'ADD')) ? 'block' : 'none';
-        if (cardRemove) cardRemove.style.display = (cardRemove.getAttribute('data-count') > 0 && (filter === 'ALL' || filter === 'REMOVE')) ? 'block' : 'none';
-        if (cardKeep) cardKeep.style.display = (cardKeep.getAttribute('data-count') > 0 && (filter === 'ALL' || filter === 'KEEP')) ? 'block' : 'none';
+
+        // 顯示或隱藏標籤
+        const items = document.querySelectorAll('#scheduleComparisonResult .child-item');
+        items.forEach(item => {
+            if (filter === 'ALL' || item.getAttribute('data-type') === filter) {
+                item.classList.remove('hidden-item');
+            } else {
+                item.classList.add('hidden-item');
+            }
+        });
+
+        // 隱藏完全沒內容的表格列 (TR)
+        const rows = document.querySelectorAll('#scheduleComparisonResult tbody tr');
+        rows.forEach(row => {
+            const hasVisible = Array.from(row.querySelectorAll('.child-item')).some(item => !item.classList.contains('hidden-item'));
+            row.style.display = hasVisible ? '' : 'none';
+        });
     }
 
+    // 產生排程批次對比結果 (改為BOM表樣式)
     function runScheduleComparison() {
         const resultArea = document.getElementById('scheduleComparisonResult');
         if (completedModels.length === 0 && uncompletedModels.length === 0) { resultArea.innerHTML = "<div class='match-info' style='color:#e74c3c;'>請至少加入一個型號至清單中。</div>"; return; }
@@ -555,6 +582,23 @@
         const obsoleteParts = Array.from(remove).sort(naturalSort);
         const sharedParts = Array.from(keep).sort(naturalSort);
 
+        const masterMap = {};
+        const addToMap = (partsArray, typeStr, cssClass) => {
+            partsArray.forEach(fullPart => {
+                const parts = fullPart.split('-');
+                let prefix = parts[0];
+                let rest = parts.slice(1).join('-');
+                if (parts.length === 1) { prefix = '其他'; rest = fullPart; }
+                const code = formatCode(rest);
+                if (!masterMap[prefix]) masterMap[prefix] = [];
+                masterMap[prefix].push({ code, type: typeStr, css: cssClass, originalPart: fullPart });
+            });
+        };
+
+        addToMap(newParts, 'ADD', 'sch-add');
+        addToMap(obsoleteParts, 'REMOVE', 'sch-remove');
+        addToMap(sharedParts, 'KEEP', 'sch-keep');
+
         let html = `
         <div style="border-top: 2px solid #ccc; padding-top: 15px;">
             <div class="filter-tabs">
@@ -563,109 +607,179 @@
                 <div class="filter-tab" id="tab-REMOVE" onclick="setCompareFilter('REMOVE')">僅可退庫料</div>
                 <div class="filter-tab" id="tab-KEEP" onclick="setCompareFilter('KEEP')">僅保留共用</div>
             </div>
-        `;
-        
-        html += `<div class="action-card" id="card-add" data-count="${newParts.length}" style="border-left: 6px solid #e74c3c; background: #fdedec; ${newParts.length > 0 ? '' : 'display:none;'}"><div class="action-title">🔴 需新備用料 <span style="font-size:13px; font-weight:normal; color:#555;">(未完成需要，但已完成沒有)</span> - ${newParts.length} 件</div><div>${newParts.map(p => `<span class="action-item">${p}</span>`).join('')}</div></div>`;
-        html += `<div class="action-card" id="card-remove" data-count="${obsoleteParts.length}" style="border-left: 6px solid #3498db; background: #ebf5fb; ${obsoleteParts.length > 0 ? '' : 'display:none;'}"><div class="action-title">🔵 可退庫用料 <span style="font-size:13px; font-weight:normal; color:#555;">(已完成專屬，未完成不需要)</span> - ${obsoleteParts.length} 件</div><div>${obsoleteParts.map(p => `<span class="action-item">${p}</span>`).join('')}</div></div>`;
-        html += `<div class="action-card" id="card-keep" data-count="${sharedParts.length}" style="border-left: 6px solid #27ae60; background: #eaeded; ${sharedParts.length > 0 ? '' : 'display:none;'}"><div class="action-title">🟢 共用保留料 <span style="font-size:13px; font-weight:normal; color:#555;">(兩邊皆有用到)</span> - ${sharedParts.length} 件</div><div>${sharedParts.map(p => `<span class="action-item">${p}</span>`).join('')}</div></div>`;
-        html += '</div>'; resultArea.innerHTML = html; setCompareFilter('ALL'); 
-    }
-
-    // ==========================================
-    // 換線比對系統：滑動切換版 + BOM 表格樣式
-    // ==========================================
-    function clearChangeover() { document.getElementById('coOldModel').value = ''; document.getElementById('coNewModel').value = ''; document.getElementById('changeoverResultArea').innerHTML = ''; }
-
-    function switchTab(tabIndex) {
-        const track = document.getElementById('sliderTrack'); const indicator = document.getElementById('toggleIndicator'); const btn0 = document.getElementById('btnTab0'); const btn1 = document.getElementById('btnTab1');
-        if (tabIndex === 0) { track.style.transform = 'translateX(0%)'; indicator.style.left = '0%'; btn0.classList.add('active'); btn1.classList.remove('active'); } 
-        else { track.style.transform = 'translateX(-50%)'; indicator.style.left = '50%'; btn1.classList.add('active'); btn0.classList.remove('active'); }
-    }
-
-    function runChangeoverAnalysis() {
-        const oldModelRaw = document.getElementById('coOldModel').value.trim(); const oldSide = document.getElementById('coOldSide').value;
-        const newModelRaw = document.getElementById('coNewModel').value.trim(); const newSide = document.getElementById('coNewSide').value;
-        const resultArea = document.getElementById('changeoverResultArea');
-
-        if (!oldModelRaw || !newModelRaw) { resultArea.innerHTML = "<div class='match-info' style='color:#e74c3c;'>請完整輸入換下與換上的機種型號。</div>"; return; }
-
-        const matchModel = (input) => {
-            const cleanInput = input.toUpperCase(); const keys = Object.keys(feederDB);
-            let exact = keys.find(k => k.toUpperCase() === cleanInput); if (exact) return exact;
-            let fuzzy = keys.find(k => k.toUpperCase().includes(cleanInput)); return fuzzy || input; 
-        };
-
-        const oldModel = matchModel(oldModelRaw); const newModel = matchModel(newModelRaw);
-
-        if (!feederDB[oldModel] || !feederDB[oldModel][oldSide]) { resultArea.innerHTML = `<div class='match-info' style='color:#e74c3c;'>❌ 找不到機台現有產品的資料：${oldModel} (${oldSide} 面)。</div>`; return; }
-        if (!feederDB[newModel] || !feederDB[newModel][newSide]) { resultArea.innerHTML = `<div class='match-info' style='color:#e74c3c;'>❌ 找不到準備生產產品的資料：${newModel} (${newSide} 面)。</div>`; return; }
-
-        const oldStations = feederDB[oldModel][oldSide]; const newStations = feederDB[newModel][newSide];
-        
-        const allOldSides = Object.keys(feederDB[oldModel]);
-        const otherOldSides = allOldSides.filter(s => s !== oldSide);
-        let partsInOtherSides = [];
-        otherOldSides.forEach(os => { partsInOtherSides = partsInOtherSides.concat(Object.values(feederDB[oldModel][os])); });
-
-        // 視角 1: 機台現狀
-        const oldStationsKeys = Object.keys(oldStations).sort(naturalSort);
-        const teardownActionMap = {}; const fulfilledNewStations = new Set();
-
-        for (const st of oldStationsKeys) { const part = oldStations[st]; if (newStations[st] === part) { teardownActionMap[st] = { part: part, css: 'act-keep' }; fulfilledNewStations.add(st); } }
-        for (const st of oldStationsKeys) {
-            if (teardownActionMap[st]) continue; 
-            const part = oldStations[st]; let swapped = false;
-            for (const [newSt, newPart] of Object.entries(newStations)) {
-                if (newPart === part && !fulfilledNewStations.has(newSt)) { teardownActionMap[st] = { part: part, css: 'act-swap' }; fulfilledNewStations.add(newSt); swapped = true; break; }
-            }
-            if (!swapped) { teardownActionMap[st] = { part: part, css: 'act-remove' }; }
-        }
-
-        // 視角 2: 物料來源
-        const newStationsKeys = Object.keys(newStations).sort(naturalSort);
-        const setupActionMap = {}; const oldPartsSameSide = Object.values(oldStations);
-
-        newStationsKeys.forEach(st => {
-            const part = newStations[st]; let cssClass = 'act-remove'; 
-            if (oldPartsSameSide.includes(part)) { cssClass = 'act-keep'; } 
-            else if (partsInOtherSides.includes(part)) { cssClass = 'act-swap'; }
-            setupActionMap[st] = { part: part, css: cssClass };
-        });
-
-        // =====================================
-        // NEW: BOM 表格風格的渲染器 (取代 A/B 左右排版)
-        // =====================================
-        const renderBOMStyleWorkstations = (keysList, actionMap) => {
-            const masterMap = {};
-            keysList.forEach(st => {
-                const data = actionMap[st];
-                const fullPart = data.part;
-                const parts = fullPart.split('-');
-                let prefix = parts[0];
-                let rest = parts.slice(1).join('-');
-                
-                if (parts.length === 1) {
-                    prefix = '其他';
-                    rest = fullPart;
-                }
-
-                const code = formatCode(rest);
-                
-                if (!masterMap[prefix]) masterMap[prefix] = [];
-                masterMap[prefix].push({ code: code, css: data.css, originalPart: fullPart, st: st });
-            });
-
-            let html = `<table><thead><tr><th style="width: 1%">類別</th><th>子件狀態 <span style="font-size:12px;color:#888;font-weight:normal;">(游標懸停顯示原站別)</span></th></tr></thead><tbody>`;
             
+            <div class="legend-container" style="text-align: center; margin-bottom: 15px;">
+                <span style="display:inline-block; padding:4px 10px; margin:0 5px; border-radius:4px; background:#e74c3c; color:white; font-size:13px;">🔴 需新備料 (${newParts.length})</span>
+                <span style="display:inline-block; padding:4px 10px; margin:0 5px; border-radius:4px; background:#3498db; color:white; font-size:13px;">🔵 可退庫料 (${obsoleteParts.length})</span>
+                <span style="display:inline-block; padding:4px 10px; margin:0 5px; border-radius:4px; background:#27ae60; color:white; font-size:13px;">🟢 共用保留 (${sharedParts.length})</span>
+            </div>
+        `;
+
+        if (Object.keys(masterMap).length === 0) {
+            html += `<div class="match-info" style="text-align:center;">無任何用料差異或資料。</div>`;
+        } else {
+            html += `<table><thead><tr><th style="width: 1%">類別</th><th>用料明細狀態 <span style="font-size:12px;color:#888;font-weight:normal;">(游標懸停顯示完整料號)</span></th></tr></thead><tbody>`;
             Object.keys(masterMap).sort().forEach(pre => {
                 const items = masterMap[pre].sort((a, b) => naturalSort(a.code, b.code));
                 let codeHtmlList = items.map(item => {
-                    return `<span class="child-item ${item.css}" title="原站別: 第 ${item.st} 站 | 完整料號: ${item.originalPart}">${item.code}</span>`;
+                    return `<span class="child-item ${item.css}" data-type="${item.type}" title="完整料號: ${item.originalPart}">${item.code}</span>`;
                 }).join('');
                 html += `<tr><td class="prefix-td">${pre}</td><td>${codeHtmlList}</td></tr>`;
             });
             html += `</tbody></table>`;
-            return html;
+        }
+        
+        html += '</div>';
+        resultArea.innerHTML = html; 
+        
+        // 初始執行一次全部顯示，確保過濾器綁定
+        setCompareFilter('ALL');
+    }
+
+    // ==========================================
+    // 換線比對系統：滑動切換版 (左右雙視角 - A/B站排版)
+    // ==========================================
+    function clearChangeover() {
+        document.getElementById('coOldModel').value = '';
+        document.getElementById('coNewModel').value = '';
+        document.getElementById('changeoverResultArea').innerHTML = '';
+    }
+
+    function switchTab(tabIndex) {
+        const track = document.getElementById('sliderTrack');
+        const indicator = document.getElementById('toggleIndicator');
+        const btn0 = document.getElementById('btnTab0');
+        const btn1 = document.getElementById('btnTab1');
+
+        if (tabIndex === 0) {
+            track.style.transform = 'translateX(0%)';
+            indicator.style.left = '0%';
+            btn0.classList.add('active');
+            btn1.classList.remove('active');
+        } else {
+            track.style.transform = 'translateX(-50%)';
+            indicator.style.left = '50%';
+            btn1.classList.add('active');
+            btn0.classList.remove('active');
+        }
+    }
+
+    function runChangeoverAnalysis() {
+        const oldModelRaw = document.getElementById('coOldModel').value.trim();
+        const oldSide = document.getElementById('coOldSide').value;
+        const newModelRaw = document.getElementById('coNewModel').value.trim();
+        const newSide = document.getElementById('coNewSide').value;
+        const resultArea = document.getElementById('changeoverResultArea');
+
+        if (!oldModelRaw || !newModelRaw) {
+            resultArea.innerHTML = "<div class='match-info' style='color:#e74c3c;'>請完整輸入換下與換上的機種型號。</div>";
+            return;
+        }
+
+        const matchModel = (input) => {
+            const cleanInput = input.toUpperCase();
+            const keys = Object.keys(feederDB);
+            let exact = keys.find(k => k.toUpperCase() === cleanInput);
+            if (exact) return exact;
+            let fuzzy = keys.find(k => k.toUpperCase().includes(cleanInput));
+            return fuzzy || input; 
+        };
+
+        const oldModel = matchModel(oldModelRaw);
+        const newModel = matchModel(newModelRaw);
+
+        if (!feederDB[oldModel] || !feederDB[oldModel][oldSide]) {
+            resultArea.innerHTML = `<div class='match-info' style='color:#e74c3c;'>❌ 找不到機台現狀產品的資料：${oldModel} (${oldSide} 面)。</div>`;
+            return;
+        }
+        if (!feederDB[newModel] || !feederDB[newModel][newSide]) {
+            resultArea.innerHTML = `<div class='match-info' style='color:#e74c3c;'>❌ 找不到物料來源產品的資料：${newModel} (${newSide} 面)。</div>`;
+            return;
+        }
+
+        const oldStations = feederDB[oldModel][oldSide];
+        const newStations = feederDB[newModel][newSide];
+        
+        const allOldSides = Object.keys(feederDB[oldModel]);
+        const otherOldSides = allOldSides.filter(s => s !== oldSide);
+        let partsInOtherSides = [];
+        otherOldSides.forEach(os => {
+            partsInOtherSides = partsInOtherSides.concat(Object.values(feederDB[oldModel][os]));
+        });
+
+        // 視角 1: 機台現狀
+        const oldStationsKeys = Object.keys(oldStations).sort(naturalSort);
+        const teardownActionMap = {}; 
+        const fulfilledNewStations = new Set();
+
+        for (const st of oldStationsKeys) {
+            const part = oldStations[st];
+            if (newStations[st] === part) {
+                teardownActionMap[st] = { part: part, css: 'act-keep' };
+                fulfilledNewStations.add(st);
+            }
+        }
+        for (const st of oldStationsKeys) {
+            if (teardownActionMap[st]) continue; 
+            const part = oldStations[st];
+            let swapped = false;
+            for (const [newSt, newPart] of Object.entries(newStations)) {
+                if (newPart === part && !fulfilledNewStations.has(newSt)) {
+                    teardownActionMap[st] = { part: part, css: 'act-swap' };
+                    fulfilledNewStations.add(newSt);
+                    swapped = true;
+                    break;
+                }
+            }
+            if (!swapped) {
+                teardownActionMap[st] = { part: part, css: 'act-remove' };
+            }
+        }
+
+        // 視角 2: 物料來源
+        const newStationsKeys = Object.keys(newStations).sort(naturalSort);
+        const setupActionMap = {};
+        const oldPartsSameSide = Object.values(oldStations);
+
+        newStationsKeys.forEach(st => {
+            const part = newStations[st];
+            let cssClass = 'act-remove'; 
+            if (oldPartsSameSide.includes(part)) {
+                cssClass = 'act-keep'; 
+            } else if (partsInOtherSides.includes(part)) {
+                cssClass = 'act-swap'; 
+            }
+            setupActionMap[st] = { part: part, css: cssClass };
+        });
+
+        const renderWorkstations = (keysList, actionMap) => {
+            const listA = [];
+            const listB = [];
+            keysList.forEach(st => {
+                const match = st.match(/\d+/);
+                const num = match ? parseInt(match[0]) : 0;
+                if (num >= 100) listB.push(st);
+                else listA.push(st);
+            });
+
+            const renderBlocks = (list) => {
+                return list.map(st => {
+                    const data = actionMap[st];
+                    return `<div class="co-item ${data.css}" title="原站別: ${st} (已隱藏)">${data.part}</div>`;
+                }).join('');
+            };
+
+            return `
+            <div class="co-workstations">
+                <div class="co-ws-col">
+                    <div class="co-ws-title">A 工作站</div>
+                    ${listA.length > 0 ? renderBlocks(listA) : '<div style="text-align:center; color:#999; padding:20px;">無料站</div>'}
+                </div>
+                <div class="co-ws-col">
+                    <div class="co-ws-title">B 工作站</div>
+                    ${listB.length > 0 ? renderBlocks(listB) : '<div style="text-align:center; color:#999; padding:20px;">無料站</div>'}
+                </div>
+            </div>`;
         };
 
         let html = `
@@ -683,8 +797,8 @@
                         <span style="display:inline-block; padding:6px 15px; margin:0 5px; border-radius:4px; background:#f39c12; color:white; font-weight:bold;">🟡 交換</span>
                         <span style="display:inline-block; padding:6px 15px; margin:0 5px; border-radius:4px; background:#c0392b; color:white; font-weight:bold;">🔴 退下</span>
                     </div>
-                    <div style="text-align:center; font-size:14px; color:#666; margin-bottom:10px;">(依目前 <b>${oldModel} ${oldSide}面</b> 存在機台上的物料分析)</div>
-                    ${renderBOMStyleWorkstations(oldStationsKeys, teardownActionMap)}
+                    <div style="text-align:center; font-size:14px; color:#666; margin-bottom:10px;">(依目前 <b>${oldModel} ${oldSide}面</b> 的實際站位順序排列)</div>
+                    ${renderWorkstations(oldStationsKeys, teardownActionMap)}
                 </div>
 
                 <div class="slider-panel" id="panelSetup">
@@ -693,8 +807,8 @@
                         <span style="display:inline-block; padding:6px 15px; margin:0 5px; border-radius:4px; background:#f39c12; color:white; font-weight:bold;">🟡 上一張另一面</span>
                         <span style="display:inline-block; padding:6px 15px; margin:0 5px; border-radius:4px; background:#c0392b; color:white; font-weight:bold;">🔴 全新上料</span>
                     </div>
-                    <div style="text-align:center; font-size:14px; color:#666; margin-bottom:10px;">(依下張工單 <b>${newModel} ${newSide}面</b> 需要上機的物料分析)</div>
-                    ${renderBOMStyleWorkstations(newStationsKeys, setupActionMap)}
+                    <div style="text-align:center; font-size:14px; color:#666; margin-bottom:10px;">(依下張工單 <b>${newModel} ${newSide}面</b> 的目標站位順序排列)</div>
+                    ${renderWorkstations(newStationsKeys, setupActionMap)}
                 </div>
             </div>
         </div>`;
