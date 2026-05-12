@@ -230,6 +230,9 @@
     <div class="btn-group">
         <button id="btnDischarge" onclick="runDischargeQuery()" disabled>搜尋全部</button>
         <button class="clear-btn" onclick="clearDischarge()">清除查詢</button>
+        <button class="filter-btn fixed-btn" id="btnDischargeFixedOnly" onclick="setDischargeFixedFilter(1)" style="display:none;">僅顯示固定料</button>
+        <button class="filter-btn fixed-btn" id="btnDischargeFixedExclude" onclick="setDischargeFixedFilter(2)" style="display:none;">排除固定料</button>
+        <button class="clear-btn" id="btnDischargeFixedReset" onclick="setDischargeFixedFilter(0)" style="display:none;">固定料:顯示全部</button>
     </div>
 
     <div id="dischargeStickyHeader" class="bom-sticky-header" style="display:none;">
@@ -256,6 +259,7 @@
     let fixedFilterMode = 0;
     
     let dischargeGroups = [];
+    let dischargeFixedFilterMode = 0;
 
     const naturalSort = (a, b) => a.localeCompare(b, undefined, { numeric: true });
 
@@ -558,6 +562,7 @@
         localStorage.removeItem(storageKeys.dischargeInput);
 
         dischargeGroups = [];
+        dischargeFixedFilterMode = 0;
         updateDischargeUI();
     }
 
@@ -611,11 +616,33 @@
         updateDischargeUI();
     }
 
+    function setDischargeFixedFilter(mode) {
+        dischargeFixedFilterMode = mode;
+        updateDischargeUI();
+    }
+
+    function updateDischargeFixedButtons() {
+        const hasGroups = dischargeGroups.length > 0;
+        const btnOnly = document.getElementById('btnDischargeFixedOnly');
+        const btnExclude = document.getElementById('btnDischargeFixedExclude');
+        const btnReset = document.getElementById('btnDischargeFixedReset');
+
+        btnOnly.style.display = hasGroups ? 'inline-block' : 'none';
+        btnExclude.style.display = hasGroups ? 'inline-block' : 'none';
+        btnReset.style.display = hasGroups ? 'inline-block' : 'none';
+
+        btnOnly.style.opacity = dischargeFixedFilterMode === 1 ? '1' : '0.75';
+        btnExclude.style.opacity = dischargeFixedFilterMode === 2 ? '1' : '0.75';
+        btnReset.style.opacity = dischargeFixedFilterMode === 0 ? '1' : '0.75';
+    }
+
     function updateDischargeUI() {
         const stickyHeader = document.getElementById('dischargeStickyHeader');
         const statusDiv = document.getElementById('dischargeStatus');
         const resultArea = document.getElementById('dischargeResultArea');
         const countDiv = document.getElementById('dischargeCount');
+
+        updateDischargeFixedButtons();
 
         if (dischargeGroups.length === 0) {
             stickyHeader.style.display = 'none';
@@ -697,9 +724,12 @@
 
                 if (doneOwners.length === 0 || activeOwners.length > 0) return '';
 
+                const isFixed = fullStrs.some(str => fixedFeederParts.has(str));
+                if (dischargeFixedFilterMode === 1 && !isFixed) return '';
+                if (dischargeFixedFilterMode === 2 && isFixed) return '';
+
                 dischargeCount++;
 
-                const isFixed = fullStrs.some(str => fixedFeederParts.has(str));
                 const fixedClass = isFixed ? " fixed-item" : "";
                 const tooltipText = "可下料原因 - 使用此料的所有母件皆已完成:\n" + owners.map(o => `${o.displayName} ✓`).join('\n');
 
@@ -711,12 +741,16 @@
             }
         });
 
+        let filterText = '';
+        if (dischargeFixedFilterMode === 1) filterText = '｜固定料:僅顯示';
+        if (dischargeFixedFilterMode === 2) filterText = '｜固定料:排除';
+
         if (dischargeCount === 0) {
             countDiv.innerHTML = '';
-            resultArea.innerHTML = '<div style="text-align:center; padding:30px 15px; color:#888; background:#fff5f5; border:1px dashed #f5b7b1; border-radius:8px; margin-top:15px; font-size:15px; line-height:1.8;">⚠ 目前無可下料物料<br><span style="font-size:13px; color:#aaa;">已完成母件的所有用料，仍被進行中的母件繼續使用</span></div>';
+            resultArea.innerHTML = '<div style="text-align:center; padding:30px 15px; color:#888; background:#fff5f5; border:1px dashed #f5b7b1; border-radius:8px; margin-top:15px; font-size:15px; line-height:1.8;">⚠ 目前無符合條件的可下料物料<br><span style="font-size:13px; color:#aaa;">已完成母件的所有用料，仍被進行中的母件繼續使用，或固定料篩選後沒有資料</span></div>';
         } else {
             resultArea.innerHTML = html + `</tbody></table>`;
-            countDiv.innerHTML = `🔴 <span style="color:#e74c3c; font-weight:bold;">可下料數量:${dischargeCount}</span>`;
+            countDiv.innerHTML = `🔴 <span style="color:#e74c3c; font-weight:bold;">可下料數量:${dischargeCount}</span><span style="color:#8e44ad; font-weight:bold;"> ${filterText}</span>`;
         }
     }
 </script>
