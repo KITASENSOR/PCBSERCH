@@ -82,7 +82,7 @@
         /* ===== 下料系統:左右兩塊母件容器 ===== */
         .discharge-list-container {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
             gap: 10px;
             margin: 5px 0;
             line-height: 1.6;
@@ -93,6 +93,7 @@
             padding: 8px 10px;
             min-height: 60px;
             background: #fafafa;
+            min-width: 0; /* 關鍵：允許欄位在小螢幕縮小，不被內容撐到換行堆疊 */
         }
         .discharge-list-col-active { border-top: 3px solid #2c3e50; }
         .discharge-list-col-done { border-top: 3px solid #27ae60; }
@@ -119,7 +120,9 @@
             padding: 2px 20px 2px 8px;
             border-radius: 3px;
             margin: 2px;
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
             font-size: 13px;
             font-weight: 600;
             line-height: 1.5;
@@ -127,6 +130,10 @@
             transition: transform 0.2s, box-shadow 0.2s;
             white-space: nowrap;
             color: #1a1a1a;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            box-sizing: border-box;
         }
         .discharge-mini-tag:hover { box-shadow: 0 2px 4px rgba(0,0,0,0.18); }
         .discharge-mini-tag.tag-active:hover { transform: translateX(3px); }
@@ -141,6 +148,7 @@
             margin: 0 2px;
             color: rgba(0,0,0,0.55);
             font-weight: bold;
+            flex: 0 0 auto;
         }
         .discharge-mini-tag .del-btn {
             width: 16px;
@@ -148,6 +156,7 @@
             line-height: 14px;
             right: 2px;
             font-size: 11px;
+            flex: 0 0 auto;
         }
 
         /* 下料子件配色 */
@@ -231,9 +240,13 @@
             /* 手機版 sticky 區塊:限制母件高度避免擋太多畫面 */
             .bom-sticky-header .match-info { max-height: 28vh; line-height: 2.2; }
 
-            /* 手機版下料系統:維持左右兩塊並排 */
-            .discharge-list-container { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
-            .discharge-list-col { min-height: 40px; }
+            /* 手機版下料系統：強制維持左右兩欄 */
+            .discharge-list-container {
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                gap: 8px;
+            }
+            .discharge-list-col { min-height: 40px; min-width: 0; }
+            .discharge-mini-tag { max-width: 100%; }
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
