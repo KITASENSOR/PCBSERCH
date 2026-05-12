@@ -91,7 +91,6 @@
         
         /* 下料子件配色 */
         .discharge-color-out { background-color: #e74c3c !important; color: white !important; border: 1px solid #c0392b !important; }
-        .discharge-color-keep { background-color: #f39c12 !important; color: white !important; border: 1px solid #d68910 !important; }
 
         /* ===== 浮動視窗共用樣式 ===== */
         .clickable-link { color: #007bff; text-decoration: underline; cursor: pointer; font-weight: 500; }
@@ -290,7 +289,6 @@
     <div class="btn-group">
         <button id="btnDischarge" onclick="runDischargeQuery()" disabled>搜尋全部</button>
         <button class="clear-btn" onclick="clearDischarge()">清空搜尋</button>
-        <button class="filter-btn" id="btnDischargeFilter" onclick="toggleDischargeFilter()" style="display:none;">顯示全部料件</button>
     </div>
 
     <div id="dischargeStickyHeader" class="bom-sticky-header" style="display:none;">
@@ -329,7 +327,6 @@
     
     // 下料系統狀態
     let dischargeGroups = [];
-    let dischargeFilterMode = 0; // 0: 全部 / 1: 僅可下料 / 2: 僅須保留
 
     const naturalSort = (a, b) => a.localeCompare(b, undefined, { numeric: true });
 
@@ -674,7 +671,6 @@
     function clearDischarge() {
         document.getElementById('inputDischarge').value = '';
         dischargeGroups = [];
-        dischargeFilterMode = 0;
         updateDischargeUI();
     }
 
@@ -726,33 +722,21 @@
         updateDischargeUI();
     }
 
-    function toggleDischargeFilter() {
-        dischargeFilterMode = (dischargeFilterMode + 1) % 3;
-        updateDischargeUI();
-    }
-
     function updateDischargeUI() {
         const stickyHeader = document.getElementById('dischargeStickyHeader');
         const statusDiv = document.getElementById('dischargeStatus');
         const resultArea = document.getElementById('dischargeResultArea');
         const countDiv = document.getElementById('dischargeCount');
-        const btnFilter = document.getElementById('btnDischargeFilter');
 
         if (dischargeGroups.length === 0) {
             stickyHeader.style.display = 'none';
             statusDiv.innerHTML = '';
             countDiv.innerHTML = '';
             resultArea.innerHTML = '';
-            btnFilter.style.display = 'none';
             return;
         }
 
         stickyHeader.style.display = 'block';
-        btnFilter.style.display = 'inline-block';
-
-        // 過濾按鈕文字
-        const filterText = ['顯示全部料件', '🔴 僅顯示可下料', '🟡 僅顯示保留料'];
-        btnFilter.innerText = filterText[dischargeFilterMode];
 
         // 母件分組:進行中 vs 已完成
         const activeGroups = dischargeGroups.filter(g => !g.completed);
@@ -777,7 +761,15 @@
         }
         statusDiv.innerHTML = statusHtml;
 
-        // 料件統計:走訪所有母件的子件,以「擁有者狀態」分類
+        // 若尚未標記任何母件為已完成,直接顯示提示
+        if (doneGroups.length === 0) {
+            countDiv.innerHTML = '';
+            resultArea.innerHTML = '<div style="text-align:center; padding:30px 15px; color:#888; background:#f8f9fa; border-radius:8px; margin-top:15px; font-size:15px; line-height:1.8;">💡 請點擊上方「<b style="color:#2c3e50;">🚀 進行中</b>」區的母件標籤,將已生產完成的母件移到「<b style="color:#27ae60;">✅ 已完成</b>」區<br>系統會自動分析出可下料的物料</div>';
+            return;
+        }
+
+        // 走訪所有母件的子件,挑出「可下料」物料
+        // 可下料定義:該料件的所有擁有者母件都已完成,且至少有一個已完成擁有者
         const masterMap = {};
         dischargeGroups.forEach(g => {
             g.content.split(',').forEach(fullStr => {
@@ -791,12 +783,8 @@
             });
         });
 
-        let visibleCount = 0;
         let dischargeCount = 0;
-        let sharedRetainCount = 0;
-        let activeOnlyCount = 0;
-
-        let html = `<table><thead><tr><th style="width: 1%">類別</th><th>子件明細</th></tr></thead><tbody>`;
+        let html = `<table><thead><tr><th style="width: 1%">類別</th><th>可下料物料</th></tr></thead><tbody>`;
 
         Object.keys(masterMap).sort().forEach(pre => {
             const codesObj = masterMap[pre];
@@ -807,50 +795,15 @@
                 const doneOwners = owners.filter(o => o.completed);
                 const activeOwners = owners.filter(o => !o.completed);
 
-                // 狀態判定
-                let status;
-                if (doneOwners.length > 0 && activeOwners.length === 0) {
-                    status = 'discharge'; // 全部已完成 → 可下料
-                    dischargeCount++;
-                } else if (doneOwners.length > 0 && activeOwners.length > 0) {
-                    status = 'shared'; // 混合 → 須保留
-                    sharedRetainCount++;
-                } else {
-                    status = 'active'; // 全部進行中 → 原色
-                    activeOnlyCount++;
-                }
-
-                // 過濾
-                if (dischargeFilterMode === 1 && status !== 'discharge') return '';
-                if (dischargeFilterMode === 2 && status === 'discharge') return '';
-                visibleCount++;
+                // 只顯示「可下料」:所有擁有者皆為已完成狀態
+                if (doneOwners.length === 0 || activeOwners.length > 0) return '';
+                dischargeCount++;
 
                 const isFixed = fullStrs.some(str => fixedFeederParts.has(str));
                 const fixedClass = isFixed ? " fixed-item" : "";
-                const tooltipText = "使用的母件:\n" + owners.map(o => `${o.displayName}${o.completed ? ' ✓已完成' : ' 🚀進行中'}`).join('\n');
+                const tooltipText = "可下料原因 - 使用此料的所有母件皆已完成:\n" + owners.map(o => `${o.displayName} ✓`).join('\n');
 
-                let bgStyle = '';
-                let cssClass = '';
-
-                if (status === 'discharge') {
-                    cssClass = 'discharge-color-out';
-                } else if (status === 'shared') {
-                    cssClass = 'discharge-color-keep';
-                } else {
-                    // active-only:沿用 BOM 邏輯的多色漸層
-                    if (activeOwners.length === 1) {
-                        bgStyle = `background-color: ${activeOwners[0].color};`;
-                    } else {
-                        let stops = activeOwners.map((o, i) => {
-                            let start = (i / activeOwners.length) * 100;
-                            let end = ((i + 1) / activeOwners.length) * 100;
-                            return `${o.color} ${start}%, ${o.color} ${end}%`;
-                        }).join(', ');
-                        bgStyle = `background: linear-gradient(to right, ${stops}); color: #333; border: 1px solid #999;`;
-                    }
-                }
-
-                return `<span class="child-item ${cssClass}${fixedClass}" style="${bgStyle}" title="${tooltipText}" onclick="this.classList.toggle('dimmed')">${c}</span>`;
+                return `<span class="child-item discharge-color-out${fixedClass}" title="${tooltipText}" onclick="this.classList.toggle('dimmed')">${c}</span>`;
             }).filter(h => h !== '');
 
             if (codeHtmlList.length > 0) {
@@ -858,16 +811,13 @@
             }
         });
 
-        resultArea.innerHTML = html + `</tbody></table>`;
-
-        // 計數資訊
-        let countHtml = `數量:${visibleCount}`;
-        if (doneGroups.length > 0) {
-            countHtml += ` <span style="color:#e74c3c; margin-left:12px;">🔴 可下料:${dischargeCount}</span>`;
-            countHtml += ` <span style="color:#d68910; margin-left:12px;">🟡 混用保留:${sharedRetainCount}</span>`;
-            countHtml += ` <span style="color:#2c3e50; margin-left:12px;">🔵 進行中料:${activeOnlyCount}</span>`;
+        if (dischargeCount === 0) {
+            countDiv.innerHTML = '';
+            resultArea.innerHTML = '<div style="text-align:center; padding:30px 15px; color:#888; background:#fff5f5; border:1px dashed #f5b7b1; border-radius:8px; margin-top:15px; font-size:15px; line-height:1.8;">⚠ 目前無可下料物料<br><span style="font-size:13px; color:#aaa;">(已完成母件的所有用料,仍被進行中的母件繼續使用)</span></div>';
+        } else {
+            resultArea.innerHTML = html + `</tbody></table>`;
+            countDiv.innerHTML = `🔴 <span style="color:#e74c3c; font-weight:bold;">可下料數量:${dischargeCount}</span>`;
         }
-        countDiv.innerHTML = countHtml;
     }
 </script>
 </body>
