@@ -79,16 +79,77 @@
             overflow-y: auto;
         }
 
-        /* ===== 下料系統:母件 tag 狀態樣式 ===== */
-        .discharge-tag-active { transition: all 0.2s; }
-        .discharge-tag-active:hover { box-shadow: 0 0 0 2px #27ae60; }
-        .discharge-tag-done { opacity: 0.7; font-weight: 700; border: 1px dashed #27ae60 !important; }
-        .discharge-tag-done:hover { opacity: 1; box-shadow: 0 0 0 2px #f39c12; }
-        
-        .discharge-section-label { font-size: 13px; font-weight: bold; margin-right: 8px; padding: 3px 8px; border-radius: 4px; display: inline-block; vertical-align: middle; }
-        .discharge-label-active { color: #2c3e50; background: #ecf0f1; }
-        .discharge-label-done { color: white; background: #27ae60; }
-        
+        /* ===== 下料系統:左右兩塊母件容器 ===== */
+        .discharge-list-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 5px 0;
+            line-height: 1.6;
+        }
+        .discharge-list-col {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 8px 10px;
+            min-height: 60px;
+            background: #fafafa;
+        }
+        .discharge-list-col-active { border-top: 3px solid #2c3e50; }
+        .discharge-list-col-done { border-top: 3px solid #27ae60; }
+        .discharge-list-col-title { 
+            font-size: 13px; 
+            font-weight: bold; 
+            margin-bottom: 6px; 
+            padding-bottom: 4px;
+            border-bottom: 1px dashed #ddd;
+        }
+        .discharge-list-col-active .discharge-list-col-title { color: #2c3e50; }
+        .discharge-list-col-done .discharge-list-col-title { color: #27ae60; }
+        .discharge-list-col-empty {
+            color: #aaa;
+            font-size: 12px;
+            text-align: center;
+            padding: 10px 0 6px;
+        }
+
+        /* 精簡母件 tag(色塊高度貼合字體) */
+        .discharge-mini-tag {
+            position: relative;
+            cursor: pointer;
+            padding: 2px 20px 2px 8px;
+            border-radius: 3px;
+            margin: 2px;
+            display: inline-block;
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.5;
+            border: 1px solid rgba(0,0,0,0.15);
+            transition: transform 0.2s, box-shadow 0.2s;
+            white-space: nowrap;
+            color: #1a1a1a;
+        }
+        .discharge-mini-tag:hover { box-shadow: 0 2px 4px rgba(0,0,0,0.18); }
+        .discharge-mini-tag.tag-active:hover { transform: translateX(3px); }
+        .discharge-mini-tag.tag-done:hover { transform: translateX(-3px); }
+        .discharge-mini-tag.tag-done { 
+            opacity: 0.9; 
+            border-style: dashed; 
+            border-color: #27ae60;
+        }
+        .discharge-mini-tag .move-icon {
+            font-size: 10px;
+            margin: 0 2px;
+            color: rgba(0,0,0,0.55);
+            font-weight: bold;
+        }
+        .discharge-mini-tag .del-btn {
+            width: 16px;
+            height: 16px;
+            line-height: 14px;
+            right: 2px;
+            font-size: 11px;
+        }
+
         /* 下料子件配色 */
         .discharge-color-out { background-color: #e74c3c !important; color: white !important; border: 1px solid #c0392b !important; }
 
@@ -169,6 +230,10 @@
 
             /* 手機版 sticky 區塊:限制母件高度避免擋太多畫面 */
             .bom-sticky-header .match-info { max-height: 28vh; line-height: 2.2; }
+
+            /* 手機版下料系統:維持左右兩塊並排 */
+            .discharge-list-container { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+            .discharge-list-col { min-height: 40px; }
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
@@ -742,23 +807,32 @@
         const activeGroups = dischargeGroups.filter(g => !g.completed);
         const doneGroups = dischargeGroups.filter(g => g.completed);
 
-        let statusHtml = '';
+        // 左右兩塊容器:左進行中 / 右已完成,點擊母件可左右切換
+        let statusHtml = '<div class="discharge-list-container">';
 
-        if (activeGroups.length > 0) {
-            statusHtml += `<div style="margin-bottom: 6px;"><span class="discharge-section-label discharge-label-active">🚀 進行中 (${activeGroups.length})</span>`;
+        statusHtml += `<div class="discharge-list-col discharge-list-col-active">
+            <div class="discharge-list-col-title">🚀 進行中 (${activeGroups.length})</div>`;
+        if (activeGroups.length === 0) {
+            statusHtml += '<div class="discharge-list-col-empty">— 無進行中母件 —</div>';
+        } else {
             activeGroups.forEach(g => {
-                statusHtml += `<span class="parent-tag discharge-tag-active" style="background-color: ${g.color};" title="點擊標記為已完成" onclick="toggleGroupComplete('${g.id}', event)">${g.displayName}<span class="del-btn" title="移除" onclick="removeDischargeGroup('${g.id}', event)">×</span></span>`;
+                statusHtml += `<span class="discharge-mini-tag tag-active" style="background-color: ${g.color};" title="點擊移到已完成" onclick="toggleGroupComplete('${g.id}', event)">${g.displayName}<span class="move-icon">→</span><span class="del-btn" title="移除" onclick="removeDischargeGroup('${g.id}', event)">×</span></span>`;
             });
-            statusHtml += '</div>';
         }
+        statusHtml += '</div>';
 
-        if (doneGroups.length > 0) {
-            statusHtml += `<div><span class="discharge-section-label discharge-label-done">✅ 已完成 (${doneGroups.length})</span>`;
+        statusHtml += `<div class="discharge-list-col discharge-list-col-done">
+            <div class="discharge-list-col-title">✅ 已完成 (${doneGroups.length})</div>`;
+        if (doneGroups.length === 0) {
+            statusHtml += '<div class="discharge-list-col-empty">— 無已完成母件 —</div>';
+        } else {
             doneGroups.forEach(g => {
-                statusHtml += `<span class="parent-tag discharge-tag-done" style="background-color: ${g.color};" title="點擊移回進行中" onclick="toggleGroupComplete('${g.id}', event)">✓ ${g.displayName}<span class="del-btn" title="移除" onclick="removeDischargeGroup('${g.id}', event)">×</span></span>`;
+                statusHtml += `<span class="discharge-mini-tag tag-done" style="background-color: ${g.color};" title="點擊移回進行中" onclick="toggleGroupComplete('${g.id}', event)"><span class="move-icon">←</span>${g.displayName}<span class="del-btn" title="移除" onclick="removeDischargeGroup('${g.id}', event)">×</span></span>`;
             });
-            statusHtml += '</div>';
         }
+        statusHtml += '</div>';
+
+        statusHtml += '</div>';
         statusDiv.innerHTML = statusHtml;
 
         // 若尚未標記任何母件為已完成,直接顯示提示
