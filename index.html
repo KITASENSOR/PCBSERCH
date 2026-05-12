@@ -8,7 +8,6 @@
         body { font-family: "Segoe UI", "Microsoft JhengHei", sans-serif; margin: 25px; background: #f4f7f9; }
         .container { max-width: 1000px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         
-        /* 標題與切換按鈕排版 */
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         h2 { color: #333; border-left: 5px solid #28a745; padding-left: 15px; margin-bottom: 0; }
         .switch-btn { background: #17a2b8; padding: 8px 15px; font-size: 14px; border-radius: 5px; color: white; border: none; cursor: pointer; }
@@ -33,7 +32,6 @@
         .fixed-btn { background: #8e44ad; }
         .fixed-btn:hover { background: #732d91; }
         
-        /* 固定料外框加粗 4px */
         .fixed-item { border: 4px solid #8e44ad !important; box-sizing: border-box; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
@@ -55,7 +53,6 @@
         .count-info { font-weight: bold; color: #e67e22; margin-top: 5px; margin-bottom: 5px; font-size: 15px; }
         .reset-btn { background: #6c757d; color: white; border: none; margin-left: 10px; padding: 5px 12px; font-size: 12px; border-radius: 3px; cursor: pointer; }
 
-        /* ===== BOM 母件浮動置頂 Sticky 區塊 ===== */
         .bom-sticky-header {
             position: sticky;
             top: 0;
@@ -73,7 +70,6 @@
             overflow-y: auto;
         }
 
-        /* ===== 下料系統：左右兩塊母件容器 ===== */
         .discharge-list-container {
             display: grid;
             grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -108,7 +104,6 @@
             padding: 10px 0 6px;
         }
 
-        /* 精簡母件 tag */
         .discharge-mini-tag {
             position: relative;
             cursor: pointer;
@@ -154,12 +149,10 @@
             flex: 0 0 auto;
         }
 
-        /* 下料子件配色 */
         .discharge-color-out { background-color: #e74c3c !important; color: white !important; border: 1px solid #c0392b !important; }
         
         @media screen and (min-width: 601px) { .mobile-only { display: none !important; } }
 
-        /* ----- 手機版螢幕適應設定 ----- */
         @media screen and (max-width: 600px) {
             body { margin: 10px; }
             .container { padding: 15px; }
@@ -180,10 +173,8 @@
 
             .child-item { font-size: 13px; padding: 4px 6px; } 
 
-            /* 手機版 sticky 區塊：限制母件高度避免擋太多畫面 */
             .bom-sticky-header .match-info { max-height: 28vh; line-height: 2.2; }
 
-            /* 手機版下料系統：強制維持左右兩欄 */
             .discharge-list-container {
                 display: grid !important;
                 grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
@@ -218,7 +209,7 @@
 
     <div class="btn-group">
         <button id="btnSearch" onclick="runFuzzyQuery()" disabled>搜尋全部</button>
-        <button class="clear-btn" onclick="clearBOMSearch()">清空搜尋</button>
+        <button class="clear-btn" onclick="clearBOMSearch()">清除查詢</button>
         <button class="filter-btn" id="btnOnlyCommon" onclick="toggleCommonFilter()" style="display:none;">僅顯示共用料</button>
         <button class="filter-btn fixed-btn" id="btnFixedFilter" onclick="toggleFixedFilter()" style="display:none;">固定料:顯示全部</button>
     </div>
@@ -238,7 +229,7 @@
 
     <div class="btn-group">
         <button id="btnDischarge" onclick="runDischargeQuery()" disabled>搜尋全部</button>
-        <button class="clear-btn" onclick="clearDischarge()">清空搜尋</button>
+        <button class="clear-btn" onclick="clearDischarge()">清除查詢</button>
     </div>
 
     <div id="dischargeStickyHeader" class="bom-sticky-header" style="display:none;">
@@ -251,6 +242,11 @@
 <script>
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTCXT3zLzXbfrprksE92KR0EM6qXnteT_aGAjYFVIpRiwDV7Pg_BIFoIQMG8fpnTd6m8dCAYYBnuaxX/pub?output=csv";
     
+    const storageKeys = {
+        bomInput: "pcb_bom_query_input",
+        dischargeInput: "pcb_discharge_query_input"
+    };
+
     let rawData = {};
     let fixedFeederParts = new Set(); 
 
@@ -259,10 +255,26 @@
     let filterMode = 0; 
     let fixedFilterMode = 0;
     
-    // 下料系統狀態
     let dischargeGroups = [];
 
     const naturalSort = (a, b) => a.localeCompare(b, undefined, { numeric: true });
+
+    function saveInputToStorage(elementId, storageKey) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+
+        const cachedValue = localStorage.getItem(storageKey);
+        if (cachedValue !== null) el.value = cachedValue;
+
+        el.addEventListener('input', () => {
+            localStorage.setItem(storageKey, el.value);
+        });
+    }
+
+    function initInputStorage() {
+        saveInputToStorage('inputSearch', storageKeys.bomInput);
+        saveInputToStorage('inputDischarge', storageKeys.dischargeInput);
+    }
 
     function toggleView(viewType) {
         document.getElementById('viewBOM').style.display = (viewType === 'BOM') ? 'block' : 'none';
@@ -299,10 +311,13 @@
         }
     }
 
+    initInputStorage();
     fetchCSV();
 
     function clearBOMSearch() {
         document.getElementById('inputSearch').value = '';
+        localStorage.removeItem(storageKeys.bomInput);
+
         document.getElementById('resultArea').innerHTML = '';
         document.getElementById('matchStatus').innerText = '';
         document.getElementById('itemCount').innerText = '';
@@ -329,9 +344,6 @@
         return match ? match[1].padStart(2, '0') + match[2] : clean;
     }
 
-    // ==========================================
-    // 共用搜尋邏輯：BOM 與下料系統共用
-    // ==========================================
     function findMatchedGroups(input) {
         const keywords = input.split(/[\s,]+/).filter(k => k !== "");
         if (keywords.length === 0) return [];
@@ -394,11 +406,10 @@
         return Object.values(groups);
     }
 
-    // ==========================================
-    // BOM 查詢
-    // ==========================================
     function runFuzzyQuery() {
         const input = document.getElementById('inputSearch').value.trim();
+        localStorage.setItem(storageKeys.bomInput, document.getElementById('inputSearch').value);
+
         const rawGroups = findMatchedGroups(input);
         currentGroups = rawGroups.map((g, i) => ({
             ...g,
@@ -542,17 +553,18 @@
         if (target) renderView([target]);
     }
 
-    // ==========================================
-    // 下料系統
-    // ==========================================
     function clearDischarge() {
         document.getElementById('inputDischarge').value = '';
+        localStorage.removeItem(storageKeys.dischargeInput);
+
         dischargeGroups = [];
         updateDischargeUI();
     }
 
     function runDischargeQuery() {
         const input = document.getElementById('inputDischarge').value.trim();
+        localStorage.setItem(storageKeys.dischargeInput, document.getElementById('inputDischarge').value);
+
         if (!input) return;
         
         const rawGroups = findMatchedGroups(input);
