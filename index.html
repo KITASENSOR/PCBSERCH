@@ -230,9 +230,7 @@
     <div class="btn-group">
         <button id="btnDischarge" onclick="runDischargeQuery()" disabled>搜尋全部</button>
         <button class="clear-btn" onclick="clearDischarge()">清除查詢</button>
-        <button class="filter-btn fixed-btn" id="btnDischargeFixedOnly" onclick="setDischargeFixedFilter(1)" style="display:none;">僅顯示固定料</button>
-        <button class="filter-btn fixed-btn" id="btnDischargeFixedExclude" onclick="setDischargeFixedFilter(2)" style="display:none;">排除固定料</button>
-        <button class="clear-btn" id="btnDischargeFixedReset" onclick="setDischargeFixedFilter(0)" style="display:none;">固定料:顯示全部</button>
+        <button class="filter-btn fixed-btn" id="btnDischargeFixedFilter" onclick="toggleDischargeFixedFilter()" style="display:none;">固定料:顯示全部</button>
     </div>
 
     <div id="dischargeStickyHeader" class="bom-sticky-header" style="display:none;">
@@ -616,24 +614,20 @@
         updateDischargeUI();
     }
 
-    function setDischargeFixedFilter(mode) {
-        dischargeFixedFilterMode = mode;
+    function toggleDischargeFixedFilter() {
+        dischargeFixedFilterMode = (dischargeFixedFilterMode + 1) % 3;
         updateDischargeUI();
     }
 
-    function updateDischargeFixedButtons() {
-        const hasGroups = dischargeGroups.length > 0;
-        const btnOnly = document.getElementById('btnDischargeFixedOnly');
-        const btnExclude = document.getElementById('btnDischargeFixedExclude');
-        const btnReset = document.getElementById('btnDischargeFixedReset');
+    function updateDischargeFixedButton() {
+        const btn = document.getElementById('btnDischargeFixedFilter');
+        if (!btn) return;
 
-        btnOnly.style.display = hasGroups ? 'inline-block' : 'none';
-        btnExclude.style.display = hasGroups ? 'inline-block' : 'none';
-        btnReset.style.display = hasGroups ? 'inline-block' : 'none';
+        btn.style.display = dischargeGroups.length > 0 ? 'inline-block' : 'none';
 
-        btnOnly.style.opacity = dischargeFixedFilterMode === 1 ? '1' : '0.75';
-        btnExclude.style.opacity = dischargeFixedFilterMode === 2 ? '1' : '0.75';
-        btnReset.style.opacity = dischargeFixedFilterMode === 0 ? '1' : '0.75';
+        if (dischargeFixedFilterMode === 0) btn.innerText = "固定料:顯示全部";
+        else if (dischargeFixedFilterMode === 1) btn.innerText = "固定料:僅顯示";
+        else btn.innerText = "固定料:排除";
     }
 
     function updateDischargeUI() {
@@ -642,7 +636,7 @@
         const resultArea = document.getElementById('dischargeResultArea');
         const countDiv = document.getElementById('dischargeCount');
 
-        updateDischargeFixedButtons();
+        updateDischargeFixedButton();
 
         if (dischargeGroups.length === 0) {
             stickyHeader.style.display = 'none';
@@ -725,6 +719,7 @@
                 if (doneOwners.length === 0 || activeOwners.length > 0) return '';
 
                 const isFixed = fullStrs.some(str => fixedFeederParts.has(str));
+
                 if (dischargeFixedFilterMode === 1 && !isFixed) return '';
                 if (dischargeFixedFilterMode === 2 && isFixed) return '';
 
