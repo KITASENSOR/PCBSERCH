@@ -32,7 +32,12 @@
         .fixed-btn { background: #8e44ad; }
         .fixed-btn:hover { background: #732d91; }
         
-        .fixed-item { border: 4px solid #8e44ad !important; box-sizing: border-box; }
+        .fixed-item,
+        .child-item.fixed-item,
+        .child-item.discharge-color-out.fixed-item {
+            border: 4px solid #8e44ad !important;
+            box-sizing: border-box;
+        }
         
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { border: 1px solid #e0e0e0; padding: 12px; text-align: left; }
