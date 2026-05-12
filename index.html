@@ -45,14 +45,14 @@
         .prefix-td { font-weight: bold; color: #28a745; width: 1%; white-space: nowrap; padding-right: 20px; }
         .product-parent-title { margin-bottom: 6px; font-weight: bold; color: #28a745; white-space: nowrap; }
         
-        .parent-tag { position: relative; cursor: pointer; padding: 6px 35px 6px 12px; border-radius: 4px; margin: 5px; display: inline-block; transition: all 0.2s; border: 1px solid rgba(0,0,0,0.1); font-weight: 500; }
+        .parent-tag { position: relative; cursor: pointer; padding: 6px 35px 6px 12px; border-radius: 4px; margin: 5px; display: inline-block; transition: all 0.2s; border: 2px solid rgba(0,0,0,0.15); font-weight: 600; color: #1a1a1a; }
         .parent-tag:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .del-btn { position: absolute; right: 5px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; line-height: 18px; text-align: center; background: rgba(217, 83, 79, 0.1); color: #d9534f; border-radius: 50%; font-size: 16px; font-weight: bold; transition: all 0.2s; }
+        .del-btn { position: absolute; right: 5px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; line-height: 18px; text-align: center; background: rgba(217, 83, 79, 0.15); color: #d9534f; border-radius: 50%; font-size: 16px; font-weight: bold; transition: all 0.2s; }
         .del-btn:hover { background: #d9534f; color: white; }
         
-        .child-item { cursor: pointer; padding: 4px 8px; border-radius: 4px; margin: 3px; display: inline-block; border: 1px solid rgba(0,0,0,0.05); transition: all 0.2s; font-weight: 500; }
-        .common-part { background-color: #ffcccc; color: #d9534f; font-weight: bold; border: 1px solid #ffb3b3; } 
-        .child-item.dimmed { background-color: #e0e0e0 !important; color: #888 !important; border-color: #ccc !important; opacity: 0.6; }
+        .child-item { cursor: pointer; padding: 5px 10px; border-radius: 4px; margin: 3px; display: inline-block; border: 1px solid rgba(0,0,0,0.15); transition: all 0.2s; font-weight: 600; color: #1a1a1a; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+        .common-part { background-color: #ff5252 !important; color: white !important; font-weight: bold; border: 1px solid #d32f2f !important; } 
+        .child-item.dimmed { background: #e0e0e0 !important; background-color: #e0e0e0 !important; color: #888 !important; border-color: #ccc !important; opacity: 0.55; box-shadow: none !important; }
         
         /* 隱藏元素的通用類別 */
         .hidden-item { display: none !important; }
@@ -165,7 +165,31 @@
             .legend-container span { padding: 4px 6px !important; font-size: 12px; margin: 2px !important; }
             .toggle-btn { font-size: 12px; padding: 10px 2px; }
             .filter-tab { padding: 8px 2px; font-size: 13px; }
-            .child-item { font-size: 13px; padding: 4px 6px; } 
+            
+            /* === 手機版料件區塊強化(可讀性) === */
+            .child-item { 
+                font-size: 15px; 
+                padding: 7px 12px; 
+                margin: 4px; 
+                font-weight: 700;
+                border-width: 2px !important;
+                border-style: solid !important;
+                box-shadow: 0 2px 3px rgba(0,0,0,0.15);
+                letter-spacing: 0.3px;
+            } 
+            .parent-tag {
+                font-size: 15px;
+                padding: 8px 36px 8px 14px;
+                font-weight: 700;
+                border-width: 2px;
+                margin: 4px 3px;
+            }
+            .del-btn {
+                width: 22px;
+                height: 22px;
+                line-height: 20px;
+                font-size: 18px;
+            }
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
@@ -190,15 +214,15 @@
 
 <div class="container" id="viewBOM">
     <script>renderHeader('BOM 查詢', 'BOM');</script>
-    <p>輸入母件編號：</p>
+    <p>輸入母件編號:</p>
     <textarea id="inputSearch" placeholder="例如輸入 PC-0427-4X 或 42242"></textarea>
-    <div class="hint">* 自動比對 PC-00XX-XX 格式，完整輸入或局部輸入皆可精準搜尋。</div>
+    <div class="hint">* 自動比對 PC-00XX-XX 格式,完整輸入或局部輸入皆可精準搜尋。</div>
 
     <div class="btn-group">
         <button id="btnSearch" onclick="runFuzzyQuery()" disabled>搜尋全部</button>
         <button class="clear-btn" onclick="clearBOMSearch()">清空搜尋</button>
         <button class="filter-btn" id="btnOnlyCommon" onclick="toggleCommonFilter()" style="display:none;">僅顯示共用料</button>
-        <button class="filter-btn fixed-btn" id="btnFixedFilter" onclick="toggleFixedFilter()" style="display:none;">固定料：顯示全部</button>
+        <button class="filter-btn fixed-btn" id="btnFixedFilter" onclick="toggleFixedFilter()" style="display:none;">固定料:顯示全部</button>
     </div>
 
     <div id="matchStatus" class="match-info">資料載入中...</div>
@@ -208,7 +232,7 @@
 
 <div class="container" id="viewPRODUCT" style="display: none;">
     <script>renderHeader('成品查詢', 'PRODUCT');</script>
-    <p>輸入母件編號：</p>
+    <p>輸入母件編號:</p>
     <textarea id="inputProductSearch" placeholder="例如輸入 KP48 或 50EP011"></textarea>
 
     <div class="btn-group">
@@ -225,7 +249,7 @@
     
     <div class="sched-co-container">
         <h3 class="sched-co-title">排程批次用料對比</h3>
-        <p style="font-size: 14px; color: #666; margin-bottom: 15px;">選擇排程中的型號加入清單，系統將自動展開底層 BOM 並以表格呈現備料差異。</p>
+        <p style="font-size: 14px; color: #666; margin-bottom: 15px;">選擇排程中的型號加入清單,系統將自動展開底層 BOM 並以表格呈現備料差異。</p>
         
         <div class="co-grid">
             <div class="co-box" style="border-top: 4px solid #27ae60; padding: 15px;">
@@ -259,7 +283,7 @@
 
     <div style="margin-top: 30px; border-top: 2px dashed #ccc; padding-top: 20px;">
         <h3 class="sched-co-title">最新排程清單</h3>
-        <div class="hint">* 點擊「製令單號」產生條碼，點擊「產品型號」自動跳轉查 BOM。</div>
+        <div class="hint">* 點擊「製令單號」產生條碼,點擊「產品型號」自動跳轉查 BOM。</div>
         <div id="scheduleResultArea"></div>
     </div>
 </div>
@@ -277,7 +301,7 @@
 
 <div class="container" id="viewCHANGEOVER" style="display: none;">
     <script>renderHeader('換線/換料比對系統', 'CHANGEOVER');</script>
-    <p style="color:#555; font-weight:500;">輸入機台現有與準備生產的型號，系統將自動產生機台物料的處置顏色地圖：</p>
+    <p style="color:#555; font-weight:500;">輸入機台現有與準備生產的型號,系統將自動產生機台物料的處置顏色地圖:</p>
     
     <div class="co-grid">
         <div class="co-box" style="border-top: 4px solid #e74c3c;">
@@ -336,7 +360,21 @@
     let uncompletedModels = [];
     let currentSelectTarget = '';
 
-    const palette = ["#90caf9", "#c5e1a5", "#ffcc80", "#e1bee7", "#80cbc4", "#c5cae9", "#cfd8dc", "#f48fb1", "#e6ee9c", "#bcaaa4"];
+    /* ===== 新色板:辨識度大幅提升 =====
+       原本使用 Material Design 100 系列(淺色),在手機螢幕辨識度低
+       改用 Material 300/400 飽和度較高的色系,任兩色都明顯不同 */
+    const palette = [
+        "#42A5F5",   // 藍 (鮮明天空藍)
+        "#66BB6A",   // 綠 (草地綠)
+        "#FFA726",   // 橘 (鮮橘)
+        "#AB47BC",   // 紫 (鮮紫)
+        "#26C6DA",   // 青 (青藍)
+        "#EC407A",   // 粉紅 (鮮粉)
+        "#FFEE58",   // 黃 (鮮黃)
+        "#5C6BC0",   // 靛藍 (深藍紫)
+        "#8D6E63",   // 棕 (咖啡棕)
+        "#78909C"    // 藍灰 (鋼鐵灰)
+    ];
     let currentGroups = []; 
     let filterMode = 0; 
     let fixedFilterMode = 0;
@@ -423,7 +461,7 @@
             
             renderSchedule();
         } catch (error) {
-            document.getElementById('matchStatus').innerText = "載入失敗：Failed to fetch";
+            document.getElementById('matchStatus').innerText = "載入失敗:Failed to fetch";
         }
     }
 
@@ -437,17 +475,90 @@
     function toggleCommonFilter() { filterMode = (filterMode + 1) % 3; updateUI(); }
     function toggleFixedFilter() { fixedFilterMode = (fixedFilterMode + 1) % 3; updateUI(); }
     function resetFilter() { filterMode = 0; fixedFilterMode = 0; updateUI(); }
-    function updateUI() { document.getElementById('btnOnlyCommon').style.display = currentGroups.length > 1 ? 'inline-block' : 'none'; document.getElementById('btnFixedFilter').style.display = currentGroups.length > 0 ? 'inline-block' : 'none'; const btnC = document.getElementById('btnOnlyCommon'); if (filterMode === 0) btnC.innerText = "僅顯示共用料"; else if (filterMode === 1) btnC.innerText = "排除共用料"; else btnC.innerText = "顯示全部料件"; const btnF = document.getElementById('btnFixedFilter'); if (fixedFilterMode === 0) btnF.innerText = "固定料：顯示全部"; else if (fixedFilterMode === 1) btnF.innerText = "固定料：僅顯示"; else btnF.innerText = "固定料：排除"; renderView(currentGroups); }
-    function renderView(displayGroups) { const statusDiv = document.getElementById('matchStatus'); const resultArea = document.getElementById('resultArea'); const countDiv = document.getElementById('itemCount'); if (currentGroups.length === 0) { statusDiv.innerText = "查無此核心編號。"; countDiv.innerText = ""; resultArea.innerHTML = ""; return; } let statusHtml = "母件："; currentGroups.forEach(g => { const isSelected = displayGroups.length === 1 && displayGroups[0] === g; statusHtml += `<span class="parent-tag" style="background-color: ${g.color}; border: ${isSelected ? '2px solid #333' : '1px solid #ccc'}" onclick="filterGroup('${g.id}')">${g.displayName}<span class="del-btn" onclick="removeGroup('${g.id}', event)">×</span></span>`; }); if (displayGroups.length < currentGroups.length) statusHtml += `<button class="reset-btn" onclick="resetFilter()">恢復清單</button>`; statusDiv.innerHTML = statusHtml; const masterMap = {}; displayGroups.forEach(g => { g.content.split(',').forEach(fullStr => { const [prefix, ...rest] = fullStr.split('-'); const code = formatCode(rest.join('-')); if (!masterMap[prefix]) masterMap[prefix] = {}; if (!masterMap[prefix][code]) masterMap[prefix][code] = { owners: [], fullStrs: [] }; masterMap[prefix][code].owners.push(g); masterMap[prefix][code].fullStrs.push(fullStr); }); }); let html = `<table><thead><tr><th style="width: 1%">類別</th><th>子件明細</th></tr></thead><tbody>`; let visibleCount = 0; Object.keys(masterMap).sort().forEach(pre => { const codesObj = masterMap[pre]; const sortedCodes = Object.keys(codesObj).sort(naturalSort); let codeHtmlList = sortedCodes.map(c => { const owners = codesObj[c].owners; const fullStrs = codesObj[c].fullStrs; const isCommon = displayGroups.length > 1 && owners.length === displayGroups.length; const isFixed = fullStrs.some(str => fixedFeederParts.has(str)); if (fixedFilterMode === 1 && !isFixed) return ''; if (fixedFilterMode === 2 && isFixed) return ''; const tooltipText = "使用的母件：\n" + owners.map(o => o.displayName).join('\n'); const fixedClass = isFixed ? " fixed-item" : ""; if (isCommon) { if (filterMode === 2) return ''; visibleCount++; return `<span class="child-item common-part${fixedClass}" title="${tooltipText}" onclick="this.classList.toggle('dimmed')">${c}</span>`; } else { if (filterMode === 1) return ''; visibleCount++; let bgStyle = ""; if (owners.length === 1) { bgStyle = `background-color: ${owners[0].color};`; } else { let stops = owners.map((o, i) => { let start = (i / owners.length) * 100; let end = ((i + 1) / owners.length) * 100; return `${o.color} ${start}%, ${o.color} ${end}%`; }).join(', '); bgStyle = `background: linear-gradient(to right, ${stops}); color: #333; border: 1px solid #999;`; } return `<span class="child-item${fixedClass}" style="${bgStyle}" title="${tooltipText}" onclick="this.classList.toggle('dimmed')">${c}</span>`; } }).filter(h => h !== ''); if (codeHtmlList.length > 0) html += `<tr><td class="prefix-td">${pre}</td><td>${codeHtmlList.join('')}</td></tr>`; }); resultArea.innerHTML = html + `</tbody></table>`; countDiv.innerText = `數量：${visibleCount}`; }
+    function updateUI() { document.getElementById('btnOnlyCommon').style.display = currentGroups.length > 1 ? 'inline-block' : 'none'; document.getElementById('btnFixedFilter').style.display = currentGroups.length > 0 ? 'inline-block' : 'none'; const btnC = document.getElementById('btnOnlyCommon'); if (filterMode === 0) btnC.innerText = "僅顯示共用料"; else if (filterMode === 1) btnC.innerText = "排除共用料"; else btnC.innerText = "顯示全部料件"; const btnF = document.getElementById('btnFixedFilter'); if (fixedFilterMode === 0) btnF.innerText = "固定料:顯示全部"; else if (fixedFilterMode === 1) btnF.innerText = "固定料:僅顯示"; else btnF.innerText = "固定料:排除"; renderView(currentGroups); }
+    function renderView(displayGroups) { 
+        const statusDiv = document.getElementById('matchStatus'); 
+        const resultArea = document.getElementById('resultArea'); 
+        const countDiv = document.getElementById('itemCount'); 
+        if (currentGroups.length === 0) { statusDiv.innerText = "查無此核心編號。"; countDiv.innerText = ""; resultArea.innerHTML = ""; return; } 
+        let statusHtml = "母件:"; 
+        currentGroups.forEach(g => { 
+            const isSelected = displayGroups.length === 1 && displayGroups[0] === g; 
+            statusHtml += `<span class="parent-tag" style="background-color: ${g.color}; border: ${isSelected ? '3px solid #1a1a1a' : '2px solid rgba(0,0,0,0.2)'}" onclick="filterGroup('${g.id}')">${g.displayName}<span class="del-btn" onclick="removeGroup('${g.id}', event)">×</span></span>`; 
+        }); 
+        if (displayGroups.length < currentGroups.length) statusHtml += `<button class="reset-btn" onclick="resetFilter()">恢復清單</button>`; 
+        statusDiv.innerHTML = statusHtml; 
+        const masterMap = {}; 
+        displayGroups.forEach(g => { 
+            g.content.split(',').forEach(fullStr => { 
+                const [prefix, ...rest] = fullStr.split('-'); 
+                const code = formatCode(rest.join('-')); 
+                if (!masterMap[prefix]) masterMap[prefix] = {}; 
+                if (!masterMap[prefix][code]) masterMap[prefix][code] = { owners: [], fullStrs: [] }; 
+                masterMap[prefix][code].owners.push(g); 
+                masterMap[prefix][code].fullStrs.push(fullStr); 
+            }); 
+        }); 
+        let html = `<table><thead><tr><th style="width: 1%">類別</th><th>子件明細</th></tr></thead><tbody>`; 
+        let visibleCount = 0; 
+        Object.keys(masterMap).sort().forEach(pre => { 
+            const codesObj = masterMap[pre]; 
+            const sortedCodes = Object.keys(codesObj).sort(naturalSort); 
+            let codeHtmlList = sortedCodes.map(c => { 
+                const owners = codesObj[c].owners; 
+                const fullStrs = codesObj[c].fullStrs; 
+                const isCommon = displayGroups.length > 1 && owners.length === displayGroups.length; 
+                const isFixed = fullStrs.some(str => fixedFeederParts.has(str)); 
+                if (fixedFilterMode === 1 && !isFixed) return ''; 
+                if (fixedFilterMode === 2 && isFixed) return ''; 
+                const tooltipText = "使用的母件:\n" + owners.map(o => o.displayName).join('\n'); 
+                const fixedClass = isFixed ? " fixed-item" : ""; 
+                if (isCommon) { 
+                    if (filterMode === 2) return ''; 
+                    visibleCount++; 
+                    return `<span class="child-item common-part${fixedClass}" title="${tooltipText}" onclick="this.classList.toggle('dimmed')">${c}</span>`; 
+                } else { 
+                    if (filterMode === 1) return ''; 
+                    visibleCount++; 
+                    let bgStyle = ""; 
+                    if (owners.length === 1) { 
+                        bgStyle = `background-color: ${owners[0].color};`; 
+                    } else { 
+                        // === 強化多板共用料的條紋分隔線(白色細線)讓不同顏色更分明 ===
+                        const dividerWidth = 1.2; // 分隔線寬度(百分比)
+                        let stopsArr = [];
+                        owners.forEach((o, i) => {
+                            let start = (i / owners.length) * 100;
+                            let end = ((i + 1) / owners.length) * 100;
+                            // 加入前置白色分隔線(除第一個之外)
+                            if (i > 0) {
+                                stopsArr.push(`#ffffff ${start}%`);
+                                stopsArr.push(`#ffffff ${start + dividerWidth}%`);
+                                stopsArr.push(`${o.color} ${start + dividerWidth}%`);
+                            } else {
+                                stopsArr.push(`${o.color} ${start}%`);
+                            }
+                            stopsArr.push(`${o.color} ${end}%`);
+                        });
+                        bgStyle = `background: linear-gradient(to right, ${stopsArr.join(', ')}); color: #1a1a1a; border: 2px solid #333;`; 
+                    } 
+                    return `<span class="child-item${fixedClass}" style="${bgStyle}" title="${tooltipText}" onclick="this.classList.toggle('dimmed')">${c}</span>`; 
+                } 
+            }).filter(h => h !== ''); 
+            if (codeHtmlList.length > 0) html += `<tr><td class="prefix-td">${pre}</td><td>${codeHtmlList.join('')}</td></tr>`; 
+        }); 
+        resultArea.innerHTML = html + `</tbody></table>`; 
+        countDiv.innerText = `數量:${visibleCount}`; 
+    }
     function filterGroup(groupId) { filterMode = 0; fixedFilterMode = 0; const target = currentGroups.find(g => g.id === groupId); if (target) renderView([target]); }
 
     // ==========================================
     // 成品查詢邏輯
     // ==========================================
     function clearProductSearch() { document.getElementById('inputProductSearch').value = ''; document.getElementById('productResultArea').innerHTML = ''; document.getElementById('productMatchStatus').innerText = ''; }
-    function toggleSubProduct(childId, element) { element.classList.toggle('dimmed'); const parentRow = element.parentElement.parentElement; const outerDiv = parentRow.parentElement; let subDiv = outerDiv.querySelector('.sub-result-area'); if (!subDiv) { const subItems = subProductData[childId]; if (subItems && subItems.length > 0) { subDiv = document.createElement('div'); subDiv.className = 'sub-result-area'; subDiv.style.padding = '8px 12px'; subDiv.style.margin = '4px 0 8px 15px'; subDiv.style.backgroundColor = '#f1f8ff'; subDiv.style.borderLeft = '3px solid #17a2b8'; subDiv.style.borderRadius = '0 4px 4px 0'; subDiv.style.fontSize = '13px'; let subHtml = `<div style="color: #555; margin-bottom: 5px; font-weight: bold;">↳ <span style="color: #17a2b8;">${childId}</span> 的次級子件：</div>`; subItems.forEach(sub => { subHtml += `<span class="child-item" style="background-color: #fff; border-color: #b8daff; cursor: default;">${sub}</span> `; }); subDiv.innerHTML = subHtml; outerDiv.appendChild(subDiv); } } if (subDiv) subDiv.style.display = element.classList.contains('dimmed') ? 'block' : 'none'; }
+    function toggleSubProduct(childId, element) { element.classList.toggle('dimmed'); const parentRow = element.parentElement.parentElement; const outerDiv = parentRow.parentElement; let subDiv = outerDiv.querySelector('.sub-result-area'); if (!subDiv) { const subItems = subProductData[childId]; if (subItems && subItems.length > 0) { subDiv = document.createElement('div'); subDiv.className = 'sub-result-area'; subDiv.style.padding = '8px 12px'; subDiv.style.margin = '4px 0 8px 15px'; subDiv.style.backgroundColor = '#f1f8ff'; subDiv.style.borderLeft = '3px solid #17a2b8'; subDiv.style.borderRadius = '0 4px 4px 0'; subDiv.style.fontSize = '13px'; let subHtml = `<div style="color: #555; margin-bottom: 5px; font-weight: bold;">↳ <span style="color: #17a2b8;">${childId}</span> 的次級子件:</div>`; subItems.forEach(sub => { subHtml += `<span class="child-item" style="background-color: #fff; border-color: #b8daff; cursor: default;">${sub}</span> `; }); subDiv.innerHTML = subHtml; outerDiv.appendChild(subDiv); } } if (subDiv) subDiv.style.display = element.classList.contains('dimmed') ? 'block' : 'none'; }
     function generateCommonName(keys) { if (!keys || keys.length === 0) return ""; if (keys.length === 1) return keys[0]; const splitKeys = keys.map(k => k.split('-')); const maxLen = Math.max(...splitKeys.map(k => k.length)); const resultParts = []; for (let i = 0; i < maxLen; i++) { const firstPart = splitKeys[0][i]; let isSame = true; for (let j = 1; j < splitKeys.length; j++) { if (splitKeys[j][i] !== firstPart) { isSame = false; break; } } if (isSame && firstPart !== undefined) resultParts.push(firstPart); else resultParts.push('XX'); } return resultParts.join('-'); }
-    function runProductQuery() { const rawInput = document.getElementById('inputProductSearch').value.trim(); const resultArea = document.getElementById('productResultArea'); const statusDiv = document.getElementById('productMatchStatus'); if (!rawInput) return; const cleanInput = rawInput.replace(/[-\s_]/g, '').toUpperCase(); const inputWithoutK = (cleanInput.startsWith('K') && cleanInput.length > 1) ? cleanInput.substring(1) : null; let matchedKeys = Object.keys(productData).filter(key => { const cleanKey = key.replace(/[-\s_]/g, '').toUpperCase(); return cleanKey.includes(cleanInput) || cleanInput.startsWith(cleanKey); }); if (matchedKeys.length === 0 && inputWithoutK) { matchedKeys = Object.keys(productData).filter(key => { const cleanKey = key.replace(/[-\s_]/g, '').toUpperCase(); return cleanKey.includes(inputWithoutK) || inputWithoutK.startsWith(cleanKey); }); } if (matchedKeys.length === 0) { statusDiv.innerText = "查無此成品編號。"; resultArea.innerHTML = ""; return; } const groups = {}; matchedKeys.forEach(key => { const items = productData[key]; const signatureStr = items.map(item => `${item.child}|${item.vendor}`).sort().join('||'); if (!groups[signatureStr]) groups[signatureStr] = { keys: [], items: items }; groups[signatureStr].keys.push(key); }); Object.values(groups).forEach(group => { group.commonName = generateCommonName(group.keys); }); let statusHtml = "成品母件："; Object.values(groups).forEach(group => { statusHtml += `<span class="parent-tag" style="background-color: #cfd8dc; cursor: default;" title="${group.keys.join('\n')}">${group.commonName}</span>`; }); statusDiv.innerHTML = statusHtml; let html = `<table><thead><tr><th style="width: 15%; white-space: nowrap;">成品母件</th><th>子件清單與廠商</th></tr></thead><tbody>`; Object.values(groups).forEach(group => { const keysHtml = `<div class="product-parent-title" title="${group.keys.join('\n')}">${group.commonName}</div>`; let listHtml = group.items.map(item => { const safeChild = item.child.replace(/'/g, "\\'"); return `<div><div style="display: flex; align-items: center; padding: 6px 0; border-bottom: 1px dashed #eee;"><div style="flex: 1;"><span class="child-item" style="background-color: #f8f9fa;" onclick="toggleSubProduct('${safeChild}', this)">${item.child}</span></div><div style="flex: 1; color: #555; font-weight: 500;">${item.vendor}</div></div></div>`; }).join(''); html += `<tr><td class="prefix-td" style="vertical-align: top;">${keysHtml}</td><td>${listHtml}</td></tr>`; }); html += `</tbody></table>`; resultArea.innerHTML = html; }
+    function runProductQuery() { const rawInput = document.getElementById('inputProductSearch').value.trim(); const resultArea = document.getElementById('productResultArea'); const statusDiv = document.getElementById('productMatchStatus'); if (!rawInput) return; const cleanInput = rawInput.replace(/[-\s_]/g, '').toUpperCase(); const inputWithoutK = (cleanInput.startsWith('K') && cleanInput.length > 1) ? cleanInput.substring(1) : null; let matchedKeys = Object.keys(productData).filter(key => { const cleanKey = key.replace(/[-\s_]/g, '').toUpperCase(); return cleanKey.includes(cleanInput) || cleanInput.startsWith(cleanKey); }); if (matchedKeys.length === 0 && inputWithoutK) { matchedKeys = Object.keys(productData).filter(key => { const cleanKey = key.replace(/[-\s_]/g, '').toUpperCase(); return cleanKey.includes(inputWithoutK) || inputWithoutK.startsWith(cleanKey); }); } if (matchedKeys.length === 0) { statusDiv.innerText = "查無此成品編號。"; resultArea.innerHTML = ""; return; } const groups = {}; matchedKeys.forEach(key => { const items = productData[key]; const signatureStr = items.map(item => `${item.child}|${item.vendor}`).sort().join('||'); if (!groups[signatureStr]) groups[signatureStr] = { keys: [], items: items }; groups[signatureStr].keys.push(key); }); Object.values(groups).forEach(group => { group.commonName = generateCommonName(group.keys); }); let statusHtml = "成品母件:"; Object.values(groups).forEach(group => { statusHtml += `<span class="parent-tag" style="background-color: #cfd8dc; cursor: default;" title="${group.keys.join('\n')}">${group.commonName}</span>`; }); statusDiv.innerHTML = statusHtml; let html = `<table><thead><tr><th style="width: 15%; white-space: nowrap;">成品母件</th><th>子件清單與廠商</th></tr></thead><tbody>`; Object.values(groups).forEach(group => { const keysHtml = `<div class="product-parent-title" title="${group.keys.join('\n')}">${group.commonName}</div>`; let listHtml = group.items.map(item => { const safeChild = item.child.replace(/'/g, "\\'"); return `<div><div style="display: flex; align-items: center; padding: 6px 0; border-bottom: 1px dashed #eee;"><div style="flex: 1;"><span class="child-item" style="background-color: #f8f9fa;" onclick="toggleSubProduct('${safeChild}', this)">${item.child}</span></div><div style="flex: 1; color: #555; font-weight: 500;">${item.vendor}</div></div></div>`; }).join(''); html += `<tr><td class="prefix-td" style="vertical-align: top;">${keysHtml}</td><td>${listHtml}</td></tr>`; }); html += `</tbody></table>`; resultArea.innerHTML = html; }
 
     // ==========================================
     // 排程系統 & "BOM表格版"的排程批次對比邏輯
@@ -632,12 +743,12 @@
         html += '</div>';
         resultArea.innerHTML = html; 
         
-        // 初始執行一次全部顯示，確保過濾器綁定
+        // 初始執行一次全部顯示,確保過濾器綁定
         setCompareFilter('ALL');
     }
 
     // ==========================================
-    // 換線比對系統：滑動切換版 (左右雙視角 - A/B站排版)
+    // 換線比對系統:滑動切換版 (左右雙視角 - A/B站排版)
     // ==========================================
     function clearChangeover() {
         document.getElementById('coOldModel').value = '';
@@ -689,11 +800,11 @@
         const newModel = matchModel(newModelRaw);
 
         if (!feederDB[oldModel] || !feederDB[oldModel][oldSide]) {
-            resultArea.innerHTML = `<div class='match-info' style='color:#e74c3c;'>❌ 找不到機台現狀產品的資料：${oldModel} (${oldSide} 面)。</div>`;
+            resultArea.innerHTML = `<div class='match-info' style='color:#e74c3c;'>❌ 找不到機台現狀產品的資料:${oldModel} (${oldSide} 面)。</div>`;
             return;
         }
         if (!feederDB[newModel] || !feederDB[newModel][newSide]) {
-            resultArea.innerHTML = `<div class='match-info' style='color:#e74c3c;'>❌ 找不到物料來源產品的資料：${newModel} (${newSide} 面)。</div>`;
+            resultArea.innerHTML = `<div class='match-info' style='color:#e74c3c;'>❌ 找不到物料來源產品的資料:${newModel} (${newSide} 面)。</div>`;
             return;
         }
 
@@ -785,8 +896,8 @@
         let html = `
         <div class="toggle-wrapper">
             <div class="toggle-indicator" id="toggleIndicator"></div>
-            <button class="toggle-btn active" id="btnTab0" onclick="switchTab(0)">⬅️ 換下：機台現狀</button>
-            <button class="toggle-btn" id="btnTab1" onclick="switchTab(1)">換上：物料來源 ➡️</button>
+            <button class="toggle-btn active" id="btnTab0" onclick="switchTab(0)">⬅️ 換下:機台現狀</button>
+            <button class="toggle-btn" id="btnTab1" onclick="switchTab(1)">換上:物料來源 ➡️</button>
         </div>
 
         <div class="slider-viewport">
