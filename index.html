@@ -231,9 +231,18 @@
             /* 手機版 sticky 區塊:限制母件高度避免擋太多畫面 */
             .bom-sticky-header .match-info { max-height: 28vh; line-height: 2.2; }
 
-            /* 手機版下料系統:左右兩塊改為上下排 */
-            .discharge-list-container { grid-template-columns: 1fr; gap: 8px; }
-            .discharge-list-col { min-height: 40px; }
+            /* 手機版下料系統:左右兩塊(縮小尺寸以符合手機螢幕) */
+            .discharge-list-container { grid-template-columns: 1fr 1fr; gap: 6px; }
+            .discharge-list-col { min-height: 40px; padding: 6px 6px; }
+            .discharge-list-col-title { font-size: 12px; margin-bottom: 4px; padding-bottom: 3px; }
+            .discharge-mini-tag {
+                font-size: 12px;
+                padding: 1px 17px 1px 6px;
+                margin: 2px 1px;
+            }
+            .discharge-mini-tag .move-icon { font-size: 9px; margin: 0 1px; }
+            .discharge-mini-tag .del-btn { width: 14px; height: 14px; line-height: 12px; font-size: 10px; right: 1px; }
+            .discharge-list-col-empty { font-size: 11px; padding: 6px 0 4px; }
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
