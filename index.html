@@ -16,6 +16,128 @@
         .switch-discharge-btn { background: #16a085; }
         .switch-discharge-btn:hover { background: #138d75; }
 
+        .machine-time-btn { background: #34495e; }
+        .machine-time-btn:hover { background: #2c3e50; }
+
+        .machine-description {
+            color: #666;
+            line-height: 1.7;
+            margin-bottom: 18px;
+            background: #f8f9fa;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 12px 14px;
+        }
+        .machine-mode-tabs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 18px 0 22px;
+        }
+        .machine-mode-tab {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            background: #fafafa;
+            transition: 0.2s;
+            user-select: none;
+            display: block;
+        }
+        .machine-mode-tab input { margin-right: 6px; }
+        .machine-mode-tab.active {
+            border-color: #28a745;
+            background: #eefaf1;
+            box-shadow: 0 2px 6px rgba(40,167,69,0.14);
+            font-weight: bold;
+        }
+        .machine-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+        .machine-field {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 12px;
+            background: #fff;
+        }
+        .machine-field label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .machine-field input {
+            width: 100%;
+        }
+        .machine-field input[readonly] {
+            background: #f8f9fa;
+            color: #555;
+        }
+        .machine-result-box {
+            margin-top: 22px;
+            border-radius: 10px;
+            border: 1px solid #d7eadc;
+            background: #f4fff6;
+            padding: 16px;
+        }
+        .machine-result-title {
+            font-weight: bold;
+            color: #218838;
+            margin-bottom: 10px;
+            font-size: 17px;
+        }
+        .machine-result-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+        .machine-result-item {
+            background: #fff;
+            border: 1px solid #e7f2ea;
+            border-radius: 8px;
+            padding: 12px;
+            min-height: 70px;
+        }
+        .machine-result-label {
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+        .machine-result-value {
+            font-size: 22px;
+            font-weight: bold;
+            color: #222;
+            line-height: 1.3;
+            word-break: break-word;
+        }
+        .machine-warning {
+            margin-top: 12px;
+            display: none;
+            color: #9a5b00;
+            background: #fff8e1;
+            border: 1px solid #ffe0a3;
+            border-radius: 8px;
+            padding: 10px 12px;
+            line-height: 1.6;
+        }
+        .machine-error {
+            margin-top: 12px;
+            display: none;
+            color: #b00020;
+            background: #fff0f2;
+            border: 1px solid #ffd1d8;
+            border-radius: 8px;
+            padding: 10px 12px;
+            line-height: 1.6;
+        }
+        .machine-small-note {
+            color: #666;
+            font-size: 13px;
+            line-height: 1.6;
+            margin-top: 12px;
+        }
+
         textarea, input[type="text"], select { padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 15px; box-sizing: border-box; }
         textarea { width: 100%; height: 80px; }
         .hint { color: #666; font-size: 13px; margin-top: 5px; }
@@ -187,6 +309,13 @@
             }
             .discharge-list-col { min-height: 40px; min-width: 0; }
             .discharge-mini-tag { max-width: 100%; }
+
+            .machine-grid,
+            .machine-mode-tabs,
+            .machine-result-grid {
+                grid-template-columns: 1fr;
+            }
+            .machine-result-value { font-size: 20px; }
         }
     </style>
 </head>
@@ -198,8 +327,9 @@
             <div class="header-row">
                 <h2>${currentViewTitle}</h2>
                 <div class="header-buttons" style="text-align: right;">
+                    ${viewId !== 'BOM' ? `<button class="switch-btn" onclick="toggleView('BOM')">BOM 查詢</button>` : ''}
                     ${viewId !== 'DISCHARGE' ? `<button class="switch-btn switch-discharge-btn" onclick="toggleView('DISCHARGE')">下料系統 📦</button>` : ''}
-                    ${viewId !== 'BOM' ? `<button class="switch-btn" onclick="toggleView('BOM')">← 切換回 BOM 查詢</button>` : ''}
+                    ${viewId !== 'MACHINE_TIME' ? `<button class="switch-btn machine-time-btn" onclick="toggleView('MACHINE_TIME')">機台時間試算 ⏱</button>` : ''}
                 </div>
             </div>
         `);
@@ -245,12 +375,108 @@
     <div id="dischargeResultArea"></div>
 </div>
 
+<div class="container" id="viewMACHINE_TIME" style="display: none;">
+    <script>renderHeader('機台時間試算', 'MACHINE_TIME');</script>
+
+    <div class="machine-description">
+        工時請輸入機台當下計算出的「單一連板打件秒數」。可用連板數推算預計結束時間，也可以用目標結束時間反推可完成連板數。
+    </div>
+
+    <div class="machine-mode-tabs">
+        <label class="machine-mode-tab active" id="machineTabByBoards">
+            <input type="radio" name="machineCalcMode" value="byBoards" checked>
+            用連板數推算結束時間
+            <div class="hint">適合：這筆有固定數量，想知道會打到幾點。</div>
+        </label>
+
+        <label class="machine-mode-tab" id="machineTabByEnd">
+            <input type="radio" name="machineCalcMode" value="byEnd">
+            用結束時間反推連板數
+            <div class="hint">適合：到某個時間前，想知道可以完成多少。</div>
+        </label>
+    </div>
+
+    <div class="machine-grid">
+        <div class="machine-field">
+            <label for="machineStartTime">開始時間</label>
+            <input id="machineStartTime" type="time" step="60">
+            <div class="hint">24 時制，例如 08:30、17:05。</div>
+        </div>
+
+        <div class="machine-field">
+            <label for="machineEndTime">結束時間</label>
+            <input id="machineEndTime" type="time" step="60">
+            <div class="hint" id="machineEndHint">此欄會依照開始時間、工時、連板數自動計算。</div>
+        </div>
+
+        <div class="machine-field">
+            <label for="machineWorkSecond">工時（秒 / 單一連板）</label>
+            <input id="machineWorkSecond" type="number" min="0" step="0.01" inputmode="decimal" placeholder="例如 45">
+            <div class="hint">只輸入秒數，例如 45、80、125.5。</div>
+        </div>
+
+        <div class="machine-field">
+            <label for="machineBoardCount">連板數</label>
+            <input id="machineBoardCount" type="number" min="0" step="1" inputmode="numeric" placeholder="請輸入連板數">
+            <div class="hint" id="machineBoardHint">輸入要打的連板數，系統會推算結束時間。</div>
+        </div>
+
+        <div class="machine-field">
+            <label for="machineTotalDuration">打件時間</label>
+            <input id="machineTotalDuration" type="text" readonly placeholder="自動計算">
+            <div class="hint">顯示格式：時、分、秒。</div>
+        </div>
+
+        <div class="machine-field">
+            <label for="machineFinishDisplay">預計完成</label>
+            <input id="machineFinishDisplay" type="text" readonly placeholder="自動計算">
+            <div class="hint">若跨日會顯示 +1日、+2日。</div>
+        </div>
+    </div>
+
+    <div class="btn-group">
+        <button type="button" onclick="setMachineNow()">帶入現在時間</button>
+        <button type="button" class="switch-btn" onclick="copyMachineResult()">複製結果</button>
+        <button type="button" class="clear-btn" onclick="clearMachineTime()">清除</button>
+    </div>
+
+    <div class="machine-result-box">
+        <div class="machine-result-title">計算結果</div>
+        <div class="machine-result-grid">
+            <div class="machine-result-item">
+                <div class="machine-result-label">預計結束時間</div>
+                <div class="machine-result-value" id="machineFinishResult">—</div>
+            </div>
+            <div class="machine-result-item">
+                <div class="machine-result-label">可完成連板數</div>
+                <div class="machine-result-value" id="machineBoardResult">—</div>
+            </div>
+            <div class="machine-result-item">
+                <div class="machine-result-label">總打件時間</div>
+                <div class="machine-result-value" id="machineDurationResult">—</div>
+            </div>
+            <div class="machine-result-item">
+                <div class="machine-result-label">剩餘不足一連板時間</div>
+                <div class="machine-result-value" id="machineRemainResult">—</div>
+            </div>
+        </div>
+
+        <div class="machine-warning" id="machineWarningBox"></div>
+        <div class="machine-error" id="machineErrorBox"></div>
+        <div class="machine-small-note">
+            反推連板數時會向下取整數，因為不足一整個連板不列入完成數。結束時間早於或等於開始時間時，系統會視為跨日。
+        </div>
+    </div>
+</div>
+
+
 <script>
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTCXT3zLzXbfrprksE92KR0EM6qXnteT_aGAjYFVIpRiwDV7Pg_BIFoIQMG8fpnTd6m8dCAYYBnuaxX/pub?output=csv";
     
     const storageKeys = {
         bomInput: "pcb_bom_query_input",
-        dischargeInput: "pcb_discharge_query_input"
+        dischargeInput: "pcb_discharge_query_input",
+        machineTime: "pcb_machine_time_calculator"
     };
 
     let rawData = {};
@@ -286,6 +512,11 @@
     function toggleView(viewType) {
         document.getElementById('viewBOM').style.display = (viewType === 'BOM') ? 'block' : 'none';
         document.getElementById('viewDISCHARGE').style.display = (viewType === 'DISCHARGE') ? 'block' : 'none';
+        document.getElementById('viewMACHINE_TIME').style.display = (viewType === 'MACHINE_TIME') ? 'block' : 'none';
+
+        if (viewType === 'MACHINE_TIME') {
+            calculateMachineTime();
+        }
     }
 
     async function fetchCSV() {
@@ -753,6 +984,296 @@
             countDiv.innerHTML = `🔴 <span style="color:#e74c3c; font-weight:bold;">可下料數量:${dischargeCount}</span><span style="color:#8e44ad; font-weight:bold;"> ${filterText}</span>`;
         }
     }
+
+    const machineEls = {
+        startTime: document.getElementById('machineStartTime'),
+        endTime: document.getElementById('machineEndTime'),
+        workSecond: document.getElementById('machineWorkSecond'),
+        boardCount: document.getElementById('machineBoardCount'),
+        totalDuration: document.getElementById('machineTotalDuration'),
+        finishDisplay: document.getElementById('machineFinishDisplay'),
+        finishResult: document.getElementById('machineFinishResult'),
+        boardResult: document.getElementById('machineBoardResult'),
+        durationResult: document.getElementById('machineDurationResult'),
+        remainResult: document.getElementById('machineRemainResult'),
+        warningBox: document.getElementById('machineWarningBox'),
+        errorBox: document.getElementById('machineErrorBox'),
+        tabByBoards: document.getElementById('machineTabByBoards'),
+        tabByEnd: document.getElementById('machineTabByEnd'),
+        endHint: document.getElementById('machineEndHint'),
+        boardHint: document.getElementById('machineBoardHint')
+    };
+
+    function machinePad(n) {
+        return String(n).padStart(2, '0');
+    }
+
+    function machineTimeToMinutes(value) {
+        if (!value || !/^\d{2}:\d{2}$/.test(value)) return null;
+        const [h, m] = value.split(':').map(Number);
+        if (h < 0 || h > 23 || m < 0 || m > 59) return null;
+        return h * 60 + m;
+    }
+
+    function machineMinutesToTime(totalMinutes) {
+        const oneDay = 24 * 60;
+        const dayOffset = Math.floor(totalMinutes / oneDay);
+        const minuteOfDay = ((totalMinutes % oneDay) + oneDay) % oneDay;
+        const h = Math.floor(minuteOfDay / 60);
+        const m = Math.floor(minuteOfDay % 60);
+        return {
+            value: `${machinePad(h)}:${machinePad(m)}`,
+            label: `${machinePad(h)}:${machinePad(m)}${dayOffset > 0 ? `（+${dayOffset}日）` : ''}`,
+            dayOffset
+        };
+    }
+
+    function getCurrentMachineTimeValue() {
+        const now = new Date();
+        return `${machinePad(now.getHours())}:${machinePad(now.getMinutes())}`;
+    }
+
+    function getMachineMode() {
+        const checked = document.querySelector('input[name="machineCalcMode"]:checked');
+        return checked ? checked.value : 'byBoards';
+    }
+
+    function getPositiveMachineNumber(el) {
+        const value = Number(el.value);
+        return Number.isFinite(value) && value > 0 ? value : 0;
+    }
+
+    function getMachineWorkSeconds() {
+        return getPositiveMachineNumber(machineEls.workSecond);
+    }
+
+    function formatMachineDuration(totalSeconds) {
+        if (!Number.isFinite(totalSeconds) || totalSeconds < 0) return '—';
+
+        totalSeconds = Math.round(totalSeconds * 100) / 100;
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = Math.round((totalSeconds % 60) * 100) / 100;
+
+        return `${hours}時 ${minutes}分 ${seconds}秒`;
+    }
+
+    function setMachineNotice(type, message) {
+        machineEls.warningBox.style.display = 'none';
+        machineEls.errorBox.style.display = 'none';
+        machineEls.warningBox.textContent = '';
+        machineEls.errorBox.textContent = '';
+
+        if (!message) return;
+
+        const box = type === 'error' ? machineEls.errorBox : machineEls.warningBox;
+        box.textContent = message;
+        box.style.display = 'block';
+    }
+
+    function setMachineModeUI() {
+        const mode = getMachineMode();
+
+        machineEls.tabByBoards.classList.toggle('active', mode === 'byBoards');
+        machineEls.tabByEnd.classList.toggle('active', mode === 'byEnd');
+
+        if (mode === 'byBoards') {
+            machineEls.endTime.readOnly = true;
+            machineEls.boardCount.readOnly = false;
+            machineEls.endHint.textContent = '此欄會依照開始時間、工時、連板數自動計算。';
+            machineEls.boardHint.textContent = '輸入要打的連板數，系統會推算結束時間。';
+            machineEls.boardCount.placeholder = '請輸入連板數';
+        } else {
+            machineEls.endTime.readOnly = false;
+            machineEls.boardCount.readOnly = true;
+            machineEls.endHint.textContent = '輸入目標結束時間，系統會反推可完成連板數。';
+            machineEls.boardHint.textContent = '此欄會依照可用時間與工時自動計算。';
+            machineEls.boardCount.placeholder = '自動計算';
+        }
+    }
+
+    function saveMachineTimeState() {
+        const data = {
+            mode: getMachineMode(),
+            startTime: machineEls.startTime.value,
+            endTime: machineEls.endTime.value,
+            workSecond: machineEls.workSecond.value,
+            boardCount: machineEls.boardCount.value
+        };
+        localStorage.setItem(storageKeys.machineTime, JSON.stringify(data));
+    }
+
+    function loadMachineTimeState() {
+        try {
+            const raw = localStorage.getItem(storageKeys.machineTime);
+            if (!raw) return false;
+
+            const data = JSON.parse(raw);
+            if (data.mode) {
+                const radio = document.querySelector(`input[name="machineCalcMode"][value="${data.mode}"]`);
+                if (radio) radio.checked = true;
+            }
+
+            machineEls.startTime.value = data.startTime || '';
+            machineEls.endTime.value = data.endTime || '';
+            machineEls.workSecond.value = data.workSecond || '';
+            machineEls.boardCount.value = data.boardCount || '';
+
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function clearMachineResults(message, type = 'error') {
+        machineEls.totalDuration.value = '';
+        machineEls.finishDisplay.value = '';
+        machineEls.finishResult.textContent = '—';
+        machineEls.boardResult.textContent = '—';
+        machineEls.durationResult.textContent = '—';
+        machineEls.remainResult.textContent = '—';
+        setMachineNotice(type, message);
+        saveMachineTimeState();
+    }
+
+    function calculateMachineTime() {
+        setMachineModeUI();
+
+        const mode = getMachineMode();
+        const startMinutes = machineTimeToMinutes(machineEls.startTime.value);
+        const endMinutesRaw = machineTimeToMinutes(machineEls.endTime.value);
+        const workSeconds = getMachineWorkSeconds();
+
+        let finishInfo = null;
+        let boardCount = 0;
+        let totalSeconds = 0;
+        let remainSeconds = 0;
+
+        if (startMinutes === null) {
+            clearMachineResults('請先輸入開始時間。');
+            return;
+        }
+
+        if (workSeconds <= 0) {
+            clearMachineResults('請輸入工時，也就是單一連板打件秒數。');
+            return;
+        }
+
+        if (mode === 'byBoards') {
+            boardCount = Math.floor(getPositiveMachineNumber(machineEls.boardCount));
+
+            if (boardCount <= 0) {
+                clearMachineResults('請輸入連板數。');
+                return;
+            }
+
+            totalSeconds = workSeconds * boardCount;
+            const extraSeconds = totalSeconds % 60;
+            finishInfo = machineMinutesToTime(startMinutes + totalSeconds / 60);
+
+            machineEls.endTime.value = finishInfo.value;
+            remainSeconds = 0;
+
+            if (extraSeconds > 0) {
+                finishInfo.label += `，另 ${Math.round(extraSeconds * 100) / 100} 秒`;
+            }
+        } else {
+            if (endMinutesRaw === null) {
+                clearMachineResults('請輸入結束時間。');
+                return;
+            }
+
+            let availableMinutes = endMinutesRaw - startMinutes;
+            if (availableMinutes <= 0) availableMinutes += 24 * 60;
+
+            const availableSeconds = availableMinutes * 60;
+
+            boardCount = Math.floor(availableSeconds / workSeconds);
+            totalSeconds = boardCount * workSeconds;
+            remainSeconds = availableSeconds - totalSeconds;
+
+            finishInfo = machineMinutesToTime(startMinutes + totalSeconds / 60);
+            machineEls.boardCount.value = String(boardCount);
+        }
+
+        machineEls.totalDuration.value = formatMachineDuration(totalSeconds);
+        machineEls.finishDisplay.value = finishInfo.label;
+        machineEls.finishResult.textContent = finishInfo.label;
+        machineEls.boardResult.textContent = `${boardCount} 連板`;
+        machineEls.durationResult.textContent = formatMachineDuration(totalSeconds);
+        machineEls.remainResult.textContent = formatMachineDuration(remainSeconds);
+
+        if (mode === 'byEnd' && boardCount === 0) {
+            setMachineNotice('warning', '可用時間不足以完成 1 連板。');
+        } else if (mode === 'byEnd' && remainSeconds > 0) {
+            setMachineNotice('warning', `目標時間內可完成 ${boardCount} 連板，剩餘 ${formatMachineDuration(remainSeconds)} 不足一整個連板。`);
+        } else if (finishInfo.dayOffset > 0) {
+            setMachineNotice('warning', `此筆會跨日完成，結束時間為 ${finishInfo.label}。`);
+        } else {
+            setMachineNotice('', '');
+        }
+
+        saveMachineTimeState();
+    }
+
+    function setMachineNow() {
+        machineEls.startTime.value = getCurrentMachineTimeValue();
+        calculateMachineTime();
+    }
+
+    function clearMachineTime() {
+        localStorage.removeItem(storageKeys.machineTime);
+        document.querySelector('input[name="machineCalcMode"][value="byBoards"]').checked = true;
+        machineEls.startTime.value = getCurrentMachineTimeValue();
+        machineEls.endTime.value = '';
+        machineEls.workSecond.value = '';
+        machineEls.boardCount.value = '';
+        machineEls.totalDuration.value = '';
+        machineEls.finishDisplay.value = '';
+        calculateMachineTime();
+    }
+
+    async function copyMachineResult() {
+        const mode = getMachineMode();
+        const lines = [
+            '機台時間試算',
+            `模式：${mode === 'byBoards' ? '用連板數推算結束時間' : '用結束時間反推連板數'}`,
+            `開始時間：${machineEls.startTime.value || '—'}`,
+            `工時：${machineEls.workSecond.value || '—'} 秒 / 單一連板`,
+            `連板數：${machineEls.boardCount.value || '—'}`,
+            `打件時間：${machineEls.totalDuration.value || '—'}`,
+            `結束時間：${machineEls.finishDisplay.value || machineEls.endTime.value || '—'}`
+        ];
+
+        try {
+            await navigator.clipboard.writeText(lines.join('\\n'));
+            setMachineNotice('warning', '已複製計算結果。');
+        } catch (e) {
+            setMachineNotice('error', '此瀏覽器不允許直接複製，請手動選取結果。');
+        }
+    }
+
+    function initMachineTimeCalculator() {
+        const restored = loadMachineTimeState();
+
+        if (!restored || !machineEls.startTime.value) {
+            machineEls.startTime.value = getCurrentMachineTimeValue();
+        }
+
+        document.querySelectorAll('#viewMACHINE_TIME input').forEach(el => {
+            el.addEventListener('input', calculateMachineTime);
+            el.addEventListener('change', calculateMachineTime);
+        });
+
+        document.querySelectorAll('input[name="machineCalcMode"]').forEach(el => {
+            el.addEventListener('change', calculateMachineTime);
+        });
+
+        calculateMachineTime();
+    }
+
+    initMachineTimeCalculator();
+
 </script>
 </body>
 </html>
