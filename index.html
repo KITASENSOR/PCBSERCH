@@ -385,53 +385,45 @@
     <div class="machine-mode-tabs">
         <label class="machine-mode-tab active" id="machineTabByBoards">
             <input type="radio" name="machineCalcMode" value="byBoards" checked>
-            用連板數推算結束時間
-            <div class="hint">適合：這筆有固定數量，想知道會打到幾點。</div>
-        </label>
+            算時間
+                   </label>
 
         <label class="machine-mode-tab" id="machineTabByEnd">
             <input type="radio" name="machineCalcMode" value="byEnd">
-            用結束時間反推連板數
-            <div class="hint">適合：到某個時間前，想知道可以完成多少。</div>
-        </label>
+            算片數
+                   </label>
     </div>
 
     <div class="machine-grid">
         <div class="machine-field">
             <label for="machineStartTime">開始時間</label>
             <input id="machineStartTime" type="time" step="60">
-            <div class="hint">24 時制，例如 08:30、17:05。</div>
-        </div>
+                   </div>
 
         <div class="machine-field">
             <label for="machineEndTime">結束時間</label>
             <input id="machineEndTime" type="time" step="60">
-            <div class="hint" id="machineEndHint">此欄會依照開始時間、工時、連板數自動計算。</div>
-        </div>
+                    </div>
 
         <div class="machine-field">
             <label for="machineWorkSecond">工時（秒 / 單一連板）</label>
             <input id="machineWorkSecond" type="number" min="0" step="0.01" inputmode="decimal" placeholder="例如 45">
-            <div class="hint">只輸入秒數，例如 45、80、125.5。</div>
-        </div>
+                   </div>
 
         <div class="machine-field">
             <label for="machineBoardCount">連板數</label>
             <input id="machineBoardCount" type="number" min="0" step="1" inputmode="numeric" placeholder="請輸入連板數">
-            <div class="hint" id="machineBoardHint">輸入要打的連板數，系統會推算結束時間。</div>
-        </div>
+                    </div>
 
         <div class="machine-field">
             <label for="machineTotalDuration">打件時間</label>
             <input id="machineTotalDuration" type="text" readonly placeholder="自動計算">
-            <div class="hint">顯示格式：時、分、秒。</div>
-        </div>
+                   </div>
 
         <div class="machine-field">
             <label for="machineFinishDisplay">預計完成</label>
             <input id="machineFinishDisplay" type="text" readonly placeholder="自動計算">
-            <div class="hint">若跨日會顯示 +1日、+2日。</div>
-        </div>
+                   </div>
     </div>
 
     <div class="btn-group">
@@ -439,33 +431,6 @@
         <button type="button" class="switch-btn" onclick="copyMachineResult()">複製結果</button>
         <button type="button" class="clear-btn" onclick="clearMachineTime()">清除</button>
     </div>
-
-    <div class="machine-result-box">
-        <div class="machine-result-title">計算結果</div>
-        <div class="machine-result-grid">
-            <div class="machine-result-item">
-                <div class="machine-result-label">預計結束時間</div>
-                <div class="machine-result-value" id="machineFinishResult">—</div>
-            </div>
-            <div class="machine-result-item">
-                <div class="machine-result-label">可完成連板數</div>
-                <div class="machine-result-value" id="machineBoardResult">—</div>
-            </div>
-            <div class="machine-result-item">
-                <div class="machine-result-label">總打件時間</div>
-                <div class="machine-result-value" id="machineDurationResult">—</div>
-            </div>
-            <div class="machine-result-item">
-                <div class="machine-result-label">剩餘不足一連板時間</div>
-                <div class="machine-result-value" id="machineRemainResult">—</div>
-            </div>
-        </div>
-
-        <div class="machine-warning" id="machineWarningBox"></div>
-        <div class="machine-error" id="machineErrorBox"></div>
-        <div class="machine-small-note">
-            反推連板數時會向下取整數，因為不足一整個連板不列入完成數。結束時間早於或等於開始時間時，系統會視為跨日。
-        </div>
     </div>
 </div>
 
