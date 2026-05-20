@@ -382,7 +382,7 @@
 
         <div class="machine-field machine-work-field">
             <label for="machineWorkSecond">工時</label>
-            <input id="machineWorkSecond" type="text" inputmode="numeric" placeholder="秒" autocomplete="off">
+            <input id="machineWorkSecond" type="text" inputmode="decimal" placeholder="秒" autocomplete="off">
         </div>
 
         <div class="machine-field machine-end-field">
@@ -392,7 +392,7 @@
 
         <div class="machine-field machine-board-field">
             <label for="machineBoardCount">連板數</label>
-            <input id="machineBoardCount" type="text" inputmode="numeric" placeholder="連板數" autocomplete="off">
+            <input id="machineBoardCount" type="text" inputmode="decimal" placeholder="連板數" autocomplete="off">
         </div>
 
         <div class="machine-field machine-duration-field">
@@ -1026,17 +1026,35 @@
         return checked ? checked.value : 'byBoards';
     }
 
-    function getPositiveMachineInteger(el) {
-        const value = Number(cleanMachineDigits(el.value));
-        return Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
+    function cleanMachineDecimal(value) {
+        let raw = String(value || '').replace(/[^0-9.]/g, '');
+        const parts = raw.split('.');
+        let cleaned = parts.shift() || '';
+
+        if (parts.length > 0) {
+            cleaned += '.' + parts.join('');
+        }
+
+        if (cleaned.startsWith('.')) cleaned = '0' + cleaned;
+        return cleaned;
     }
 
-    function normalizeMachineIntegerInput(el) {
-        el.value = cleanMachineDigits(el.value);
+    function normalizeMachineDecimalInput(el) {
+        el.value = cleanMachineDecimal(el.value);
+    }
+
+    function getPositiveMachineNumber(el) {
+        const value = Number(el.value);
+        return Number.isFinite(value) && value > 0 ? value : 0;
+    }
+
+    function formatMachineNumber(value) {
+        if (!Number.isFinite(value)) return '';
+        return String(Number(value.toFixed(4)));
     }
 
     function getMachineWorkSeconds() {
-        return getPositiveMachineInteger(machineEls.workSecond);
+        return getPositiveMachineNumber(machineEls.workSecond);
     }
 
     function formatMachineDuration(totalSeconds) {
@@ -1100,8 +1118,8 @@
 
             machineEls.startTime.value = data.startTime || '';
             machineEls.endTime.value = data.endTime || '';
-            machineEls.workSecond.value = cleanMachineDigits(data.workSecond || '');
-            machineEls.boardCount.value = cleanMachineDigits(data.boardCount || '');
+            machineEls.workSecond.value = cleanMachineDecimal(data.workSecond || '');
+            machineEls.boardCount.value = cleanMachineDecimal(data.boardCount || '');
 
             if (machineEls.startTime.value) normalizeMachineTimeInput(machineEls.startTime);
             if (machineEls.endTime.value) normalizeMachineTimeInput(machineEls.endTime);
@@ -1135,7 +1153,7 @@
         }
 
         if (mode === 'byBoards') {
-            boardCount = getPositiveMachineInteger(machineEls.boardCount);
+            boardCount = getPositiveMachineNumber(machineEls.boardCount);
 
             if (boardCount <= 0) {
                 machineEls.totalDuration.value = '';
@@ -1156,9 +1174,9 @@
             if (availableMinutes <= 0) availableMinutes += 24 * 60;
 
             const availableSeconds = availableMinutes * 60;
-            boardCount = Math.floor(availableSeconds / workSeconds);
-            totalSeconds = boardCount * workSeconds;
-            machineEls.boardCount.value = String(boardCount);
+            boardCount = availableSeconds / workSeconds;
+            totalSeconds = availableSeconds;
+            machineEls.boardCount.value = formatMachineNumber(boardCount);
         }
 
         machineEls.totalDuration.value = formatMachineDuration(totalSeconds);
@@ -1226,7 +1244,7 @@
         [machineEls.workSecond, machineEls.boardCount].forEach(el => {
             el.addEventListener('input', () => {
                 if (el.readOnly) return;
-                normalizeMachineIntegerInput(el);
+                normalizeMachineDecimalInput(el);
                 calculateMachineTime();
             });
             el.addEventListener('change', calculateMachineTime);
