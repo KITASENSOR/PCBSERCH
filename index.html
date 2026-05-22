@@ -330,111 +330,93 @@
             .machine-result-value { font-size: 20px; }
         }
 
-        /* Force the whole app to use the mobile layout at every viewport width. */
-        @media screen {
-            body {
-                margin: 8px;
-                font-size: 14px;
-            }
-            .container {
-                max-width: 410px;
-                padding: 12px;
-            }
-            .header-row { flex-direction: column; align-items: stretch; gap: 7px; margin-bottom: 10px; }
-            .header-row h2 {
-                margin-bottom: 0;
-                font-size: 20px;
-                padding-left: 10px;
-            }
-            .header-buttons {
-                display: grid;
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: 6px;
-                width: 100%;
-            }
-            .header-buttons .switch-btn { width: 100%; margin-bottom: 0 !important; padding: 8px 6px; }
-            .btn-group { flex-direction: row; gap: 8px; }
-            .btn-group button { flex: 1 1 0; min-width: 0; }
-            button {
-                width: 100%;
-                padding: 10px 8px;
-                font-size: 14px;
-            }
-
-            .mobile-only { display: initial !important; }
-            .desktop-only { display: none !important; }
-
-            table, thead, tbody, th, td, tr { display: block; width: 100%; box-sizing: border-box; }
-            thead { display: none; }
-            tr { margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; background-color: #fff; }
-            td { border: none; padding: 10px; }
-            .prefix-td { border-bottom: 1px dashed #e0e0e0; padding-bottom: 8px; margin-bottom: 5px; }
-
-            .child-item { font-size: 13px; padding: 4px 6px; }
-            .bom-sticky-header .match-info { max-height: 28vh; line-height: 2.2; }
-
-            .discharge-list-container {
-                display: grid !important;
-                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
-                gap: 8px;
-            }
-            .discharge-list-col { min-height: 40px; min-width: 0; }
-            .discharge-mini-tag { max-width: 100%; }
-
-            .machine-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: 6px;
-            }
-            .machine-mode-tabs {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: 6px;
-                margin: 8px 0;
-            }
-            .machine-mode-tab {
-                padding: 8px 6px;
-                min-height: 38px;
-                font-size: 13px;
-            }
-            .machine-field {
-                min-height: 76px;
-                padding: 8px;
-            }
-            .machine-field label {
-                margin-bottom: 6px;
-                font-size: 13px;
-            }
-            .machine-field .machine-field-note { display: none; }
-            .machine-field input {
-                font-size: 16px;
-                padding: 8px 6px;
-            }
-            .machine-results {
-                grid-template-columns: repeat(3, minmax(0, 1fr));
-                gap: 6px;
-                margin-top: 8px;
-            }
-            .machine-result-card {
-                min-height: 58px;
-                padding: 8px 6px;
-            }
-            .machine-result-label {
-                font-size: 11px;
-                margin-bottom: 4px;
-                line-height: 1.2;
-            }
-            .machine-result-value {
-                font-size: 17px;
-                line-height: 1.2;
-            }
-            #viewMACHINE_TIME .btn-group {
-                margin-top: 8px;
-            }
-            #viewMACHINE_TIME .machine-warning,
-            #viewMACHINE_TIME .machine-error {
-                margin-top: 8px;
-                padding: 8px;
-                line-height: 1.4;
-            }
+        /* Compact layout only for the machine time calculator. */
+        #viewMACHINE_TIME {
+            max-width: 410px;
+            padding: 12px;
+        }
+        #viewMACHINE_TIME .header-row {
+            gap: 7px;
+            margin-bottom: 10px;
+        }
+        #viewMACHINE_TIME h2 {
+            margin-bottom: 0;
+            font-size: 20px;
+            padding-left: 10px;
+        }
+        #viewMACHINE_TIME .header-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 6px;
+            width: 100%;
+        }
+        #viewMACHINE_TIME .header-buttons .switch-btn {
+            width: 100%;
+            margin-bottom: 0 !important;
+            padding: 8px 6px;
+        }
+        #viewMACHINE_TIME .machine-mode-tabs {
+            gap: 6px;
+            margin: 8px 0;
+        }
+        #viewMACHINE_TIME .machine-mode-tab {
+            padding: 8px 6px;
+            min-height: 38px;
+            font-size: 13px;
+        }
+        #viewMACHINE_TIME .machine-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 6px;
+        }
+        #viewMACHINE_TIME .machine-field {
+            min-height: 76px;
+            padding: 8px;
+        }
+        #viewMACHINE_TIME .machine-field label {
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+        #viewMACHINE_TIME .machine-field .machine-field-note {
+            display: none;
+        }
+        #viewMACHINE_TIME .machine-field input {
+            font-size: 16px;
+            padding: 8px 6px;
+        }
+        #viewMACHINE_TIME .machine-results {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
+            margin-top: 8px;
+        }
+        #viewMACHINE_TIME .machine-result-card {
+            min-height: 58px;
+            padding: 8px 6px;
+        }
+        #viewMACHINE_TIME .machine-result-label {
+            font-size: 11px;
+            margin-bottom: 4px;
+            line-height: 1.2;
+        }
+        #viewMACHINE_TIME .machine-result-value {
+            font-size: 17px;
+            line-height: 1.2;
+        }
+        #viewMACHINE_TIME .btn-group {
+            flex-direction: row;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        #viewMACHINE_TIME .btn-group button {
+            flex: 1 1 0;
+            min-width: 0;
+            padding: 10px 8px;
+            font-size: 14px;
+        }
+        #viewMACHINE_TIME .machine-warning,
+        #viewMACHINE_TIME .machine-error {
+            margin-top: 8px;
+            padding: 8px;
+            line-height: 1.4;
         }
     </style>
 </head>
