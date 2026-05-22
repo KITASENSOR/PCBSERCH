@@ -220,6 +220,10 @@
             max-height: 35vh;
             overflow-y: auto;
         }
+        .bom-sticky-header .bom-action-row {
+            margin-top: 0;
+            margin-bottom: 8px;
+        }
 
         .discharge-list-container {
             display: grid;
@@ -478,14 +482,13 @@
     <textarea id="inputSearch" placeholder="例如輸入 PC-0427-4X 或 42242"></textarea>
     <div class="hint">* 自動比對 PC-00XX-XX 格式，完整輸入或局部輸入皆可精準搜尋。</div>
 
-    <div class="btn-group bom-action-row">
-        <button id="btnSearch" onclick="runFuzzyQuery()" disabled>搜尋</button>
-        <button class="clear-btn" onclick="clearBOMSearch()">清除</button>
-        <button class="filter-btn filter-state-neutral" id="btnOnlyCommon" onclick="toggleCommonFilter()" style="display:none;">共用料</button>
-        <button class="filter-btn fixed-btn filter-state-neutral" id="btnFixedFilter" onclick="toggleFixedFilter()" style="display:none;">固定料</button>
-    </div>
-
     <div id="bomStickyHeader" class="bom-sticky-header">
+        <div class="btn-group bom-action-row">
+            <button id="btnSearch" onclick="runFuzzyQuery()" disabled>搜尋</button>
+            <button class="clear-btn" onclick="clearBOMSearch()">清除</button>
+            <button class="filter-btn filter-state-neutral" id="btnOnlyCommon" onclick="toggleCommonFilter()" style="display:none;">共用料</button>
+            <button class="filter-btn fixed-btn filter-state-neutral" id="btnFixedFilter" onclick="toggleFixedFilter()" style="display:none;">固定料</button>
+        </div>
         <div id="matchStatus" class="match-info">資料載入中...</div>
         <div id="itemCount" class="count-info"></div>
     </div>
