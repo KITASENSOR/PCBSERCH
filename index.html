@@ -159,12 +159,19 @@
         .clear-btn:hover { background: #5a6268; }
         .fixed-btn { background: #8e44ad; }
         .fixed-btn:hover { background: #732d91; }
-        .bom-action-row {
+        .bom-action-row,
+        .discharge-action-row {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 6px;
         }
-        .bom-action-row button {
+        .bom-action-row {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+        .discharge-action-row {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        .bom-action-row button,
+        .discharge-action-row button {
             width: 100%;
             min-width: 0;
             padding: 10px 6px;
@@ -306,7 +313,9 @@
             .header-buttons .switch-btn { width: 100%; margin-bottom: 0 !important; padding: 10px; }
             .btn-group { flex-direction: column; gap: 8px; }
             .bom-action-row { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-            .bom-action-row button { padding: 9px 4px; font-size: 12px; }
+            .discharge-action-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+            .bom-action-row button,
+            .discharge-action-row button { padding: 9px 4px; font-size: 12px; }
             button { width: 100%; padding: 12px 20px; }
             
             .desktop-only { display: none !important; }
@@ -489,10 +498,10 @@
     <textarea id="inputDischarge" placeholder="例如輸入 PC-0427-4X 或 42242"></textarea>
     <div class="hint">* 點擊「進行中」母件可標記為「已完成」/ 點擊「已完成」母件可移回 / 右側 × 可移除</div>
 
-    <div class="btn-group">
-        <button id="btnDischarge" onclick="runDischargeQuery()" disabled>搜尋全部</button>
-        <button class="clear-btn" onclick="clearDischarge()">清除查詢</button>
-        <button class="filter-btn fixed-btn" id="btnDischargeFixedFilter" onclick="toggleDischargeFixedFilter()" style="display:none;">固定料:顯示全部</button>
+    <div class="btn-group discharge-action-row">
+        <button id="btnDischarge" onclick="runDischargeQuery()" disabled>搜尋</button>
+        <button class="clear-btn" onclick="clearDischarge()">清除</button>
+        <button class="filter-btn fixed-btn filter-state-neutral" id="btnDischargeFixedFilter" onclick="toggleDischargeFixedFilter()" style="display:none;">固定料</button>
     </div>
 
     <div id="dischargeStickyHeader" class="bom-sticky-header" style="display:none;">
@@ -977,9 +986,10 @@
 
         btn.style.display = dischargeGroups.length > 0 ? 'inline-block' : 'none';
 
-        if (dischargeFixedFilterMode === 0) btn.innerText = "固定料:顯示全部";
-        else if (dischargeFixedFilterMode === 1) btn.innerText = "固定料:僅顯示";
-        else btn.innerText = "固定料:排除";
+        btn.innerText = "固定料";
+        if (dischargeFixedFilterMode === 0) setFilterButtonState(btn, 'neutral');
+        else if (dischargeFixedFilterMode === 1) setFilterButtonState(btn, 'active');
+        else setFilterButtonState(btn, 'excluded');
     }
 
     function updateDischargeUI() {
