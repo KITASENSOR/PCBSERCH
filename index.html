@@ -332,17 +332,34 @@
 
         /* Force the whole app to use the mobile layout at every viewport width. */
         @media screen {
-            body { margin: 10px; }
-            .container {
-                max-width: 430px;
-                padding: 15px;
+            body {
+                margin: 8px;
+                font-size: 14px;
             }
-            .header-row { flex-direction: column; align-items: stretch; gap: 10px; }
-            .header-row h2 { margin-bottom: 5px; }
-            .header-buttons { display: flex; flex-direction: column; gap: 6px; width: 100%; }
-            .header-buttons .switch-btn { width: 100%; margin-bottom: 0 !important; padding: 10px; }
-            .btn-group { flex-direction: column; gap: 8px; }
-            button { width: 100%; padding: 12px 20px; }
+            .container {
+                max-width: 410px;
+                padding: 12px;
+            }
+            .header-row { flex-direction: column; align-items: stretch; gap: 7px; margin-bottom: 10px; }
+            .header-row h2 {
+                margin-bottom: 0;
+                font-size: 20px;
+                padding-left: 10px;
+            }
+            .header-buttons {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 6px;
+                width: 100%;
+            }
+            .header-buttons .switch-btn { width: 100%; margin-bottom: 0 !important; padding: 8px 6px; }
+            .btn-group { flex-direction: row; gap: 8px; }
+            .btn-group button { flex: 1 1 0; min-width: 0; }
+            button {
+                width: 100%;
+                padding: 10px 8px;
+                font-size: 14px;
+            }
 
             .mobile-only { display: initial !important; }
             .desktop-only { display: none !important; }
@@ -366,30 +383,58 @@
 
             .machine-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: 8px;
+                gap: 6px;
             }
             .machine-mode-tabs {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: 8px;
+                gap: 6px;
+                margin: 8px 0;
             }
             .machine-mode-tab {
-                padding: 10px 8px;
-                min-height: 44px;
+                padding: 8px 6px;
+                min-height: 38px;
+                font-size: 13px;
             }
             .machine-field {
-                min-height: 104px;
-                padding: 10px;
+                min-height: 76px;
+                padding: 8px;
             }
-            .machine-field input { font-size: 16px; }
+            .machine-field label {
+                margin-bottom: 6px;
+                font-size: 13px;
+            }
+            .machine-field .machine-field-note { display: none; }
+            .machine-field input {
+                font-size: 16px;
+                padding: 8px 6px;
+            }
             .machine-results {
-                grid-template-columns: 1fr;
-                gap: 8px;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 6px;
+                margin-top: 8px;
             }
             .machine-result-card {
-                min-height: 72px;
-                padding: 12px;
+                min-height: 58px;
+                padding: 8px 6px;
             }
-            .machine-result-value { font-size: 20px; }
+            .machine-result-label {
+                font-size: 11px;
+                margin-bottom: 4px;
+                line-height: 1.2;
+            }
+            .machine-result-value {
+                font-size: 17px;
+                line-height: 1.2;
+            }
+            #viewMACHINE_TIME .btn-group {
+                margin-top: 8px;
+            }
+            #viewMACHINE_TIME .machine-warning,
+            #viewMACHINE_TIME .machine-error {
+                margin-top: 8px;
+                padding: 8px;
+                line-height: 1.4;
+            }
         }
     </style>
 </head>
