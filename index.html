@@ -10,6 +10,8 @@
         
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         h2 { color: #333; border-left: 5px solid #28a745; padding-left: 15px; margin-bottom: 0; }
+        .header-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: min(100%, 360px); }
+        .header-buttons .switch-btn { width: 100%; min-width: 0; }
         .switch-btn { background: #17a2b8; padding: 8px 15px; font-size: 14px; border-radius: 5px; color: white; border: none; cursor: pointer; }
         .switch-btn:hover { background: #138496; }
 
@@ -141,10 +143,33 @@
         
         .filter-btn { background: #f39c12; }
         .filter-btn:hover { background: #e67e22; }
+        .filter-state-neutral {
+            background: #e9ecef !important;
+            color: #495057 !important;
+            border: 1px solid #d0d7de;
+        }
+        .filter-state-excluded {
+            background:
+                linear-gradient(135deg, transparent calc(50% - 1px), #dc3545 calc(50% - 1px), #dc3545 calc(50% + 1px), transparent calc(50% + 1px)),
+                #e9ecef !important;
+            color: #495057 !important;
+            border: 1px solid #d0d7de;
+        }
         .clear-btn { background: #6c757d; }
         .clear-btn:hover { background: #5a6268; }
         .fixed-btn { background: #8e44ad; }
         .fixed-btn:hover { background: #732d91; }
+        .bom-action-row {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 6px;
+        }
+        .bom-action-row button {
+            width: 100%;
+            min-width: 0;
+            padding: 10px 6px;
+            font-size: 13px;
+        }
         
         .fixed-item,
         .child-item.fixed-item,
@@ -277,9 +302,11 @@
             .container { padding: 15px; }
             .header-row { flex-direction: column; align-items: stretch; gap: 10px; }
             .header-row h2 { margin-bottom: 5px; }
-            .header-buttons { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+            .header-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; width: 100%; }
             .header-buttons .switch-btn { width: 100%; margin-bottom: 0 !important; padding: 10px; }
             .btn-group { flex-direction: column; gap: 8px; }
+            .bom-action-row { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+            .bom-action-row button { padding: 9px 4px; font-size: 12px; }
             button { width: 100%; padding: 12px 20px; }
             
             .desktop-only { display: none !important; }
@@ -427,7 +454,7 @@
         document.write(`
             <div class="header-row">
                 <h2>${currentViewTitle}</h2>
-                <div class="header-buttons" style="text-align: right;">
+                <div class="header-buttons">
                     ${viewId !== 'BOM' ? `<button class="switch-btn" onclick="toggleView('BOM')">BOM 查詢</button>` : ''}
                     ${viewId !== 'DISCHARGE' ? `<button class="switch-btn switch-discharge-btn" onclick="toggleView('DISCHARGE')">下料系統 📦</button>` : ''}
                     ${viewId !== 'MACHINE_TIME' ? `<button class="switch-btn machine-time-btn" onclick="toggleView('MACHINE_TIME')">機台時間試算 ⏱</button>` : ''}
@@ -439,15 +466,14 @@
 
 <div class="container" id="viewBOM">
     <script>renderHeader('BOM 查詢', 'BOM');</script>
-    <p>輸入母件編號:</p>
     <textarea id="inputSearch" placeholder="例如輸入 PC-0427-4X 或 42242"></textarea>
     <div class="hint">* 自動比對 PC-00XX-XX 格式，完整輸入或局部輸入皆可精準搜尋。</div>
 
-    <div class="btn-group">
-        <button id="btnSearch" onclick="runFuzzyQuery()" disabled>搜尋全部</button>
-        <button class="clear-btn" onclick="clearBOMSearch()">清除查詢</button>
-        <button class="filter-btn" id="btnOnlyCommon" onclick="toggleCommonFilter()" style="display:none;">僅顯示共用料</button>
-        <button class="filter-btn fixed-btn" id="btnFixedFilter" onclick="toggleFixedFilter()" style="display:none;">固定料:顯示全部</button>
+    <div class="btn-group bom-action-row">
+        <button id="btnSearch" onclick="runFuzzyQuery()" disabled>搜尋</button>
+        <button class="clear-btn" onclick="clearBOMSearch()">清除</button>
+        <button class="filter-btn filter-state-neutral" id="btnOnlyCommon" onclick="toggleCommonFilter()" style="display:none;">共用料</button>
+        <button class="filter-btn fixed-btn filter-state-neutral" id="btnFixedFilter" onclick="toggleFixedFilter()" style="display:none;">固定料</button>
     </div>
 
     <div id="bomStickyHeader" class="bom-sticky-header">
@@ -642,6 +668,8 @@
         fixedFilterMode = 0;
         document.getElementById('btnOnlyCommon').style.display = 'none';
         document.getElementById('btnFixedFilter').style.display = 'none';
+        setFilterButtonState(document.getElementById('btnOnlyCommon'), 'neutral');
+        setFilterButtonState(document.getElementById('btnFixedFilter'), 'neutral');
     }
 
     function checkSmartMatch(fullID, queryStr) {
@@ -757,19 +785,29 @@
         updateUI();
     }
 
+    function setFilterButtonState(btn, state) {
+        if (!btn) return;
+        btn.classList.remove('filter-state-neutral', 'filter-state-excluded');
+        if (state !== 'active') {
+            btn.classList.add(`filter-state-${state}`);
+        }
+    }
+
     function updateUI() {
         document.getElementById('btnOnlyCommon').style.display = currentGroups.length > 1 ? 'inline-block' : 'none';
         document.getElementById('btnFixedFilter').style.display = currentGroups.length > 0 ? 'inline-block' : 'none';
 
         const btnC = document.getElementById('btnOnlyCommon');
-        if (filterMode === 0) btnC.innerText = "僅顯示共用料";
-        else if (filterMode === 1) btnC.innerText = "排除共用料";
-        else btnC.innerText = "顯示全部料件";
+        btnC.innerText = "共用料";
+        if (filterMode === 0) setFilterButtonState(btnC, 'neutral');
+        else if (filterMode === 1) setFilterButtonState(btnC, 'active');
+        else setFilterButtonState(btnC, 'excluded');
 
         const btnF = document.getElementById('btnFixedFilter');
-        if (fixedFilterMode === 0) btnF.innerText = "固定料:顯示全部";
-        else if (fixedFilterMode === 1) btnF.innerText = "固定料:僅顯示";
-        else btnF.innerText = "固定料:排除";
+        btnF.innerText = "固定料";
+        if (fixedFilterMode === 0) setFilterButtonState(btnF, 'neutral');
+        else if (fixedFilterMode === 1) setFilterButtonState(btnF, 'active');
+        else setFilterButtonState(btnF, 'excluded');
 
         renderView(currentGroups);
     }
@@ -786,7 +824,7 @@
             return;
         }
 
-        let statusHtml = "母件:";
+        let statusHtml = "";
         currentGroups.forEach(g => {
             const isSelected = displayGroups.length === 1 && displayGroups[0] === g;
             statusHtml += `<span class="parent-tag" style="background-color: ${g.color}; border: ${isSelected ? '2px solid #333' : '1px solid #ccc'}" onclick="filterGroup('${g.id}')">${g.displayName}<span class="del-btn" onclick="removeGroup('${g.id}', event)">×</span></span>`;
