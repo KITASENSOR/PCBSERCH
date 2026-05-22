@@ -39,6 +39,7 @@
             font-weight: bold;
             min-height: 48px;
             box-sizing: border-box;
+            text-align: center;
         }
         .machine-mode-tab input { margin-right: 6px; }
         .machine-mode-tab.active {
@@ -49,45 +50,64 @@
         }
         .machine-grid {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            grid-template-areas:
-                "start work"
-                "end board"
-                "duration duration";
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 14px;
         }
         .machine-field {
             border: 1px solid #eee;
-            border-radius: 10px;
+            border-radius: 8px;
             padding: 14px;
             background: #fff;
-            min-height: 118px;
+            min-height: 112px;
             display: flex;
             flex-direction: column;
             justify-content: center;
             box-sizing: border-box;
-        }
-        .machine-start-field { grid-area: start; }
-        .machine-work-field { grid-area: work; }
-        .machine-end-field { grid-area: end; }
-        .machine-board-field { grid-area: board; }
-        .machine-duration-field {
-            grid-area: duration;
-            min-height: 94px;
         }
         .machine-field label {
             display: block;
             font-weight: bold;
             margin-bottom: 10px;
         }
+        .machine-field .machine-field-note {
+            color: #777;
+            font-size: 12px;
+            margin-top: 8px;
+            line-height: 1.4;
+        }
         .machine-field input {
             width: 100%;
             font-size: 18px;
             text-align: center;
         }
-        .machine-field input[readonly] {
-            background: #f8f9fa;
-            color: #555;
+        .machine-scenario-panel {
+            margin-top: 14px;
+        }
+        .machine-results {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 14px;
+        }
+        .machine-result-card {
+            border: 1px solid #dfe8e4;
+            border-radius: 8px;
+            background: #f8fbf9;
+            padding: 14px;
+            min-height: 88px;
+            box-sizing: border-box;
+        }
+        .machine-result-label {
+            color: #60706a;
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .machine-result-value {
+            color: #1f3b2f;
+            font-size: 22px;
+            font-weight: bold;
+            line-height: 1.25;
         }
         .machine-warning {
             margin-top: 12px;
@@ -298,8 +318,78 @@
                 min-height: 104px;
                 padding: 10px;
             }
-            .machine-duration-field { min-height: 86px; }
             .machine-field input { font-size: 16px; }
+            .machine-results {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            .machine-result-card {
+                min-height: 72px;
+                padding: 12px;
+            }
+            .machine-result-value { font-size: 20px; }
+        }
+
+        /* Force the whole app to use the mobile layout at every viewport width. */
+        @media screen {
+            body { margin: 10px; }
+            .container {
+                max-width: 430px;
+                padding: 15px;
+            }
+            .header-row { flex-direction: column; align-items: stretch; gap: 10px; }
+            .header-row h2 { margin-bottom: 5px; }
+            .header-buttons { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+            .header-buttons .switch-btn { width: 100%; margin-bottom: 0 !important; padding: 10px; }
+            .btn-group { flex-direction: column; gap: 8px; }
+            button { width: 100%; padding: 12px 20px; }
+
+            .mobile-only { display: initial !important; }
+            .desktop-only { display: none !important; }
+
+            table, thead, tbody, th, td, tr { display: block; width: 100%; box-sizing: border-box; }
+            thead { display: none; }
+            tr { margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; background-color: #fff; }
+            td { border: none; padding: 10px; }
+            .prefix-td { border-bottom: 1px dashed #e0e0e0; padding-bottom: 8px; margin-bottom: 5px; }
+
+            .child-item { font-size: 13px; padding: 4px 6px; }
+            .bom-sticky-header .match-info { max-height: 28vh; line-height: 2.2; }
+
+            .discharge-list-container {
+                display: grid !important;
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+                gap: 8px;
+            }
+            .discharge-list-col { min-height: 40px; min-width: 0; }
+            .discharge-mini-tag { max-width: 100%; }
+
+            .machine-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 8px;
+            }
+            .machine-mode-tabs {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 8px;
+            }
+            .machine-mode-tab {
+                padding: 10px 8px;
+                min-height: 44px;
+            }
+            .machine-field {
+                min-height: 104px;
+                padding: 10px;
+            }
+            .machine-field input { font-size: 16px; }
+            .machine-results {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            .machine-result-card {
+                min-height: 72px;
+                padding: 12px;
+            }
+            .machine-result-value { font-size: 20px; }
         }
     </style>
 </head>
@@ -365,45 +455,64 @@
     <div class="machine-mode-tabs">
         <label class="machine-mode-tab active" id="machineTabByBoards">
             <input type="radio" name="machineCalcMode" value="byBoards" checked>
-            算時間
+            剩餘時間算數量
         </label>
 
         <label class="machine-mode-tab" id="machineTabByEnd">
             <input type="radio" name="machineCalcMode" value="byEnd">
-            算數量
+            目標數量算時間
         </label>
     </div>
 
     <div class="machine-grid">
-        <div class="machine-field machine-start-field">
-            <label for="machineStartTime">開始時間</label>
+        <div class="machine-field">
+            <label for="machineDoneCount">已打數量</label>
+            <input id="machineDoneCount" type="text" inputmode="decimal" placeholder="已完成數" autocomplete="off">
+            <div class="machine-field-note">機台目前已完成的數量</div>
+        </div>
+
+        <div class="machine-field">
+            <label for="machineWorkSecond">單件工時</label>
+            <input id="machineWorkSecond" type="text" inputmode="decimal" placeholder="秒 / 件" autocomplete="off">
+            <div class="machine-field-note">每打一件需要幾秒</div>
+        </div>
+
+        <div class="machine-field">
+            <label for="machineStartTime">目前時間</label>
             <input id="machineStartTime" type="text" inputmode="numeric" maxlength="5" placeholder="08:30" autocomplete="off">
+            <div class="machine-field-note">用來推算剩餘時間或完成時間</div>
         </div>
 
-        <div class="machine-field machine-work-field">
-            <label for="machineWorkSecond">工時</label>
-            <input id="machineWorkSecond" type="text" inputmode="decimal" placeholder="秒" autocomplete="off">
-        </div>
-
-        <div class="machine-field machine-end-field">
-            <label for="machineEndTime">結束時間</label>
+        <div class="machine-field machine-scenario-field" data-machine-mode="byBoards">
+            <label for="machineEndTime">可生產到幾點</label>
             <input id="machineEndTime" type="text" inputmode="numeric" maxlength="5" placeholder="17:05" autocomplete="off">
+            <div class="machine-field-note">用剩餘時間計算還能打多少</div>
         </div>
 
-        <div class="machine-field machine-board-field">
-            <label for="machineBoardCount">連板數</label>
-            <input id="machineBoardCount" type="text" inputmode="decimal" placeholder="連板數" autocomplete="off">
+        <div class="machine-field machine-scenario-field" data-machine-mode="byEnd" style="display:none;">
+            <label for="machineTargetCount">目標數量</label>
+            <input id="machineTargetCount" type="text" inputmode="decimal" placeholder="目標總數" autocomplete="off">
+            <div class="machine-field-note">用目標數量計算還要多久</div>
         </div>
+    </div>
 
-        <div class="machine-field machine-duration-field">
-            <label for="machineTotalDuration">打件時間</label>
-            <input id="machineTotalDuration" type="text" readonly placeholder="自動計算">
+    <div class="machine-results">
+        <div class="machine-result-card">
+            <div class="machine-result-label" id="machineResultLabelA">還能打數量</div>
+            <div class="machine-result-value" id="machineResultA">--</div>
+        </div>
+        <div class="machine-result-card">
+            <div class="machine-result-label" id="machineResultLabelB">預估總完成</div>
+            <div class="machine-result-value" id="machineResultB">--</div>
+        </div>
+        <div class="machine-result-card">
+            <div class="machine-result-label" id="machineResultLabelC">剩餘時間</div>
+            <div class="machine-result-value" id="machineResultC">--</div>
         </div>
     </div>
 
     <div class="btn-group">
         <button type="button" onclick="setMachineNow()">帶入現在時間</button>
-        <button type="button" class="switch-btn" onclick="copyMachineResult()">複製結果</button>
         <button type="button" class="clear-btn" onclick="clearMachineTime()">清除</button>
     </div>
 
@@ -928,11 +1037,17 @@
     }
 
     const machineEls = {
+        doneCount: document.getElementById('machineDoneCount'),
         startTime: document.getElementById('machineStartTime'),
         endTime: document.getElementById('machineEndTime'),
         workSecond: document.getElementById('machineWorkSecond'),
-        boardCount: document.getElementById('machineBoardCount'),
-        totalDuration: document.getElementById('machineTotalDuration'),
+        targetCount: document.getElementById('machineTargetCount'),
+        resultLabelA: document.getElementById('machineResultLabelA'),
+        resultLabelB: document.getElementById('machineResultLabelB'),
+        resultLabelC: document.getElementById('machineResultLabelC'),
+        resultA: document.getElementById('machineResultA'),
+        resultB: document.getElementById('machineResultB'),
+        resultC: document.getElementById('machineResultC'),
         warningBox: document.getElementById('machineWarningBox'),
         errorBox: document.getElementById('machineErrorBox'),
         tabByBoards: document.getElementById('machineTabByBoards'),
@@ -1048,6 +1163,11 @@
         return Number.isFinite(value) && value > 0 ? value : 0;
     }
 
+    function getNonNegativeMachineNumber(el) {
+        const value = Number(el.value);
+        return Number.isFinite(value) && value >= 0 ? value : 0;
+    }
+
     function formatMachineNumber(value) {
         if (!Number.isFinite(value)) return '';
         return String(Number(value.toFixed(4)));
@@ -1087,20 +1207,29 @@
         machineEls.tabByBoards.classList.toggle('active', mode === 'byBoards');
         machineEls.tabByEnd.classList.toggle('active', mode === 'byEnd');
 
-        machineEls.endTime.readOnly = mode === 'byBoards';
-        machineEls.boardCount.readOnly = mode === 'byEnd';
+        document.querySelectorAll('.machine-scenario-field').forEach(field => {
+            field.style.display = field.dataset.machineMode === mode ? 'flex' : 'none';
+        });
 
-        machineEls.endTime.placeholder = mode === 'byBoards' ? '自動計算' : '17:05';
-        machineEls.boardCount.placeholder = mode === 'byEnd' ? '自動計算' : '連板數';
+        if (mode === 'byBoards') {
+            machineEls.resultLabelA.textContent = '還能打數量';
+            machineEls.resultLabelB.textContent = '預估總完成';
+            machineEls.resultLabelC.textContent = '剩餘時間';
+        } else {
+            machineEls.resultLabelA.textContent = '剩餘數量';
+            machineEls.resultLabelB.textContent = '還需要時間';
+            machineEls.resultLabelC.textContent = '預估完成時間';
+        }
     }
 
     function saveMachineTimeState() {
         const data = {
             mode: getMachineMode(),
+            doneCount: machineEls.doneCount.value,
             startTime: machineEls.startTime.value,
             endTime: machineEls.endTime.value,
             workSecond: machineEls.workSecond.value,
-            boardCount: machineEls.boardCount.value
+            targetCount: machineEls.targetCount.value
         };
         localStorage.setItem(storageKeys.machineTime, JSON.stringify(data));
     }
@@ -1116,10 +1245,11 @@
                 if (radio) radio.checked = true;
             }
 
+            machineEls.doneCount.value = cleanMachineDecimal(data.doneCount || '');
             machineEls.startTime.value = data.startTime || '';
             machineEls.endTime.value = data.endTime || '';
             machineEls.workSecond.value = cleanMachineDecimal(data.workSecond || '');
-            machineEls.boardCount.value = cleanMachineDecimal(data.boardCount || '');
+            machineEls.targetCount.value = cleanMachineDecimal(data.targetCount || data.boardCount || '');
 
             if (machineEls.startTime.value) normalizeMachineTimeInput(machineEls.startTime);
             if (machineEls.endTime.value) normalizeMachineTimeInput(machineEls.endTime);
@@ -1131,7 +1261,9 @@
     }
 
     function clearMachineResults() {
-        machineEls.totalDuration.value = '';
+        machineEls.resultA.textContent = '--';
+        machineEls.resultB.textContent = '--';
+        machineEls.resultC.textContent = '--';
         setMachineNotice('', '');
         saveMachineTimeState();
     }
@@ -1143,9 +1275,7 @@
         const startMinutes = machineTimeToMinutes(machineEls.startTime.value);
         const endMinutesRaw = machineTimeToMinutes(machineEls.endTime.value);
         const workSeconds = getMachineWorkSeconds();
-
-        let boardCount = 0;
-        let totalSeconds = 0;
+        const doneCount = getNonNegativeMachineNumber(machineEls.doneCount);
 
         if (startMinutes === null || workSeconds <= 0) {
             clearMachineResults();
@@ -1153,33 +1283,39 @@
         }
 
         if (mode === 'byBoards') {
-            boardCount = getPositiveMachineNumber(machineEls.boardCount);
-
-            if (boardCount <= 0) {
-                machineEls.totalDuration.value = '';
-                saveMachineTimeState();
-                return;
-            }
-
-            totalSeconds = workSeconds * boardCount;
-            machineEls.endTime.value = machineSecondsToTime(startMinutes * 60 + totalSeconds);
-        } else {
             if (endMinutesRaw === null) {
-                machineEls.totalDuration.value = '';
+                clearMachineResults();
                 saveMachineTimeState();
                 return;
             }
 
             let availableMinutes = endMinutesRaw - startMinutes;
-            if (availableMinutes <= 0) availableMinutes += 24 * 60;
+            if (availableMinutes < 0) availableMinutes += 24 * 60;
 
             const availableSeconds = availableMinutes * 60;
-            boardCount = availableSeconds / workSeconds;
-            totalSeconds = availableSeconds;
-            machineEls.boardCount.value = formatMachineNumber(boardCount);
+            const possibleCount = Math.floor(availableSeconds / workSeconds);
+            const estimatedTotal = doneCount + possibleCount;
+
+            machineEls.resultA.textContent = formatMachineNumber(possibleCount);
+            machineEls.resultB.textContent = formatMachineNumber(estimatedTotal);
+            machineEls.resultC.textContent = formatMachineDuration(availableSeconds);
+        } else {
+            const targetCount = getPositiveMachineNumber(machineEls.targetCount);
+
+            if (targetCount <= 0) {
+                clearMachineResults();
+                saveMachineTimeState();
+                return;
+            }
+
+            const remainingCount = Math.max(0, targetCount - doneCount);
+            const neededSeconds = remainingCount * workSeconds;
+
+            machineEls.resultA.textContent = formatMachineNumber(remainingCount);
+            machineEls.resultB.textContent = formatMachineDuration(neededSeconds);
+            machineEls.resultC.textContent = machineSecondsToTime(startMinutes * 60 + neededSeconds);
         }
 
-        machineEls.totalDuration.value = formatMachineDuration(totalSeconds);
         setMachineNotice('', '');
         saveMachineTimeState();
     }
@@ -1192,33 +1328,51 @@
     function clearMachineTime() {
         localStorage.removeItem(storageKeys.machineTime);
         document.querySelector('input[name="machineCalcMode"][value="byBoards"]').checked = true;
+        machineEls.doneCount.value = '';
         machineEls.startTime.value = getCurrentMachineTimeValue();
         machineEls.endTime.value = '';
         machineEls.workSecond.value = '';
-        machineEls.boardCount.value = '';
-        machineEls.totalDuration.value = '';
+        machineEls.targetCount.value = '';
+        machineEls.resultA.textContent = '--';
+        machineEls.resultB.textContent = '--';
+        machineEls.resultC.textContent = '--';
         setMachineNotice('', '');
         calculateMachineTime();
     }
 
-    async function copyMachineResult() {
-        const mode = getMachineMode();
-        const lines = [
-            '機台時間試算',
-            `模式：${mode === 'byBoards' ? '算時間' : '算數量'}`,
-            `開始時間：${machineEls.startTime.value || '—'}`,
-            `工時：${machineEls.workSecond.value || '—'} 秒`,
-            `結束時間：${machineEls.endTime.value || '—'}`,
-            `連板數：${machineEls.boardCount.value || '—'}`,
-            `打件時間：${machineEls.totalDuration.value || '—'}`
-        ];
+    function bindMachineTimeInput(el) {
+        if (!el) return;
 
-        try {
-            await navigator.clipboard.writeText(lines.join('\n'));
-            setMachineNotice('warning', '已複製。');
-        } catch (e) {
-            setMachineNotice('error', '無法直接複製，請手動選取。');
-        }
+        const updateTyping = () => {
+            formatMachineTimeTyping(el);
+            calculateMachineTime();
+        };
+
+        const updateFinal = () => {
+            normalizeMachineTimeInput(el);
+            calculateMachineTime();
+        };
+
+        el.addEventListener('input', updateTyping);
+        el.addEventListener('keyup', updateTyping);
+        el.addEventListener('change', updateFinal);
+        el.addEventListener('blur', updateFinal);
+        el.addEventListener('compositionend', updateFinal);
+    }
+
+    function bindMachineDecimalInput(el) {
+        if (!el) return;
+
+        const update = () => {
+            normalizeMachineDecimalInput(el);
+            calculateMachineTime();
+        };
+
+        el.addEventListener('input', update);
+        el.addEventListener('keyup', update);
+        el.addEventListener('change', update);
+        el.addEventListener('blur', update);
+        el.addEventListener('compositionend', update);
     }
 
     function initMachineTimeCalculator() {
@@ -1228,30 +1382,12 @@
             machineEls.startTime.value = getCurrentMachineTimeValue();
         }
 
-        [machineEls.startTime, machineEls.endTime].forEach(el => {
-            el.addEventListener('input', () => {
-                if (el.readOnly) return;
-                formatMachineTimeTyping(el);
-                calculateMachineTime();
-            });
-            el.addEventListener('blur', () => {
-                if (el.readOnly) return;
-                normalizeMachineTimeInput(el);
-                calculateMachineTime();
-            });
-        });
-
-        [machineEls.workSecond, machineEls.boardCount].forEach(el => {
-            el.addEventListener('input', () => {
-                if (el.readOnly) return;
-                normalizeMachineDecimalInput(el);
-                calculateMachineTime();
-            });
-            el.addEventListener('change', calculateMachineTime);
-        });
+        [machineEls.startTime, machineEls.endTime].forEach(bindMachineTimeInput);
+        [machineEls.doneCount, machineEls.workSecond, machineEls.targetCount].forEach(bindMachineDecimalInput);
 
         document.querySelectorAll('input[name="machineCalcMode"]').forEach(el => {
             el.addEventListener('change', calculateMachineTime);
+            el.addEventListener('click', calculateMachineTime);
         });
 
         calculateMachineTime();
