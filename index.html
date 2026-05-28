@@ -304,7 +304,7 @@
             flex: 0 0 auto;
         }
 
-        .discharge-color-out { background-color: #e74c3c !important; color: white !important; border: 1px solid #c0392b !important; }
+        .discharge-color-out { background-color: #ffcccc !important; color: #d9534f !important; font-weight: bold; border: 1px solid #ffb3b3 !important; }
         
         @media screen and (min-width: 601px) { .mobile-only { display: none !important; } }
 
@@ -605,6 +605,7 @@
     
     let dischargeGroups = [];
     let dischargeFixedFilterMode = 0;
+    let dischargeDimmedParts = new Set();
 
     const naturalSort = (a, b) => a.localeCompare(b, undefined, { numeric: true });
 
@@ -925,6 +926,7 @@
 
         dischargeGroups = [];
         dischargeFixedFilterMode = 0;
+        dischargeDimmedParts.clear();
         updateDischargeUI();
     }
 
@@ -981,6 +983,16 @@
     function toggleDischargeFixedFilter() {
         dischargeFixedFilterMode = (dischargeFixedFilterMode + 1) % 3;
         updateDischargeUI();
+    }
+
+    function toggleDischargePartDimmed(partKey, el) {
+        if (dischargeDimmedParts.has(partKey)) {
+            dischargeDimmedParts.delete(partKey);
+        } else {
+            dischargeDimmedParts.add(partKey);
+        }
+
+        if (el) el.classList.toggle('dimmed', dischargeDimmedParts.has(partKey));
     }
 
     function updateDischargeFixedButton() {
@@ -1091,9 +1103,11 @@
                 dischargeCount++;
 
                 const fixedClass = isFixed ? " fixed-item" : "";
+                const partKey = `${pre}-${c}`;
+                const dimmedClass = dischargeDimmedParts.has(partKey) ? " dimmed" : "";
                 const tooltipText = "可下料原因 - 使用此料的所有母件皆已完成:\n" + owners.map(o => `${o.displayName} ✓`).join('\n');
 
-                return `<span class="child-item discharge-color-out${fixedClass}" title="${tooltipText}" onclick="this.classList.toggle('dimmed')">${c}</span>`;
+                return `<span class="child-item discharge-color-out${fixedClass}${dimmedClass}" title="${tooltipText}" onclick='toggleDischargePartDimmed(${JSON.stringify(partKey)}, this)'>${c}</span>`;
             }).filter(h => h !== '');
 
             if (codeHtmlList.length > 0) {
@@ -1421,6 +1435,11 @@
     function bindMachineTimeInput(el) {
         if (!el) return;
 
+        const clearForEdit = () => {
+            if (!el.value) return;
+            el.value = '';
+            calculateMachineTime();
+        };
         const updateTyping = () => {
             formatMachineTimeTyping(el);
             calculateMachineTime();
@@ -1431,6 +1450,7 @@
             calculateMachineTime();
         };
 
+        el.addEventListener('click', clearForEdit);
         el.addEventListener('input', updateTyping);
         el.addEventListener('keyup', updateTyping);
         el.addEventListener('change', updateFinal);
@@ -1441,11 +1461,17 @@
     function bindMachineDecimalInput(el) {
         if (!el) return;
 
+        const clearForEdit = () => {
+            if (!el.value) return;
+            el.value = '';
+            calculateMachineTime();
+        };
         const update = () => {
             normalizeMachineDecimalInput(el);
             calculateMachineTime();
         };
 
+        el.addEventListener('click', clearForEdit);
         el.addEventListener('input', update);
         el.addEventListener('keyup', update);
         el.addEventListener('change', update);
