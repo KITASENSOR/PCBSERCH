@@ -1,0 +1,8 @@
+node_modules/
+.wrangler/
+.wrangler-dev.log
+.wrangler-dry-run*/
+.dev.vars
+*.local
+BOM.xlsx
+data/*.sql
