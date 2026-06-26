@@ -1,0 +1,26 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "smt-pcb-search",
+  "main": "src/index.js",
+  "compatibility_date": "2026-06-26",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "smt-pcb-search-db",
+      "database_id": "76d8928e-b9ba-4720-9709-43590abbef7f",
+      "migrations_dir": "./migrations"
+    }
+  ]
+}

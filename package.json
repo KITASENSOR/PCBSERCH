@@ -1,0 +1,25 @@
+{
+  "name": "smt-pcb-search",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 8787",
+    "deploy": "wrangler deploy --minify",
+    "d1:create": "wrangler d1 create smt-pcb-search-db",
+    "d1:migrate:local": "wrangler d1 migrations apply smt-pcb-search-db --local",
+    "d1:migrate:remote": "wrangler d1 migrations apply smt-pcb-search-db --remote",
+    "d1:seed:local": "wrangler d1 execute smt-pcb-search-db --local --file ./data/bom_seed.sql",
+    "d1:seed:remote": "wrangler d1 execute smt-pcb-search-db --remote --file ./data/bom_seed.sql",
+    "data:seed": "python ./scripts/export_bom_to_sql.py --workbook ./BOM.xlsx --output ./data/bom_seed.sql",
+    "data:sheet:bom": "python ./scripts/export_bom_to_sql.py --workbook ./BOM.xlsx --sheet bom --output ./data/bom_only_seed.sql",
+    "data:sheet:fixed": "python ./scripts/export_bom_to_sql.py --workbook ./BOM.xlsx --sheet fixed --output ./data/fixed_only_seed.sql",
+    "data:sheet:usage": "python ./scripts/export_bom_to_sql.py --workbook ./BOM.xlsx --sheet usage --output ./data/usage_only_seed.sql",
+    "data:sheet:packaging": "python ./scripts/export_bom_to_sql.py --workbook ./BOM.xlsx --sheet packaging --output ./data/packaging_only_seed.sql",
+    "import:local": "powershell -ExecutionPolicy Bypass -File ./scripts/import_excel_to_d1.ps1",
+    "import:remote": "powershell -ExecutionPolicy Bypass -File ./scripts/import_excel_to_d1.ps1 -Remote"
+  },
+  "devDependencies": {
+    "wrangler": "^4.26.0"
+  }
+}

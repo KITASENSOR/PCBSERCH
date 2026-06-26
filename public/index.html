@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PCB用料查詢</title>
+    <style>
+        body { font-family: "Segoe UI", "Microsoft JhengHei", sans-serif; margin: 25px; background: #f4f7f9; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        h2 { color: #333; border-left: 5px solid #28a745; padding-left: 15px; margin-bottom: 0; }
+        .header-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: min(100%, 360px); }
+        .header-buttons .switch-btn { width: 100%; min-width: 0; }
+        .switch-btn { background: #17a2b8; padding: 8px 15px; font-size: 14px; border-radius: 5px; color: white; border: none; cursor: pointer; }
+        .switch-btn:hover { background: #138496; }
+
+        .switch-discharge-btn { background: #16a085; }
+        .switch-discharge-btn:hover { background: #138d75; }
+
+        .machine-time-btn { background: #34495e; }
+        .machine-time-btn:hover { background: #2c3e50; }
+
+        .machine-mode-tabs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 18px 0 18px;
+        }
+        .machine-mode-tab {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            background: #fafafa;
+            transition: 0.2s;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            min-height: 48px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        .machine-mode-tab input { margin-right: 6px; }
+        .machine-mode-tab.active {
+            border-color: #28a745;
+            background: #eefaf1;
+            box-shadow: 0 2px 6px rgba(40,167,69,0.14);
+            font-weight: bold;
+        }
+        .machine-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+        }
+        .machine-field {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 14px;
+            background: #fff;
+            min-height: 112px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+        .machine-field label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .machine-field .machine-field-note {
+            color: #777;
+            font-size: 12px;
+            margin-top: 8px;
+            line-height: 1.4;
+        }
+        .machine-field input {
+            width: 100%;
+            font-size: 18px;
+            text-align: center;
+        }
+        .machine-scenario-panel {
+            margin-top: 14px;
+        }
+        .machine-results {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 14px;
+        }
+        .machine-result-card {
+            border: 1px solid #dfe8e4;
+            border-radius: 8px;
+            background: #f8fbf9;
+            padding: 14px;
+            min-height: 88px;
+            box-sizing: border-box;
+        }
+        .machine-result-label {
+            color: #60706a;
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .machine-result-value {
+            color: #1f3b2f;
+            font-size: 22px;
+            font-weight: bold;
+            line-height: 1.25;
+        }
+        .machine-warning {
+            margin-top: 12px;
+            display: none;
+            color: #9a5b00;
+            background: #fff8e1;
+            border: 1px solid #ffe0a3;
+            border-radius: 8px;
+            padding: 10px 12px;
+            line-height: 1.6;
+        }
+        .machine-error {
+            margin-top: 12px;
+            display: none;
+            color: #b00020;
+            background: #fff0f2;
+            border: 1px solid #ffd1d8;
+            border-radius: 8px;
+            padding: 10px 12px;
+            line-height: 1.6;
+        }
+
+        textarea, input[type="text"], select { padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 15px; box-sizing: border-box; }
+        textarea { width: 100%; height: 80px; }
+        .hint { color: #666; font-size: 13px; margin-top: 5px; }
+        
+        .btn-group { margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
+        button { background: #28a745; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; font-size: 15px; font-weight: bold; }
+        button:hover { background: #218838; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        
+        .filter-btn { background: #f39c12; }
+        .filter-btn:hover { background: #e67e22; }
+        .filter-state-neutral {
+            background: #e9ecef !important;
+            color: #495057 !important;
+            border: 1px solid #d0d7de;
+        }
+        .filter-state-excluded {
+            background:
+                linear-gradient(135deg, transparent calc(50% - 1px), #dc3545 calc(50% - 1px), #dc3545 calc(50% + 1px), transparent calc(50% + 1px)),
+                #e9ecef !important;
+            color: #495057 !important;
+            border: 1px solid #d0d7de;
+        }
+        .clear-btn { background: #6c757d; }
+        .clear-btn:hover { background: #5a6268; }
+        .fixed-btn { background: #8e44ad; }
+        .fixed-btn:hover { background: #732d91; }
+        .bom-action-row,
+        .discharge-action-row {
+            display: grid;
+            gap: 6px;
+        }
+        .bom-action-row {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+        .discharge-action-row {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        .bom-action-row button,
+        .discharge-action-row button {
+            width: 100%;
+            min-width: 0;
+            padding: 10px 6px;
+            font-size: 13px;
+        }
+        
+        .fixed-item,
+        .child-item.fixed-item,
+        .child-item.discharge-color-out.fixed-item {
+            border: 4px solid #8e44ad !important;
+            box-sizing: border-box;
+        }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #e0e0e0; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+
+        .prefix-td { font-weight: bold; color: #28a745; width: 1%; white-space: nowrap; padding-right: 20px; }
+        
+        .parent-tag { position: relative; cursor: pointer; padding: 6px 35px 6px 12px; border-radius: 4px; margin: 5px; display: inline-block; transition: all 0.2s; border: 1px solid rgba(0,0,0,0.1); font-weight: 500; }
+        .parent-tag:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .del-btn { position: absolute; right: 5px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; line-height: 18px; text-align: center; background: rgba(217, 83, 79, 0.1); color: #d9534f; border-radius: 50%; font-size: 16px; font-weight: bold; transition: all 0.2s; }
+        .del-btn:hover { background: #d9534f; color: white; }
+        
+        .child-item { cursor: pointer; padding: 4px 8px; border-radius: 4px; margin: 3px; display: inline-block; border: 1px solid rgba(0,0,0,0.05); transition: all 0.2s; font-weight: 500; }
+        .common-part { background-color: #ffcccc; color: #d9534f; font-weight: bold; border: 1px solid #ffb3b3; } 
+        .child-item.dimmed { background-color: #e0e0e0 !important; color: #888 !important; border-color: #ccc !important; opacity: 0.6; }
+
+        .match-info { margin-top: 20px; font-weight: bold; color: #555; line-height: 2.5; }
+        .count-info { font-weight: bold; color: #e67e22; margin-top: 5px; margin-bottom: 5px; font-size: 15px; }
+        .reset-btn { background: #6c757d; color: white; border: none; margin-left: 10px; padding: 5px 12px; font-size: 12px; border-radius: 3px; cursor: pointer; }
+
+        .bom-sticky-header {
+            position: sticky;
+            top: 0;
+            background: #ffffff;
+            z-index: 50;
+            padding-top: 10px;
+            padding-bottom: 8px;
+            margin-bottom: 5px;
+            border-bottom: 2px solid #e0e0e0;
+            box-shadow: 0 4px 6px -2px rgba(0,0,0,0.05);
+        }
+        .bom-sticky-header .match-info {
+            margin-top: 0;
+            max-height: 35vh;
+            overflow-y: auto;
+        }
+        .bom-sticky-header .bom-action-row {
+            margin-top: 0;
+            margin-bottom: 8px;
+        }
+
+        .discharge-list-container {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 10px;
+            margin: 5px 0;
+            line-height: 1.6;
+        }
+        .discharge-list-col {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 8px 10px;
+            min-height: 60px;
+            background: #fafafa;
+            min-width: 0;
+            box-sizing: border-box;
+        }
+        .discharge-list-col-active { border-top: 3px solid #2c3e50; }
+        .discharge-list-col-done { border-top: 3px solid #27ae60; }
+        .discharge-list-col-title { 
+            font-size: 13px; 
+            font-weight: bold; 
+            margin-bottom: 6px; 
+            padding-bottom: 4px;
+            border-bottom: 1px dashed #ddd;
+        }
+        .discharge-list-col-active .discharge-list-col-title { color: #2c3e50; }
+        .discharge-list-col-done .discharge-list-col-title { color: #27ae60; }
+        .discharge-list-col-empty {
+            color: #aaa;
+            font-size: 12px;
+            text-align: center;
+            padding: 10px 0 6px;
+        }
+
+        .discharge-mini-tag {
+            position: relative;
+            cursor: pointer;
+            padding: 2px 20px 2px 8px;
+            border-radius: 3px;
+            margin: 2px;
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.5;
+            border: 1px solid rgba(0,0,0,0.15);
+            transition: transform 0.2s, box-shadow 0.2s;
+            white-space: nowrap;
+            color: #1a1a1a;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            box-sizing: border-box;
+        }
+        .discharge-mini-tag:hover { box-shadow: 0 2px 4px rgba(0,0,0,0.18); }
+        .discharge-mini-tag.tag-active:hover { transform: translateX(3px); }
+        .discharge-mini-tag.tag-done:hover { transform: translateX(-3px); }
+        .discharge-mini-tag.tag-done { 
+            opacity: 0.9; 
+            border-style: dashed; 
+            border-color: #27ae60;
+        }
+        .discharge-mini-tag .move-icon {
+            font-size: 10px;
+            margin: 0 2px;
+            color: rgba(0,0,0,0.55);
+            font-weight: bold;
+            flex: 0 0 auto;
+        }
+        .discharge-mini-tag .del-btn {
+            width: 16px;
+            height: 16px;
+            line-height: 14px;
+            right: 2px;
+            font-size: 11px;
+            flex: 0 0 auto;
+        }
+
+        .discharge-color-out { background-color: #ffcccc !important; color: #d9534f !important; font-weight: bold; border: 1px solid #ffb3b3 !important; }
+        
+        @media screen and (min-width: 601px) { .mobile-only { display: none !important; } }
+
+        @media screen and (max-width: 600px) {
+            body { margin: 10px; }
+            .container { padding: 15px; }
+            .header-row { flex-direction: column; align-items: stretch; gap: 10px; }
+            .header-row h2 { margin-bottom: 5px; }
+            .header-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; width: 100%; }
+            .header-buttons .switch-btn { width: 100%; margin-bottom: 0 !important; padding: 10px; }
+            .btn-group { flex-direction: column; gap: 8px; }
+            .bom-action-row { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+            .discharge-action-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+            .bom-action-row button,
+            .discharge-action-row button { padding: 9px 4px; font-size: 12px; }
+            button { width: 100%; padding: 12px 20px; }
+            
+            .desktop-only { display: none !important; }
+            
+            table, thead, tbody, th, td, tr { display: block; width: 100%; box-sizing: border-box; }
+            thead { display: none; }
+            tr { margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; background-color: #fff; }
+            td { border: none; padding: 10px; }
+            .prefix-td { border-bottom: 1px dashed #e0e0e0; padding-bottom: 8px; margin-bottom: 5px; }
+
+            .child-item { font-size: 13px; padding: 4px 6px; } 
+
+            .bom-sticky-header .match-info { max-height: 28vh; line-height: 2.2; }
+
+            .discharge-list-container {
+                display: grid !important;
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+                gap: 8px;
+            }
+            .discharge-list-col { min-height: 40px; min-width: 0; }
+            .discharge-mini-tag { max-width: 100%; }
+
+            .machine-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 8px;
+            }
+            .machine-mode-tabs {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 8px;
+            }
+            .machine-mode-tab {
+                padding: 10px 8px;
+                min-height: 44px;
+            }
+            .machine-field {
+                min-height: 104px;
+                padding: 10px;
+            }
+            .machine-field input { font-size: 16px; }
+            .machine-results {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            .machine-result-card {
+                min-height: 72px;
+                padding: 12px;
+            }
+            .machine-result-value { font-size: 20px; }
+        }
+
+        /* Compact layout only for the machine time calculator. */
+        #viewMACHINE_TIME {
+            max-width: 410px;
+            padding: 12px;
+        }
+        #viewMACHINE_TIME .header-row {
+            gap: 7px;
+            margin-bottom: 10px;
+        }
+        #viewMACHINE_TIME h2 {
+            margin-bottom: 0;
+            font-size: 20px;
+            padding-left: 10px;
+        }
+        #viewMACHINE_TIME .header-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 6px;
+            width: 100%;
+        }
+        #viewMACHINE_TIME .header-buttons .switch-btn {
+            width: 100%;
+            margin-bottom: 0 !important;
+            padding: 8px 6px;
+        }
+        #viewMACHINE_TIME .machine-mode-tabs {
+            gap: 6px;
+            margin: 8px 0;
+        }
+        #viewMACHINE_TIME .machine-mode-tab {
+            padding: 8px 6px;
+            min-height: 38px;
+            font-size: 13px;
+        }
+        #viewMACHINE_TIME .machine-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 6px;
+        }
+        #viewMACHINE_TIME .machine-field {
+            min-height: 76px;
+            padding: 8px;
+        }
+        #viewMACHINE_TIME .machine-field label {
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+        #viewMACHINE_TIME .machine-field .machine-field-note {
+            display: none;
+        }
+        #viewMACHINE_TIME .machine-field input {
+            font-size: 16px;
+            padding: 8px 6px;
+        }
+        #viewMACHINE_TIME .machine-results {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
+            margin-top: 8px;
+        }
+        #viewMACHINE_TIME .machine-result-card {
+            min-height: 58px;
+            padding: 8px 6px;
+        }
+        #viewMACHINE_TIME .machine-result-label {
+            font-size: 11px;
+            margin-bottom: 4px;
+            line-height: 1.2;
+        }
+        #viewMACHINE_TIME .machine-result-value {
+            font-size: 17px;
+            line-height: 1.2;
+        }
+        #viewMACHINE_TIME .btn-group {
+            flex-direction: row;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        #viewMACHINE_TIME .btn-group button {
+            flex: 1 1 0;
+            min-width: 0;
+            padding: 10px 8px;
+            font-size: 14px;
+        }
+        #viewMACHINE_TIME .machine-warning,
+        #viewMACHINE_TIME .machine-error {
+            margin-top: 8px;
+            padding: 8px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+<script>
+    function renderHeader(currentViewTitle, viewId) {
+        document.write(`
+            <div class="header-row">
+                <h2>${currentViewTitle}</h2>
+                <div class="header-buttons">
+                    ${viewId !== 'BOM' ? `<button class="switch-btn" onclick="toggleView('BOM')">BOM 查詢</button>` : ''}
+                    ${viewId !== 'DISCHARGE' ? `<button class="switch-btn switch-discharge-btn" onclick="toggleView('DISCHARGE')">下料系統 📦</button>` : ''}
+                    ${viewId !== 'MACHINE_TIME' ? `<button class="switch-btn machine-time-btn" onclick="toggleView('MACHINE_TIME')">機台時間試算 ⏱</button>` : ''}
+                </div>
+            </div>
+        `);
+    }
+</script>
+
+<div class="container" id="viewBOM">
+    <script>renderHeader('BOM 查詢', 'BOM');</script>
+    <textarea id="inputSearch" placeholder="例如輸入 PC-0427-4X 或 42242"></textarea>
+    <div class="hint">* 自動比對 PC-00XX-XX 格式，完整輸入或局部輸入皆可精準搜尋。</div>
+
+    <div id="bomStickyHeader" class="bom-sticky-header">
+        <div class="btn-group bom-action-row">
+            <button id="btnSearch" onclick="runFuzzyQuery()" disabled>搜尋</button>
+            <button class="clear-btn" onclick="clearBOMSearch()">清除</button>
+            <button class="filter-btn filter-state-neutral" id="btnOnlyCommon" onclick="toggleCommonFilter()" style="display:none;">共用料</button>
+            <button class="filter-btn fixed-btn filter-state-neutral" id="btnFixedFilter" onclick="toggleFixedFilter()" style="display:none;">固定料</button>
+        </div>
+        <div id="matchStatus" class="match-info">資料載入中...</div>
+        <div id="itemCount" class="count-info"></div>
+    </div>
+    <div id="resultArea"></div>
+</div>
+
+<div class="container" id="viewDISCHARGE" style="display: none;">
+    <script>renderHeader('下料系統', 'DISCHARGE');</script>
+    <p>輸入要進行下料分析的母件編號，可多個:</p>
+    <textarea id="inputDischarge" placeholder="例如輸入 PC-0427-4X 或 42242"></textarea>
+    <div class="hint">* 點擊「進行中」母件可標記為「已完成」/ 點擊「已完成」母件可移回 / 右側 × 可移除</div>
+
+    <div class="btn-group discharge-action-row">
+        <button id="btnDischarge" onclick="runDischargeQuery()" disabled>搜尋</button>
+        <button class="clear-btn" onclick="clearDischarge()">清除</button>
+        <button class="filter-btn fixed-btn filter-state-neutral" id="btnDischargeFixedFilter" onclick="toggleDischargeFixedFilter()" style="display:none;">固定料</button>
+    </div>
+
+    <div id="dischargeStickyHeader" class="bom-sticky-header" style="display:none;">
+        <div id="dischargeStatus" class="match-info"></div>
+        <div id="dischargeCount" class="count-info"></div>
+    </div>
+    <div id="dischargeResultArea"></div>
+</div>
+
+<div class="container" id="viewMACHINE_TIME" style="display: none;">
+    <script>renderHeader('機台時間試算', 'MACHINE_TIME');</script>
+
+    <div class="machine-mode-tabs">
+        <label class="machine-mode-tab active" id="machineTabByBoards">
+            <input type="radio" name="machineCalcMode" value="byBoards" checked>
+            剩餘時間算數量
+        </label>
+
+        <label class="machine-mode-tab" id="machineTabByEnd">
+            <input type="radio" name="machineCalcMode" value="byEnd">
+            目標數量算時間
+        </label>
+    </div>
+
+    <div class="machine-grid">
+        <div class="machine-field">
+            <label for="machineDoneCount">已打數量</label>
+            <input id="machineDoneCount" type="text" inputmode="decimal" placeholder="已完成數" autocomplete="off">
+            <div class="machine-field-note">機台目前已完成的數量</div>
+        </div>
+
+        <div class="machine-field">
+            <label for="machineWorkSecond">單件工時</label>
+            <input id="machineWorkSecond" type="text" inputmode="decimal" placeholder="秒 / 件" autocomplete="off">
+            <div class="machine-field-note">每打一件需要幾秒</div>
+        </div>
+
+        <div class="machine-field">
+            <label for="machineStartTime">目前時間</label>
+            <input id="machineStartTime" type="text" inputmode="numeric" maxlength="5" placeholder="08:30" autocomplete="off">
+            <div class="machine-field-note">用來推算剩餘時間或完成時間</div>
+        </div>
+
+        <div class="machine-field machine-scenario-field" data-machine-mode="byBoards">
+            <label for="machineEndTime">可生產到幾點</label>
+            <input id="machineEndTime" type="text" inputmode="numeric" maxlength="5" placeholder="17:05" autocomplete="off">
+            <div class="machine-field-note">用剩餘時間計算還能打多少</div>
+        </div>
+
+        <div class="machine-field machine-scenario-field" data-machine-mode="byEnd" style="display:none;">
+            <label for="machineTargetCount">目標數量</label>
+            <input id="machineTargetCount" type="text" inputmode="decimal" placeholder="目標總數" autocomplete="off">
+            <div class="machine-field-note">用目標數量計算還要多久</div>
+        </div>
+    </div>
+
+    <div class="machine-results">
+        <div class="machine-result-card">
+            <div class="machine-result-label" id="machineResultLabelA">還能打數量</div>
+            <div class="machine-result-value" id="machineResultA">--</div>
+        </div>
+        <div class="machine-result-card">
+            <div class="machine-result-label" id="machineResultLabelB">預估總完成</div>
+            <div class="machine-result-value" id="machineResultB">--</div>
+        </div>
+        <div class="machine-result-card">
+            <div class="machine-result-label" id="machineResultLabelC">剩餘時間</div>
+            <div class="machine-result-value" id="machineResultC">--</div>
+        </div>
+    </div>
+
+    <div class="btn-group">
+        <button type="button" onclick="setMachineNow()">帶入現在時間</button>
+        <button type="button" class="clear-btn" onclick="clearMachineTime()">清除</button>
+    </div>
+
+    <div class="machine-warning" id="machineWarningBox"></div>
+    <div class="machine-error" id="machineErrorBox"></div>
+</div>
+
+
+<script>
+    const dataUrl = "/api/bom";
+    
+    const storageKeys = {
+        bomInput: "pcb_bom_query_input",
+        dischargeInput: "pcb_discharge_query_input",
+        machineTime: "pcb_machine_time_calculator"
+    };
+
+    let rawData = {};
+    let fixedFeederParts = new Set(); 
+
+    const palette = ["#90caf9", "#c5e1a5", "#ffcc80", "#e1bee7", "#80cbc4", "#c5cae9", "#cfd8dc", "#f48fb1", "#e6ee9c", "#bcaaa4"];
+    let currentGroups = []; 
+    let filterMode = 0; 
+    let fixedFilterMode = 0;
+    
+    let dischargeGroups = [];
+    let dischargeFixedFilterMode = 0;
+    let dischargeDimmedParts = new Set();
+
+    const naturalSort = (a, b) => a.localeCompare(b, undefined, { numeric: true });
+
+    function saveInputToStorage(elementId, storageKey) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+
+        const cachedValue = localStorage.getItem(storageKey);
+        if (cachedValue !== null) el.value = cachedValue;
+
+        el.addEventListener('input', () => {
+            localStorage.setItem(storageKey, el.value);
+        });
+    }
+
+    function initInputStorage() {
+        saveInputToStorage('inputSearch', storageKeys.bomInput);
+        saveInputToStorage('inputDischarge', storageKeys.dischargeInput);
+    }
+
+    function toggleView(viewType) {
+        document.getElementById('viewBOM').style.display = (viewType === 'BOM') ? 'block' : 'none';
+        document.getElementById('viewDISCHARGE').style.display = (viewType === 'DISCHARGE') ? 'block' : 'none';
+        document.getElementById('viewMACHINE_TIME').style.display = (viewType === 'MACHINE_TIME') ? 'block' : 'none';
+
+        if (viewType === 'MACHINE_TIME') {
+            calculateMachineTime();
+        }
+    }
+
+    async function fetchCSV() {
+        try {
+            const response = await fetch(`${dataUrl}?t=${new Date().getTime()}`, {
+                headers: { "Accept": "application/json" }
+            });
+            if (!response.ok) throw new Error('網路回應不正常');
+            const data = await response.json();
+
+            rawData = {};
+            fixedFeederParts = new Set();
+
+            (data.bom || []).forEach(row => {
+                const key = row.parent_number ? String(row.parent_number).trim() : '';
+                const val = row.child_parts ? String(row.child_parts).trim() : '';
+                if (key) rawData[key] = val;
+            });
+
+            (data.fixed || []).forEach(part => {
+                const feederPart = String(part || '').trim();
+                if (feederPart) fixedFeederParts.add(feederPart);
+            });
+
+            const bomCount = data.counts?.bom ?? Object.keys(rawData).length;
+            const fixedCount = data.counts?.fixed ?? fixedFeederParts.size;
+            document.getElementById('matchStatus').innerText = `資料同步完成。BOM ${bomCount} 筆，固定料 ${fixedCount} 筆。`;
+            document.getElementById('btnSearch').disabled = false;
+            document.getElementById('btnDischarge').disabled = false;
+        } catch (error) {
+            document.getElementById('matchStatus').innerText = `載入失敗:${error.message || '請稍後再試'}`;
+        }
+    }
+
+    initInputStorage();
+    fetchCSV();
+
+    function clearBOMSearch() {
+        document.getElementById('inputSearch').value = '';
+        localStorage.removeItem(storageKeys.bomInput);
+
+        document.getElementById('resultArea').innerHTML = '';
+        document.getElementById('matchStatus').innerText = '';
+        document.getElementById('itemCount').innerText = '';
+        currentGroups = [];
+        filterMode = 0;
+        fixedFilterMode = 0;
+        document.getElementById('btnOnlyCommon').style.display = 'none';
+        document.getElementById('btnFixedFilter').style.display = 'none';
+        setFilterButtonState(document.getElementById('btnOnlyCommon'), 'neutral');
+        setFilterButtonState(document.getElementById('btnFixedFilter'), 'neutral');
+    }
+
+    function checkSmartMatch(fullID, queryStr) {
+        const normalizedID = fullID.replace(/PC-/gi, '').replace(/[-\s_]/g, '').toUpperCase();
+        let cleanQuery = queryStr.replace(/PC-/gi, '').replace(/[-\s_]/g, '').toUpperCase();
+        if (cleanQuery.length > 0 && /^[1-9]/.test(cleanQuery)) cleanQuery = "0" + cleanQuery;
+        if (normalizedID === cleanQuery) return "EXACT";
+        if (normalizedID.startsWith(cleanQuery) || normalizedID.includes(cleanQuery)) return "FUZZY";
+        return null;
+    }
+
+    function formatCode(codeStr) {
+        let clean = codeStr.replace(/^0+/, '');
+        if (clean === "" || /^[a-zA-Z]/.test(clean)) return clean || "0";
+        let match = clean.match(/^(\d+)(.*)$/);
+        return match ? match[1].padStart(2, '0') + match[2] : clean;
+    }
+
+    function findMatchedGroups(input) {
+        const keywords = input.split(/[\s,]+/).filter(k => k !== "");
+        if (keywords.length === 0) return [];
+
+        const results = Object.keys(rawData).map(key => {
+            let bestType = null;
+            keywords.forEach(kw => {
+                const type = checkSmartMatch(key, kw);
+                if (type === "EXACT") bestType = "EXACT";
+                else if (type === "FUZZY" && bestType !== "EXACT") bestType = "FUZZY";
+            });
+            return { key, matchType: bestType };
+        }).filter(r => r.matchType !== null);
+
+        let matchedIDs = [];
+        const hasExact = results.some(r => r.matchType === "EXACT");
+        const isSeriesSearch = results.some(r => {
+            let cleanKw = keywords[0].replace(/PC-/gi, '').replace(/[-\s_]/g, '').toUpperCase();
+            if (/^[1-9]/.test(cleanKw)) cleanKw = "0" + cleanKw;
+            const normKey = r.key.replace(/PC-/gi, '').replace(/[-\s_]/g, '').toUpperCase();
+            return normKey.length > cleanKw.length;
+        });
+
+        if (hasExact && !isSeriesSearch) matchedIDs = results.filter(r => r.matchType === "EXACT").map(r => r.key);
+        else matchedIDs = results.map(r => r.key);
+
+        const groups = {};
+        matchedIDs.forEach(id => {
+            const parts = id.split('-');
+            let base = id;
+            let suffix = "";
+            let isPureEnglishSuffix = false;
+
+            if (parts.length > 3) {
+                base = parts.slice(0, 3).join('-');
+                suffix = parts.slice(3).join('-');
+                isPureEnglishSuffix = /^[A-Za-z]+$/.test(suffix);
+            }
+
+            const content = rawData[id] || "";
+            const groupKey = isPureEnglishSuffix ? base : id;
+
+            if (!groups[groupKey]) {
+                groups[groupKey] = {
+                    id: groupKey,
+                    base: base,
+                    displayName: isPureEnglishSuffix ? `${base}-XX` : id,
+                    members: [],
+                    contentSet: new Set()
+                };
+            }
+
+            groups[groupKey].members.push(id);
+            content.split(',').forEach(part => {
+                const cleanPart = part.trim();
+                if (cleanPart) groups[groupKey].contentSet.add(cleanPart);
+            });
+        });
+
+        return Object.values(groups);
+    }
+
+    function runFuzzyQuery() {
+        const input = document.getElementById('inputSearch').value.trim();
+        localStorage.setItem(storageKeys.bomInput, document.getElementById('inputSearch').value);
+
+        const rawGroups = findMatchedGroups(input);
+        currentGroups = rawGroups.map((g, i) => ({
+            ...g,
+            content: Array.from(g.contentSet).join(','),
+            color: palette[i % palette.length]
+        }));
+        updateUI();
+    }
+
+    function removeGroup(groupId, event) {
+        event.stopPropagation();
+        currentGroups = currentGroups.filter(g => g.id !== groupId);
+        updateUI();
+    }
+
+    function toggleCommonFilter() {
+        filterMode = (filterMode + 1) % 3;
+        updateUI();
+    }
+
+    function toggleFixedFilter() {
+        fixedFilterMode = (fixedFilterMode + 1) % 3;
+        updateUI();
+    }
+
+    function resetFilter() {
+        filterMode = 0;
+        fixedFilterMode = 0;
+        updateUI();
+    }
+
+    function setFilterButtonState(btn, state) {
+        if (!btn) return;
+        btn.classList.remove('filter-state-neutral', 'filter-state-excluded');
+        if (state !== 'active') {
+            btn.classList.add(`filter-state-${state}`);
+        }
+    }
+
+    function updateUI() {
+        document.getElementById('btnOnlyCommon').style.display = currentGroups.length > 1 ? 'inline-block' : 'none';
+        document.getElementById('btnFixedFilter').style.display = currentGroups.length > 0 ? 'inline-block' : 'none';
+
+        const btnC = document.getElementById('btnOnlyCommon');
+        btnC.innerText = "共用料";
+        if (filterMode === 0) setFilterButtonState(btnC, 'neutral');
+        else if (filterMode === 1) setFilterButtonState(btnC, 'active');
+        else setFilterButtonState(btnC, 'excluded');
+
+        const btnF = document.getElementById('btnFixedFilter');
+        btnF.innerText = "固定料";
+        if (fixedFilterMode === 0) setFilterButtonState(btnF, 'neutral');
+        else if (fixedFilterMode === 1) setFilterButtonState(btnF, 'active');
+        else setFilterButtonState(btnF, 'excluded');
+
+        renderView(currentGroups);
+    }
+
+    function renderView(displayGroups) {
+        const statusDiv = document.getElementById('matchStatus');
+        const resultArea = document.getElementById('resultArea');
+        const countDiv = document.getElementById('itemCount');
+
+        if (currentGroups.length === 0) {
+            statusDiv.innerText = "查無此核心編號。";
+            countDiv.innerText = "";
+            resultArea.innerHTML = "";
+            return;
+        }
+
+        let statusHtml = "";
+        currentGroups.forEach(g => {
+            const isSelected = displayGroups.length === 1 && displayGroups[0] === g;
+            statusHtml += `<span class="parent-tag" style="background-color: ${g.color}; border: ${isSelected ? '2px solid #333' : '1px solid #ccc'}" onclick="filterGroup('${g.id}')">${g.displayName}<span class="del-btn" onclick="removeGroup('${g.id}', event)">×</span></span>`;
+        });
+
+        if (displayGroups.length < currentGroups.length) {
+            statusHtml += `<button class="reset-btn" onclick="resetFilter()">恢復清單</button>`;
+        }
+
+        statusDiv.innerHTML = statusHtml;
+
+        const masterMap = {};
+        displayGroups.forEach(g => {
+            g.content.split(',').forEach(fullStr => {
+                const [prefix, ...rest] = fullStr.split('-');
+                const code = formatCode(rest.join('-'));
+                if (!masterMap[prefix]) masterMap[prefix] = {};
+                if (!masterMap[prefix][code]) masterMap[prefix][code] = { owners: [], fullStrs: [] };
+                masterMap[prefix][code].owners.push(g);
+                masterMap[prefix][code].fullStrs.push(fullStr);
+            });
+        });
+
+        let html = `<table><thead><tr><th style="width: 1%">類別</th><th>子件明細</th></tr></thead><tbody>`;
+        let visibleCount = 0;
+
+        Object.keys(masterMap).sort().forEach(pre => {
+            const codesObj = masterMap[pre];
+            const sortedCodes = Object.keys(codesObj).sort(naturalSort);
+
+            let codeHtmlList = sortedCodes.map(c => {
+                const owners = codesObj[c].owners;
+                const fullStrs = codesObj[c].fullStrs;
+                const isCommon = displayGroups.length > 1 && owners.length === displayGroups.length;
+                const isFixed = fullStrs.some(str => fixedFeederParts.has(str));
+
+                if (fixedFilterMode === 1 && !isFixed) return '';
+                if (fixedFilterMode === 2 && isFixed) return '';
+
+                const tooltipText = "使用的母件:\n" + owners.map(o => o.displayName).join('\n');
+                const fixedClass = isFixed ? " fixed-item" : "";
+
+                if (isCommon) {
+                    if (filterMode === 2) return '';
+                    visibleCount++;
+                    return `<span class="child-item common-part${fixedClass}" title="${tooltipText}" onclick="this.classList.toggle('dimmed')">${c}</span>`;
+                } else {
+                    if (filterMode === 1) return '';
+                    visibleCount++;
+
+                    let bgStyle = "";
+                    if (owners.length === 1) {
+                        bgStyle = `background-color: ${owners[0].color};`;
+                    } else {
+                        let stops = owners.map((o, i) => {
+                            let start = (i / owners.length) * 100;
+                            let end = ((i + 1) / owners.length) * 100;
+                            return `${o.color} ${start}%, ${o.color} ${end}%`;
+                        }).join(', ');
+                        bgStyle = `background: linear-gradient(to right, ${stops}); color: #333; border: 1px solid #999;`;
+                    }
+
+                    return `<span class="child-item${fixedClass}" style="${bgStyle}" title="${tooltipText}" onclick="this.classList.toggle('dimmed')">${c}</span>`;
+                }
+            }).filter(h => h !== '');
+
+            if (codeHtmlList.length > 0) {
+                html += `<tr><td class="prefix-td">${pre}</td><td>${codeHtmlList.join('')}</td></tr>`;
+            }
+        });
+
+        resultArea.innerHTML = html + `</tbody></table>`;
+        countDiv.innerText = `數量:${visibleCount}`;
+    }
+
+    function filterGroup(groupId) {
+        filterMode = 0;
+        fixedFilterMode = 0;
+        const target = currentGroups.find(g => g.id === groupId);
+        if (target) renderView([target]);
+    }
+
+    function clearDischarge() {
+        document.getElementById('inputDischarge').value = '';
+        localStorage.removeItem(storageKeys.dischargeInput);
+
+        dischargeGroups = [];
+        dischargeFixedFilterMode = 0;
+        dischargeDimmedParts.clear();
+        updateDischargeUI();
+    }
+
+    function runDischargeQuery() {
+        const input = document.getElementById('inputDischarge').value.trim();
+        localStorage.setItem(storageKeys.dischargeInput, document.getElementById('inputDischarge').value);
+
+        if (!input) return;
+        
+        const rawGroups = findMatchedGroups(input);
+        
+        if (rawGroups.length === 0) {
+            const stickyHeader = document.getElementById('dischargeStickyHeader');
+            const statusDiv = document.getElementById('dischargeStatus');
+            stickyHeader.style.display = 'block';
+
+            if (dischargeGroups.length === 0) {
+                statusDiv.innerHTML = '<span style="color:#e74c3c;">查無此核心編號。</span>';
+            } else {
+                statusDiv.innerHTML = '<span style="color:#e74c3c;">新查詢無比對結果，維持原清單。</span>';
+                setTimeout(() => updateDischargeUI(), 1500);
+            }
+            return;
+        }
+
+        const existingIds = new Set(dischargeGroups.map(g => g.id));
+        rawGroups.forEach(g => {
+            if (!existingIds.has(g.id)) {
+                dischargeGroups.push({
+                    ...g,
+                    content: Array.from(g.contentSet).join(','),
+                    color: palette[dischargeGroups.length % palette.length],
+                    completed: false
+                });
+            }
+        });
+
+        updateDischargeUI();
+    }
+
+    function toggleGroupComplete(groupId, event) {
+        if (event) event.stopPropagation();
+        const g = dischargeGroups.find(g => g.id === groupId);
+        if (g) g.completed = !g.completed;
+        updateDischargeUI();
+    }
+
+    function removeDischargeGroup(groupId, event) {
+        event.stopPropagation();
+        dischargeGroups = dischargeGroups.filter(g => g.id !== groupId);
+        updateDischargeUI();
+    }
+
+    function toggleDischargeFixedFilter() {
+        dischargeFixedFilterMode = (dischargeFixedFilterMode + 1) % 3;
+        updateDischargeUI();
+    }
+
+    function toggleDischargePartDimmed(partKey, el) {
+        if (dischargeDimmedParts.has(partKey)) {
+            dischargeDimmedParts.delete(partKey);
+        } else {
+            dischargeDimmedParts.add(partKey);
+        }
+
+        if (el) el.classList.toggle('dimmed', dischargeDimmedParts.has(partKey));
+    }
+
+    function updateDischargeFixedButton() {
+        const btn = document.getElementById('btnDischargeFixedFilter');
+        if (!btn) return;
+
+        btn.style.display = dischargeGroups.length > 0 ? 'inline-block' : 'none';
+
+        btn.innerText = "固定料";
+        if (dischargeFixedFilterMode === 0) setFilterButtonState(btn, 'neutral');
+        else if (dischargeFixedFilterMode === 1) setFilterButtonState(btn, 'active');
+        else setFilterButtonState(btn, 'excluded');
+    }
+
+    function updateDischargeUI() {
+        const stickyHeader = document.getElementById('dischargeStickyHeader');
+        const statusDiv = document.getElementById('dischargeStatus');
+        const resultArea = document.getElementById('dischargeResultArea');
+        const countDiv = document.getElementById('dischargeCount');
+
+        updateDischargeFixedButton();
+
+        if (dischargeGroups.length === 0) {
+            stickyHeader.style.display = 'none';
+            statusDiv.innerHTML = '';
+            countDiv.innerHTML = '';
+            resultArea.innerHTML = '';
+            return;
+        }
+
+        stickyHeader.style.display = 'block';
+
+        const activeGroups = dischargeGroups.filter(g => !g.completed);
+        const doneGroups = dischargeGroups.filter(g => g.completed);
+
+        let statusHtml = '<div class="discharge-list-container">';
+
+        statusHtml += `<div class="discharge-list-col discharge-list-col-active">
+            <div class="discharge-list-col-title">🚀 進行中 (${activeGroups.length})</div>`;
+
+        if (activeGroups.length === 0) {
+            statusHtml += '<div class="discharge-list-col-empty">— 無進行中母件 —</div>';
+        } else {
+            activeGroups.forEach(g => {
+                statusHtml += `<span class="discharge-mini-tag tag-active" style="background-color: ${g.color};" title="點擊移到已完成" onclick="toggleGroupComplete('${g.id}', event)">${g.displayName}<span class="move-icon">→</span><span class="del-btn" title="移除" onclick="removeDischargeGroup('${g.id}', event)">×</span></span>`;
+            });
+        }
+
+        statusHtml += '</div>';
+
+        statusHtml += `<div class="discharge-list-col discharge-list-col-done">
+            <div class="discharge-list-col-title">✅ 已完成 (${doneGroups.length})</div>`;
+
+        if (doneGroups.length === 0) {
+            statusHtml += '<div class="discharge-list-col-empty">— 無已完成母件 —</div>';
+        } else {
+            doneGroups.forEach(g => {
+                statusHtml += `<span class="discharge-mini-tag tag-done" style="background-color: ${g.color};" title="點擊移回進行中" onclick="toggleGroupComplete('${g.id}', event)"><span class="move-icon">←</span>${g.displayName}<span class="del-btn" title="移除" onclick="removeDischargeGroup('${g.id}', event)">×</span></span>`;
+            });
+        }
+
+        statusHtml += '</div>';
+        statusHtml += '</div>';
+        statusDiv.innerHTML = statusHtml;
+
+        if (doneGroups.length === 0) {
+            countDiv.innerHTML = '';
+            resultArea.innerHTML = '<div style="text-align:center; padding:30px 15px; color:#888; background:#f8f9fa; border-radius:8px; margin-top:15px; font-size:15px; line-height:1.8;">💡 請點擊上方「<b style="color:#2c3e50;">🚀 進行中</b>」區的母件標籤，將已生產完成的母件移到「<b style="color:#27ae60;">✅ 已完成</b>」區<br>系統會自動分析出可下料的物料</div>';
+            return;
+        }
+
+        const masterMap = {};
+        dischargeGroups.forEach(g => {
+            g.content.split(',').forEach(fullStr => {
+                if (!fullStr.trim()) return;
+
+                const [prefix, ...rest] = fullStr.split('-');
+                const code = formatCode(rest.join('-'));
+
+                if (!masterMap[prefix]) masterMap[prefix] = {};
+                if (!masterMap[prefix][code]) masterMap[prefix][code] = { owners: [], fullStrs: [] };
+
+                masterMap[prefix][code].owners.push(g);
+                masterMap[prefix][code].fullStrs.push(fullStr);
+            });
+        });
+
+        let dischargeCount = 0;
+        let html = `<table><thead><tr><th style="width: 1%">類別</th><th>可下料物料</th></tr></thead><tbody>`;
+
+        Object.keys(masterMap).sort().forEach(pre => {
+            const codesObj = masterMap[pre];
+            const sortedCodes = Object.keys(codesObj).sort(naturalSort);
+
+            let codeHtmlList = sortedCodes.map(c => {
+                const owners = codesObj[c].owners;
+                const fullStrs = codesObj[c].fullStrs;
+                const doneOwners = owners.filter(o => o.completed);
+                const activeOwners = owners.filter(o => !o.completed);
+
+                if (doneOwners.length === 0 || activeOwners.length > 0) return '';
+
+                const isFixed = fullStrs.some(str => fixedFeederParts.has(str));
+
+                if (dischargeFixedFilterMode === 1 && !isFixed) return '';
+                if (dischargeFixedFilterMode === 2 && isFixed) return '';
+
+                dischargeCount++;
+
+                const fixedClass = isFixed ? " fixed-item" : "";
+                const partKey = `${pre}-${c}`;
+                const dimmedClass = dischargeDimmedParts.has(partKey) ? " dimmed" : "";
+                const tooltipText = "可下料原因 - 使用此料的所有母件皆已完成:\n" + owners.map(o => `${o.displayName} ✓`).join('\n');
+
+                return `<span class="child-item discharge-color-out${fixedClass}${dimmedClass}" title="${tooltipText}" onclick='toggleDischargePartDimmed(${JSON.stringify(partKey)}, this)'>${c}</span>`;
+            }).filter(h => h !== '');
+
+            if (codeHtmlList.length > 0) {
+                html += `<tr><td class="prefix-td">${pre}</td><td>${codeHtmlList.join('')}</td></tr>`;
+            }
+        });
+
+        let filterText = '';
+        if (dischargeFixedFilterMode === 1) filterText = '｜固定料:僅顯示';
+        if (dischargeFixedFilterMode === 2) filterText = '｜固定料:排除';
+
+        if (dischargeCount === 0) {
+            countDiv.innerHTML = '';
+            resultArea.innerHTML = '<div style="text-align:center; padding:30px 15px; color:#888; background:#fff5f5; border:1px dashed #f5b7b1; border-radius:8px; margin-top:15px; font-size:15px; line-height:1.8;">⚠ 目前無符合條件的可下料物料<br><span style="font-size:13px; color:#aaa;">已完成母件的所有用料，仍被進行中的母件繼續使用，或固定料篩選後沒有資料</span></div>';
+        } else {
+            resultArea.innerHTML = html + `</tbody></table>`;
+            countDiv.innerHTML = `🔴 <span style="color:#e74c3c; font-weight:bold;">可下料數量:${dischargeCount}</span><span style="color:#8e44ad; font-weight:bold;"> ${filterText}</span>`;
+        }
+    }
+
+    const machineEls = {
+        doneCount: document.getElementById('machineDoneCount'),
+        startTime: document.getElementById('machineStartTime'),
+        endTime: document.getElementById('machineEndTime'),
+        workSecond: document.getElementById('machineWorkSecond'),
+        targetCount: document.getElementById('machineTargetCount'),
+        resultLabelA: document.getElementById('machineResultLabelA'),
+        resultLabelB: document.getElementById('machineResultLabelB'),
+        resultLabelC: document.getElementById('machineResultLabelC'),
+        resultA: document.getElementById('machineResultA'),
+        resultB: document.getElementById('machineResultB'),
+        resultC: document.getElementById('machineResultC'),
+        warningBox: document.getElementById('machineWarningBox'),
+        errorBox: document.getElementById('machineErrorBox'),
+        tabByBoards: document.getElementById('machineTabByBoards'),
+        tabByEnd: document.getElementById('machineTabByEnd')
+    };
+
+    function machinePad(n) {
+        return String(n).padStart(2, '0');
+    }
+
+    function cleanMachineDigits(value, maxLength = null) {
+        let digits = String(value || '').replace(/\D/g, '');
+        if (maxLength !== null) digits = digits.slice(0, maxLength);
+        return digits;
+    }
+
+    function formatMachineTimeTyping(el) {
+        const digits = cleanMachineDigits(el.value, 4);
+        if (digits.length >= 3) {
+            el.value = `${digits.slice(0, 2)}:${digits.slice(2)}`;
+        } else {
+            el.value = digits;
+        }
+    }
+
+    function normalizeMachineTimeInput(el) {
+        const raw = String(el.value || '').trim();
+        let h = null;
+        let m = null;
+
+        const colonMatch = raw.match(/^(\d{1,2}):(\d{1,2})$/);
+        if (colonMatch) {
+            h = Number(colonMatch[1]);
+            m = Number(colonMatch[2]);
+        } else {
+            const digits = cleanMachineDigits(raw, 4);
+            if (digits.length === 0) {
+                el.value = '';
+                return;
+            }
+            if (digits.length <= 2) {
+                h = Number(digits);
+                m = 0;
+            } else if (digits.length === 3) {
+                h = Number(digits.slice(0, 1));
+                m = Number(digits.slice(1));
+            } else {
+                h = Number(digits.slice(0, 2));
+                m = Number(digits.slice(2));
+            }
+        }
+
+        if (!Number.isFinite(h) || !Number.isFinite(m)) {
+            el.value = '';
+            return;
+        }
+
+        h = Math.max(0, Math.min(23, Math.floor(h)));
+        m = Math.max(0, Math.min(59, Math.floor(m)));
+        el.value = `${machinePad(h)}:${machinePad(m)}`;
+    }
+
+    function machineTimeToMinutes(value) {
+        if (!value || !/^\d{2}:\d{2}$/.test(value)) return null;
+        const [h, m] = value.split(':').map(Number);
+        if (h < 0 || h > 23 || m < 0 || m > 59) return null;
+        return h * 60 + m;
+    }
+
+    function machineMinutesToTime(totalMinutes) {
+        const oneDay = 24 * 60;
+        const minuteNumber = Math.floor(totalMinutes);
+        const minuteOfDay = ((minuteNumber % oneDay) + oneDay) % oneDay;
+        const h = Math.floor(minuteOfDay / 60);
+        const m = Math.floor(minuteOfDay % 60);
+        return `${machinePad(h)}:${machinePad(m)}`;
+    }
+
+    function machineSecondsToTime(totalSeconds) {
+        const roundedUpMinutes = Math.ceil(totalSeconds / 60);
+        return machineMinutesToTime(roundedUpMinutes);
+    }
+
+    function getCurrentMachineTimeValue() {
+        const now = new Date();
+        return `${machinePad(now.getHours())}:${machinePad(now.getMinutes())}`;
+    }
+
+    function getMachineMode() {
+        const checked = document.querySelector('input[name="machineCalcMode"]:checked');
+        return checked ? checked.value : 'byBoards';
+    }
+
+    function cleanMachineDecimal(value) {
+        let raw = String(value || '').replace(/[^0-9.]/g, '');
+        const parts = raw.split('.');
+        let cleaned = parts.shift() || '';
+
+        if (parts.length > 0) {
+            cleaned += '.' + parts.join('');
+        }
+
+        if (cleaned.startsWith('.')) cleaned = '0' + cleaned;
+        return cleaned;
+    }
+
+    function normalizeMachineDecimalInput(el) {
+        el.value = cleanMachineDecimal(el.value);
+    }
+
+    function getPositiveMachineNumber(el) {
+        const value = Number(el.value);
+        return Number.isFinite(value) && value > 0 ? value : 0;
+    }
+
+    function getNonNegativeMachineNumber(el) {
+        const value = Number(el.value);
+        return Number.isFinite(value) && value >= 0 ? value : 0;
+    }
+
+    function formatMachineNumber(value) {
+        if (!Number.isFinite(value)) return '';
+        return String(Number(value.toFixed(4)));
+    }
+
+    function getMachineWorkSeconds() {
+        return getPositiveMachineNumber(machineEls.workSecond);
+    }
+
+    function formatMachineDuration(totalSeconds) {
+        if (!Number.isFinite(totalSeconds) || totalSeconds < 0) return '';
+
+        totalSeconds = Math.round(totalSeconds);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        return `${hours}時 ${minutes}分 ${seconds}秒`;
+    }
+
+    function setMachineNotice(type, message) {
+        machineEls.warningBox.style.display = 'none';
+        machineEls.errorBox.style.display = 'none';
+        machineEls.warningBox.textContent = '';
+        machineEls.errorBox.textContent = '';
+
+        if (!message) return;
+
+        const box = type === 'error' ? machineEls.errorBox : machineEls.warningBox;
+        box.textContent = message;
+        box.style.display = 'block';
+    }
+
+    function setMachineModeUI() {
+        const mode = getMachineMode();
+
+        machineEls.tabByBoards.classList.toggle('active', mode === 'byBoards');
+        machineEls.tabByEnd.classList.toggle('active', mode === 'byEnd');
+
+        document.querySelectorAll('.machine-scenario-field').forEach(field => {
+            field.style.display = field.dataset.machineMode === mode ? 'flex' : 'none';
+        });
+
+        if (mode === 'byBoards') {
+            machineEls.resultLabelA.textContent = '還能打數量';
+            machineEls.resultLabelB.textContent = '預估總完成';
+            machineEls.resultLabelC.textContent = '剩餘時間';
+        } else {
+            machineEls.resultLabelA.textContent = '剩餘數量';
+            machineEls.resultLabelB.textContent = '還需要時間';
+            machineEls.resultLabelC.textContent = '預估完成時間';
+        }
+    }
+
+    function saveMachineTimeState() {
+        const data = {
+            mode: getMachineMode(),
+            doneCount: machineEls.doneCount.value,
+            startTime: machineEls.startTime.value,
+            endTime: machineEls.endTime.value,
+            workSecond: machineEls.workSecond.value,
+            targetCount: machineEls.targetCount.value
+        };
+        localStorage.setItem(storageKeys.machineTime, JSON.stringify(data));
+    }
+
+    function loadMachineTimeState() {
+        try {
+            const raw = localStorage.getItem(storageKeys.machineTime);
+            if (!raw) return false;
+
+            const data = JSON.parse(raw);
+            if (data.mode) {
+                const radio = document.querySelector(`input[name="machineCalcMode"][value="${data.mode}"]`);
+                if (radio) radio.checked = true;
+            }
+
+            machineEls.doneCount.value = cleanMachineDecimal(data.doneCount || '');
+            machineEls.startTime.value = data.startTime || '';
+            machineEls.endTime.value = data.endTime || '';
+            machineEls.workSecond.value = cleanMachineDecimal(data.workSecond || '');
+            machineEls.targetCount.value = cleanMachineDecimal(data.targetCount || data.boardCount || '');
+
+            if (machineEls.startTime.value) normalizeMachineTimeInput(machineEls.startTime);
+            if (machineEls.endTime.value) normalizeMachineTimeInput(machineEls.endTime);
+
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function clearMachineResults() {
+        machineEls.resultA.textContent = '--';
+        machineEls.resultB.textContent = '--';
+        machineEls.resultC.textContent = '--';
+        setMachineNotice('', '');
+        saveMachineTimeState();
+    }
+
+    function calculateMachineTime() {
+        setMachineModeUI();
+
+        const mode = getMachineMode();
+        const startMinutes = machineTimeToMinutes(machineEls.startTime.value);
+        const endMinutesRaw = machineTimeToMinutes(machineEls.endTime.value);
+        const workSeconds = getMachineWorkSeconds();
+        const doneCount = getNonNegativeMachineNumber(machineEls.doneCount);
+
+        if (startMinutes === null || workSeconds <= 0) {
+            clearMachineResults();
+            return;
+        }
+
+        if (mode === 'byBoards') {
+            if (endMinutesRaw === null) {
+                clearMachineResults();
+                saveMachineTimeState();
+                return;
+            }
+
+            let availableMinutes = endMinutesRaw - startMinutes;
+            if (availableMinutes < 0) availableMinutes += 24 * 60;
+
+            const availableSeconds = availableMinutes * 60;
+            const possibleCount = Math.floor(availableSeconds / workSeconds);
+            const estimatedTotal = doneCount + possibleCount;
+
+            machineEls.resultA.textContent = formatMachineNumber(possibleCount);
+            machineEls.resultB.textContent = formatMachineNumber(estimatedTotal);
+            machineEls.resultC.textContent = formatMachineDuration(availableSeconds);
+        } else {
+            const targetCount = getPositiveMachineNumber(machineEls.targetCount);
+
+            if (targetCount <= 0) {
+                clearMachineResults();
+                saveMachineTimeState();
+                return;
+            }
+
+            const remainingCount = Math.max(0, targetCount - doneCount);
+            const neededSeconds = remainingCount * workSeconds;
+
+            machineEls.resultA.textContent = formatMachineNumber(remainingCount);
+            machineEls.resultB.textContent = formatMachineDuration(neededSeconds);
+            machineEls.resultC.textContent = machineSecondsToTime(startMinutes * 60 + neededSeconds);
+        }
+
+        setMachineNotice('', '');
+        saveMachineTimeState();
+    }
+
+    function setMachineNow() {
+        machineEls.startTime.value = getCurrentMachineTimeValue();
+        calculateMachineTime();
+    }
+
+    function clearMachineTime() {
+        localStorage.removeItem(storageKeys.machineTime);
+        document.querySelector('input[name="machineCalcMode"][value="byBoards"]').checked = true;
+        machineEls.doneCount.value = '';
+        machineEls.startTime.value = getCurrentMachineTimeValue();
+        machineEls.endTime.value = '';
+        machineEls.workSecond.value = '';
+        machineEls.targetCount.value = '';
+        machineEls.resultA.textContent = '--';
+        machineEls.resultB.textContent = '--';
+        machineEls.resultC.textContent = '--';
+        setMachineNotice('', '');
+        calculateMachineTime();
+    }
+
+    function bindMachineTimeInput(el) {
+        if (!el) return;
+
+        const clearForEdit = () => {
+            if (!el.value) return;
+            el.value = '';
+            calculateMachineTime();
+        };
+        const updateTyping = () => {
+            formatMachineTimeTyping(el);
+            calculateMachineTime();
+        };
+
+        const updateFinal = () => {
+            normalizeMachineTimeInput(el);
+            calculateMachineTime();
+        };
+
+        el.addEventListener('click', clearForEdit);
+        el.addEventListener('input', updateTyping);
+        el.addEventListener('keyup', updateTyping);
+        el.addEventListener('change', updateFinal);
+        el.addEventListener('blur', updateFinal);
+        el.addEventListener('compositionend', updateFinal);
+    }
+
+    function bindMachineDecimalInput(el) {
+        if (!el) return;
+
+        const clearForEdit = () => {
+            if (!el.value) return;
+            el.value = '';
+            calculateMachineTime();
+        };
+        const update = () => {
+            normalizeMachineDecimalInput(el);
+            calculateMachineTime();
+        };
+
+        el.addEventListener('click', clearForEdit);
+        el.addEventListener('input', update);
+        el.addEventListener('keyup', update);
+        el.addEventListener('change', update);
+        el.addEventListener('blur', update);
+        el.addEventListener('compositionend', update);
+    }
+
+    function initMachineTimeCalculator() {
+        const restored = loadMachineTimeState();
+
+        if (!restored || !machineEls.startTime.value) {
+            machineEls.startTime.value = getCurrentMachineTimeValue();
+        }
+
+        [machineEls.startTime, machineEls.endTime].forEach(bindMachineTimeInput);
+        [machineEls.doneCount, machineEls.workSecond, machineEls.targetCount].forEach(bindMachineDecimalInput);
+
+        document.querySelectorAll('input[name="machineCalcMode"]').forEach(el => {
+            el.addEventListener('change', calculateMachineTime);
+            el.addEventListener('click', calculateMachineTime);
+        });
+
+        calculateMachineTime();
+    }
+
+    initMachineTimeCalculator();
+
+</script>
+</body>
+</html>
