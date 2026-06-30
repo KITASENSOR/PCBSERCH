@@ -44,6 +44,13 @@
 
 若 Cloudflare 環境變數有設定 `ADMIN_TOKEN`，管理端 API 需要帶入 token 驗證。
 
+## 排程匯入與顯示規則
+
+- 排程匯入後會依 `wo_id` 去重。
+- `wo_id` 重複且沒有 `start_date` 時，才加總 `plan_qty`。
+- `wo_id` 重複但有 `start_date` 時，不加總 `plan_qty`，保留該工單的第一筆有日期資料。
+- 排程畫面顯示順序依照 Excel 匯入後寫入資料庫的順序，不再依日期或型號重新排序。
+
 ## 之後作業流程
 
 本次已完成 Cloudflare 最新部署同步到 GitHub。之後修改請依照以下順序：

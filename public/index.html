@@ -2281,7 +2281,7 @@
             const response = await fetch(`/api/schedule?t=${Date.now()}`);
             const data = await response.json();
             if (!response.ok || data.error) throw new Error(data.error || '\u6392\u7a0b\u8b80\u53d6\u5931\u6557');
-            scheduleGroups = sortScheduleGroups(data.groups || []);
+            scheduleGroups = data.groups || [];
             selectedPickingItems.clear();
             pickingAllItems = [];
             pickingComboKey = '';
@@ -2386,15 +2386,6 @@
 
     function isScheduledGroup(group) {
         return isScheduledDate(group?.date);
-    }
-
-    function sortScheduleGroups(groups) {
-        return [...(groups || [])].sort((a, b) => {
-            const aScheduled = isScheduledGroup(a);
-            const bScheduled = isScheduledGroup(b);
-            if (aScheduled !== bScheduled) return aScheduled ? -1 : 1;
-            return String(a.date || '').localeCompare(String(b.date || ''), undefined, { numeric: true });
-        });
     }
 
     function visibleScheduleGroups() {

@@ -39,7 +39,7 @@ async function A(a) {
 __name(A, "A");
 p(A, "getBomPayload");
 async function I(a) {
-  let t = (await a.prepare("SELECT wo_id, part_no, side, plan_qty, real_qty, start_date, end_date, panel_size FROM schedule_items ORDER BY start_date, part_no, wo_id").all()).results || [], n = [], r = /* @__PURE__ */ new Map();
+  let t = (await a.prepare("SELECT wo_id, part_no, side, plan_qty, real_qty, start_date, end_date, panel_size FROM schedule_items ORDER BY rowid").all()).results || [], n = [], r = /* @__PURE__ */ new Map();
   return t.forEach((i) => {
     let c = R(i.start_date) || "\u672A\u6392\u65E5\u671F";
     if (!r.has(c)) {
@@ -53,7 +53,7 @@ async function I(a) {
 __name(I, "I");
 p(I, "getSchedulePayload");
 async function N(a) {
-  let [e, t, n, r, i] = await Promise.all([a.prepare("SELECT parent_number, child_parts FROM bom ORDER BY parent_number").all(), a.prepare("SELECT part_number FROM fixed_parts ORDER BY part_number").all(), a.prepare("SELECT parent_number, child_part_number, batch_quantity, item_name FROM usage_items ORDER BY parent_number, child_part_number").all(), a.prepare("SELECT product_number, specification, package_1 FROM packaging ORDER BY product_number").all(), a.prepare("SELECT wo_id, part_no, side, plan_qty, real_qty, start_date, end_date, panel_size FROM schedule_items ORDER BY start_date, part_no, wo_id").all()]), c = { bom: e.results || [], fixed_parts: t.results || [], usage_items: n.results || [], packaging: r.results || [], schedule_items: i.results || [] };
+  let [e, t, n, r, i] = await Promise.all([a.prepare("SELECT parent_number, child_parts FROM bom ORDER BY parent_number").all(), a.prepare("SELECT part_number FROM fixed_parts ORDER BY part_number").all(), a.prepare("SELECT parent_number, child_part_number, batch_quantity, item_name FROM usage_items ORDER BY parent_number, child_part_number").all(), a.prepare("SELECT product_number, specification, package_1 FROM packaging ORDER BY product_number").all(), a.prepare("SELECT wo_id, part_no, side, plan_qty, real_qty, start_date, end_date, panel_size FROM schedule_items ORDER BY rowid").all()]), c = { bom: e.results || [], fixed_parts: t.results || [], usage_items: n.results || [], packaging: r.results || [], schedule_items: i.results || [] };
   return { exported_at: (/* @__PURE__ */ new Date()).toISOString(), counts: Object.fromEntries(Object.entries(c).map(([s, _]) => [s, _.length])), tables: c };
 }
 __name(N, "N");
