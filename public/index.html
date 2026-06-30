@@ -8,12 +8,48 @@
         body { font-family: "Segoe UI", "Microsoft JhengHei", sans-serif; margin: 25px; background: #f4f7f9; }
         .container { max-width: 1000px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         
-        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        h2 { color: #333; border-left: 5px solid #28a745; padding-left: 15px; margin-bottom: 0; }
-        .header-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: min(100%, 360px); }
+        .header-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        h2 { color: #333; border-left: 5px solid #28a745; padding-left: 15px; margin: 0; min-width: 0; }
+        .header-buttons { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; width: 100%; margin-bottom: 20px; }
         .header-buttons .switch-btn { width: 100%; min-width: 0; }
         .switch-btn { background: #17a2b8; padding: 8px 15px; font-size: 14px; border-radius: 5px; color: white; border: none; cursor: pointer; }
         .switch-btn:hover { background: #138496; }
+        .header-icon-btn {
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            line-height: 1;
+        }
+        .header-icon-btn svg {
+            width: 24px;
+            height: 24px;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .header-icon-btn.active {
+            outline: 3px solid rgba(40,167,69,0.25);
+            filter: brightness(0.95);
+        }
+        .header-icon-group {
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+        }
 
         .switch-discharge-btn { background: #16a085; }
         .switch-discharge-btn:hover { background: #138d75; }
@@ -140,9 +176,31 @@
         button { background: #28a745; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; font-size: 15px; font-weight: bold; }
         button:hover { background: #218838; }
         button:disabled { background: #ccc; cursor: not-allowed; }
+        .query-entry-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 88px;
+            gap: 8px;
+            align-items: stretch;
+        }
+        .query-entry-row textarea {
+            min-width: 0;
+            height: 92px;
+        }
+        .query-entry-actions {
+            display: grid;
+            grid-template-rows: 1fr 1fr;
+            gap: 8px;
+        }
+        .query-entry-actions button {
+            width: 100%;
+            min-width: 0;
+            padding: 8px 6px;
+        }
         
         .filter-btn { background: #f39c12; }
         .filter-btn:hover { background: #e67e22; }
+        .warehouse-btn { background: #2563eb; }
+        .warehouse-btn:hover { background: #1d4ed8; }
         .filter-state-neutral {
             background: #e9ecef !important;
             color: #495057 !important;
@@ -165,10 +223,10 @@
             gap: 6px;
         }
         .bom-action-row {
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
         .discharge-action-row {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: minmax(0, 1fr);
         }
         .bom-action-row button,
         .discharge-action-row button {
@@ -311,13 +369,17 @@
         @media screen and (max-width: 600px) {
             body { margin: 10px; }
             .container { padding: 15px; }
-            .header-row { flex-direction: column; align-items: stretch; gap: 10px; }
+            .header-row { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }
             .header-row h2 { margin-bottom: 5px; }
-            .header-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; width: 100%; }
+            .header-icon-btn { width: 42px; height: 42px; font-size: 21px; }
+            .header-buttons { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; width: 100%; }
             .header-buttons .switch-btn { width: 100%; margin-bottom: 0 !important; padding: 10px; }
+            .query-entry-row { grid-template-columns: minmax(0, 1fr) 74px; gap: 6px; }
+            .query-entry-actions { gap: 6px; }
+            .query-entry-actions button { padding: 7px 4px; font-size: 13px; }
             .btn-group { flex-direction: column; gap: 8px; }
-            .bom-action-row { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-            .discharge-action-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+            .bom-action-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+            .discharge-action-row { grid-template-columns: minmax(0, 1fr); gap: 6px; }
             .bom-action-row button,
             .discharge-action-row button { padding: 9px 4px; font-size: 12px; }
             button { width: 100%; padding: 12px 20px; }
@@ -370,6 +432,8 @@
             .machine-result-value { font-size: 20px; }
         }
 
+        /* === Mobile-only compact layout (desktop uses the wide base layout). === */
+        @media screen and (max-width: 600px) {
         /* Compact layout only for the machine time calculator. */
         #viewMACHINE_TIME {
             max-width: 410px;
@@ -386,7 +450,7 @@
         }
         #viewMACHINE_TIME .header-buttons {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 6px;
             width: 100%;
         }
@@ -452,12 +516,650 @@
             padding: 10px 8px;
             font-size: 14px;
         }
+
+
+        /* Compact mobile-first layout for picking and maintenance pages. */
+        #viewPICKING,
+        #viewMAINTENANCE {
+            max-width: 430px;
+            padding: 12px;
+        }
+        #viewPICKING .header-row,
+        #viewMAINTENANCE .header-row {
+            gap: 7px;
+            margin-bottom: 10px;
+        }
+        #viewPICKING h2,
+        #viewMAINTENANCE h2 {
+            margin-bottom: 0;
+            font-size: 20px;
+            padding-left: 10px;
+        }
+        #viewPICKING .header-buttons,
+        #viewMAINTENANCE .header-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
+            width: 100%;
+        }
+        #viewPICKING .header-buttons .switch-btn,
+        #viewMAINTENANCE .header-buttons .switch-btn {
+            width: 100%;
+            margin-bottom: 0 !important;
+            padding: 8px 6px;
+            font-size: 13px;
+        }
+        #viewPICKING .work-panel,
+        #viewMAINTENANCE .work-panel {
+            padding: 10px;
+            margin-top: 8px;
+            border-radius: 8px;
+        }
+        #viewPICKING .work-panel h3,
+        #viewMAINTENANCE .work-panel h3 {
+            margin: 0 0 8px;
+            font-size: 16px;
+            color: #344054;
+        }
+        #viewPICKING .work-grid,
+        #viewMAINTENANCE .work-grid {
+            grid-template-columns: 1fr;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        #viewPICKING .model-list,
+        #viewPICKING .selected-list {
+            gap: 6px;
+            max-height: 280px;
+            margin-top: 8px;
+        }
+        #viewPICKING .model-row,
+        #viewPICKING .selected-row {
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 6px;
+            padding: 8px;
+        }
+        #viewPICKING .model-row .model-meta,
+        #viewPICKING .selected-row .model-meta {
+            grid-column: 1 / -1;
+            order: 3;
+            white-space: normal;
+            font-size: 12px;
+        }
+        #viewPICKING .small-btn {
+            padding: 7px 8px;
+            font-size: 12px;
+        }
+        #viewPICKING .btn-group,
+        #viewMAINTENANCE .btn-group {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            margin-top: 8px;
+        }
+        #viewPICKING .btn-group button,
+        #viewMAINTENANCE .btn-group button {
+            width: 100%;
+            min-width: 0;
+            padding: 10px 8px;
+            font-size: 14px;
+        }
+        #viewPICKING .status-box,
+        #viewMAINTENANCE .status-box {
+            margin-top: 8px;
+            padding: 8px;
+            line-height: 1.4;
+        }
+        #viewPICKING table {
+            font-size: 13px;
+        }
+        #viewPICKING th,
+        #viewPICKING td {
+            padding: 8px;
+        }
+
+
+
+        /* Compact BOM layout for mobile-style use. */
+        #viewBOM {
+            max-width: 430px;
+            padding: 12px;
+        }
+        #viewBOM .header-row {
+            gap: 7px;
+            margin-bottom: 10px;
+        }
+        #viewBOM h2 {
+            margin-bottom: 0;
+            font-size: 20px;
+            padding-left: 10px;
+        }
+        #viewBOM .header-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
+            width: 100%;
+        }
+        #viewBOM .header-buttons .switch-btn {
+            width: 100%;
+            margin-bottom: 0 !important;
+            padding: 8px 6px;
+            font-size: 13px;
+        }
+        #viewBOM textarea {
+            height: 70px;
+            font-size: 14px;
+            padding: 8px;
+        }
+        #viewBOM .hint {
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        #viewBOM .bom-sticky-header {
+            padding-top: 8px;
+            padding-bottom: 6px;
+        }
+        #viewBOM .bom-action-row {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 6px;
+        }
+        #viewBOM .bom-action-row button {
+            padding: 9px 6px;
+            font-size: 12px;
+        }
+        #viewBOM .match-info {
+            line-height: 2.1;
+            font-size: 13px;
+        }
+        #viewBOM .parent-tag {
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding: 5px 28px 5px 8px;
+            margin: 3px;
+            font-size: 13px;
+        }
+        #viewBOM .child-item {
+            font-size: 12px;
+            padding: 4px 6px;
+            margin: 2px;
+        }
+
+        /* Compact 下料系統 layout for mobile (matches the other views). */
+        #viewDISCHARGE {
+            padding: 12px;
+        }
+        #viewDISCHARGE .header-row {
+            gap: 7px;
+            margin-bottom: 10px;
+        }
+        #viewDISCHARGE h2 {
+            margin-bottom: 0;
+            font-size: 20px;
+            padding-left: 10px;
+        }
+        #viewDISCHARGE .header-buttons .switch-btn {
+            padding: 8px 6px;
+            font-size: 13px;
+        }
+        #viewDISCHARGE > p {
+            font-size: 13px;
+            line-height: 1.4;
+            margin: 8px 0;
+        }
+        #viewDISCHARGE textarea {
+            height: 70px;
+            font-size: 14px;
+            padding: 8px;
+        }
+        #viewDISCHARGE .discharge-action-row button {
+            padding: 9px 4px;
+            font-size: 12px;
+        }
+        }
+        /* === End mobile-only compact layout === */
+
+        .maintenance-upload-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        .maintenance-upload-row {
+            display: grid;
+            grid-template-columns: 72px 1fr;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 8px;
+            border: 1px solid #e6ebee;
+            border-radius: 6px;
+            background: #fff;
+        }
+        .maintenance-upload-row span {
+            font-weight: bold;
+            color: #344054;
+            font-size: 14px;
+        }
+        .maintenance-upload-row input[type="file"] {
+            width: 100%;
+            font-size: 13px;
+            min-width: 0;
+        }
+        #viewPICKING .picking-top-actions {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 6px;
+        }
+        #viewPICKING .picking-top-actions button {
+            width: 100%;
+            min-width: 0;
+            padding: 9px 4px;
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .schedule-list {
+            display: grid;
+            gap: 8px;
+            max-height: 340px;
+            overflow-y: auto;
+        }
+        .schedule-date-group {
+            border: 1px solid #dde5e8;
+            border-radius: 8px;
+            background: #fff;
+            padding: 8px;
+        }
+        .schedule-date-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            color: #344054;
+            font-weight: bold;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+        .schedule-date-title span {
+            color: #667085;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        .schedule-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            align-items: flex-start;
+        }
+        .schedule-tag {
+            cursor: pointer;
+            display: inline-grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 1px;
+            max-width: 100%;
+            border-radius: 5px;
+            border: 1px solid rgba(0,0,0,0.14);
+            padding: 5px 7px;
+            font-size: 12px;
+            line-height: 1.25;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .schedule-tag:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.14);
+        }
+        .schedule-tag strong {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #172033;
+        }
+        .schedule-tag small {
+            color: #4b5565;
+        }
+        .schedule-tag.tag-active {
+            background: #e8f4ff;
+            border-color: #90caf9;
+        }
+        .schedule-tag.tag-done {
+            background: #eafaf1;
+            border-color: #7bd99f;
+        }
+        .selected-tags {
+            min-height: 52px;
+        }
+
         #viewMACHINE_TIME .machine-warning,
         #viewMACHINE_TIME .machine-error {
             margin-top: 8px;
             padding: 8px;
             line-height: 1.4;
         }
+
+        /* Desktop: keep the page nav buttons on a single row, contained within the page. */
+        @media screen and (min-width: 601px) {
+            .header-row { flex-wrap: nowrap; }
+            .header-buttons {
+                display: flex;
+                flex-wrap: nowrap;
+                gap: 8px;
+                width: auto;
+                min-width: 0;
+                flex: 0 1 auto;
+                justify-content: flex-end;
+                grid-template-columns: none;
+            }
+            .header-buttons .switch-btn {
+                flex: 0 1 auto;
+                min-width: 0;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                padding: 8px 12px;
+            }
+        }
+        .maintenance-btn { background: #7f8c8d; }
+        .maintenance-btn:hover { background: #6c7a7a; }
+        .picking-btn { background: #0f766e; }
+        .picking-btn:hover { background: #0b5f59; }
+        .work-panel { border: 1px solid #dde5e8; border-radius: 8px; padding: 16px; margin-top: 14px; background: #fbfcfd; }
+        .work-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
+        .work-field label { display: block; font-weight: bold; margin-bottom: 8px; color: #344054; }
+        .work-field input[type="file"], .work-field input[type="password"] { width: 100%; }
+        .status-box { display: none; margin-top: 12px; padding: 10px 12px; border-radius: 8px; line-height: 1.6; border: 1px solid #d9e2ec; background: #f8fafc; color: #344054; }
+        .status-box.ok { display: block; border-color: #b7e4c7; background: #f0fff4; color: #1b5e20; }
+        .status-box.warn { display: block; border-color: #ffe0a3; background: #fff8e1; color: #8a5a00; }
+        .status-box.error { display: block; border-color: #ffc9c9; background: #fff5f5; color: #b00020; }
+        #pickingStatus.status-box {
+            position: fixed;
+            left: 50%;
+            bottom: 20vh;
+            transform: translateX(-50%) translateY(12px);
+            width: min(86vw, 420px);
+            margin: 0;
+            text-align: center;
+            box-shadow: 0 14px 38px rgba(15, 23, 42, 0.18);
+            z-index: 1900;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.18s ease, transform 0.18s ease;
+        }
+        #pickingStatus.status-box.ok,
+        #pickingStatus.status-box.warn,
+        #pickingStatus.status-box.error {
+            display: block;
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        .model-list, .selected-list { display: grid; gap: 8px; max-height: 360px; overflow-y: auto; margin-top: 12px; }
+        .model-row, .selected-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center; border: 1px solid #dde5e8; border-radius: 8px; padding: 10px; background: #fff; }
+        .model-main { min-width: 0; font-weight: bold; color: #1f2937; overflow-wrap: anywhere; }
+        .model-meta { color: #667085; font-size: 13px; white-space: nowrap; }
+        .small-btn { padding: 7px 10px; font-size: 13px; white-space: nowrap; }
+        .danger-btn { background: #dc3545; }
+        .danger-btn:hover { background: #bd2130; }
+        .table-wrap { width: 100%; overflow-x: auto; margin-top: 12px; }
+        .result-number { text-align: right; white-space: nowrap; }
+        @media screen and (max-width: 600px) {
+            .work-grid { grid-template-columns: 1fr; }
+            .model-row, .selected-row { grid-template-columns: minmax(0, 1fr); align-items: stretch; }
+            .model-meta { white-space: normal; }
+        }
+
+
+        /* Keep picking results as a real table on mobile. */
+        #viewPICKING .table-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        #viewPICKING .table-wrap table {
+            display: table !important;
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
+            table-layout: fixed;
+            border-collapse: collapse;
+            font-size: 16px;
+        }
+        #viewPICKING .table-wrap thead {
+            display: table-header-group !important;
+        }
+        #viewPICKING .table-wrap tbody {
+            display: table-row-group !important;
+        }
+        #viewPICKING .table-wrap tr {
+            display: table-row !important;
+            width: auto !important;
+            margin: 0 !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            background: transparent !important;
+        }
+        #viewPICKING .table-wrap th,
+        #viewPICKING .table-wrap td {
+            display: table-cell !important;
+            border: 1px solid #e0e0e0 !important;
+            padding: 6px 5px !important;
+            vertical-align: middle;
+            color: #1f2937;
+            box-sizing: border-box;
+        }
+        #viewPICKING .table-wrap th {
+            background: #f8f9fa !important;
+            font-size: 15px;
+            line-height: 1.3;
+        }
+        #viewPICKING .table-wrap .picking-col-part { width: 43%; }
+        #viewPICKING .table-wrap .picking-col-qty { width: 26%; }
+        #viewPICKING .table-wrap .picking-col-roll { width: 13%; }
+        #viewPICKING .table-wrap .picking-col-note { width: 18%; }
+        #viewPICKING .table-wrap th,
+        #viewPICKING .table-wrap td {
+            white-space: nowrap;
+        }
+        #viewPICKING .table-wrap td:first-child {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        #viewPICKING .table-wrap .result-number {
+            text-align: right;
+            color: #1f2937;
+        }
+        #viewPICKING .table-wrap .picking-roll-cell,
+        #viewPICKING .table-wrap .picking-note-cell {
+            text-align: right;
+            white-space: nowrap;
+        }
+        #viewPICKING .table-wrap .picking-note-input {
+            width: 100%;
+            min-width: 0;
+            padding: 5px 6px;
+            text-align: right;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .picking-note-backdrop {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(17, 24, 39, 0.32);
+            z-index: 2000;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .picking-note-backdrop.show { display: flex; }
+        .picking-note-dialog {
+            width: min(92vw, 300px);
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 18px 48px rgba(0,0,0,0.24);
+            padding: 16px;
+            box-sizing: border-box;
+        }
+        .picking-note-dialog-title {
+            font-weight: bold;
+            color: #344054;
+            margin-bottom: 10px;
+        }
+        .picking-note-dialog input {
+            width: 100%;
+            font-size: 22px;
+            text-align: right;
+            box-sizing: border-box;
+        }
+        .picking-note-dialog-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .picking-note-dialog-actions button {
+            width: 100%;
+            padding: 10px 12px;
+        }
+        /* 捲數大於 1 標紅；點選結果列可反灰標記已取。 */
+        #viewPICKING .table-wrap td.roll-warn {
+            color: #dc3545 !important;
+            font-weight: bold;
+        }
+        #viewPICKING .table-wrap tr.picking-result-row { cursor: pointer; }
+        #viewPICKING .table-wrap tr.picking-result-row:hover td { background: #f0f7ff !important; }
+        #viewPICKING .table-wrap tr.picking-result-row.dimmed td {
+            background: #ededed !important;
+            color: #999 !important;
+            opacity: 0.6;
+            text-decoration: line-through;
+        }
+
+        /* 排程清單（上線日/型號/數量/勾選）— 保持為真正表格，桌機手機皆然。 */
+        #viewPICKING .schedule-list { max-height: 40vh; overflow-y: auto; }
+        .schedule-panel-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 4px;
+        }
+        .schedule-panel-head h3 { margin: 0; }
+        .schedule-collapse-btn {
+            width: 34px;
+            height: 34px;
+            padding: 0;
+            border-radius: 50%;
+            background: #eef2f7;
+            color: #344054;
+            border: 1px solid #cfd8dc;
+            font-size: 18px;
+            line-height: 1;
+        }
+        .schedule-collapse-btn:hover { background: #dde6ef; }
+        .schedule-filter-tabs {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
+            margin: 8px 0 10px;
+        }
+        .schedule-filter-tabs button {
+            width: 100%;
+            min-width: 0;
+            padding: 8px 6px;
+            border: 1px solid #cfd8dc;
+            border-radius: 7px;
+            background: #fff;
+            color: #344054;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .schedule-filter-tabs button.active {
+            border-color: #0f766e;
+            background: #e8f6f3;
+            color: #0b5f59;
+        }
+        .picking-result-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+        .picking-result-head h3 { margin: 0; }
+        .picking-result-head button {
+            flex: 0 0 auto;
+            width: auto;
+            padding: 7px 14px;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        #viewPICKING .schedule-table {
+            display: table !important;
+            width: 100%;
+            min-width: 0;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        #viewPICKING .schedule-table thead { display: table-header-group !important; }
+        #viewPICKING .schedule-table tbody { display: table-row-group !important; }
+        #viewPICKING .schedule-table tr {
+            display: table-row !important;
+            margin: 0 !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            background: transparent !important;
+        }
+        #viewPICKING .schedule-table th,
+        #viewPICKING .schedule-table td {
+            display: table-cell !important;
+            width: auto !important;
+            border: 1px solid #e6e6e6 !important;
+            padding: 8px 10px !important;
+            text-align: left;
+            vertical-align: middle;
+            white-space: nowrap;
+            color: #1f2937;
+        }
+        #viewPICKING .schedule-table th {
+            background: #f8f9fa !important;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            font-size: 13px;
+        }
+        #viewPICKING .schedule-table .result-number { text-align: right; }
+        #viewPICKING .schedule-table .schedule-check { width: 40px; text-align: center; cursor: pointer; }
+        #viewPICKING .schedule-table .schedule-check input { pointer-events: none; width: 18px; height: 18px; }
+        #viewPICKING .schedule-table .schedule-model { font-weight: bold; }
+        #viewPICKING .schedule-table tr.schedule-row { cursor: default; }
+        #viewPICKING .schedule-table tr.schedule-row:hover td { background: #f0f7ff !important; }
+        #viewPICKING .schedule-table tr.schedule-row.is-checked td { background: #eafaf1 !important; }
+        #viewPICKING .schedule-table tr.schedule-row.is-delete-selected td { background: #fff1f2 !important; }
+        .schedule-delete-toolbar {
+            display: none;
+            grid-template-columns: minmax(0, 1fr) auto auto;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            padding: 8px;
+            border: 1px solid #fecdd3;
+            border-radius: 8px;
+            background: #fff5f6;
+        }
+        .schedule-delete-toolbar.show { display: grid; }
+        .schedule-delete-toolbar span {
+            min-width: 0;
+            color: #9f1239;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        .schedule-delete-toolbar button {
+            width: auto;
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+
     </style>
 </head>
 <body>
@@ -467,25 +1169,33 @@
         document.write(`
             <div class="header-row">
                 <h2>${currentViewTitle}</h2>
+                <div class="header-icon-group">
+                    <button class="header-icon-btn maintenance-btn${viewId === 'MAINTENANCE' ? ' active' : ''}" type="button" title="資料維護" aria-label="資料維護" onclick="toggleView('MAINTENANCE')">⚙</button>
+                    <button class="header-icon-btn machine-time-btn${viewId === 'MACHINE_TIME' ? ' active' : ''}" type="button" title="機台時間試算" aria-label="機台時間試算" onclick="toggleView('MACHINE_TIME')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"></rect><rect x="7" y="5" width="10" height="4" rx="1"></rect><path d="M8 13h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01M16 17h.01"></path></svg></button>
+                </div>
+            </div>
                 <div class="header-buttons">
                     ${viewId !== 'BOM' ? `<button class="switch-btn" onclick="toggleView('BOM')">BOM 查詢</button>` : ''}
                     ${viewId !== 'DISCHARGE' ? `<button class="switch-btn switch-discharge-btn" onclick="toggleView('DISCHARGE')">下料系統 📦</button>` : ''}
-                    ${viewId !== 'MACHINE_TIME' ? `<button class="switch-btn machine-time-btn" onclick="toggleView('MACHINE_TIME')">機台時間試算 ⏱</button>` : ''}
+                    ${viewId !== 'PICKING' ? `<button class="switch-btn picking-btn" onclick="toggleView('PICKING')">取料計算</button>` : ''}
                 </div>
-            </div>
         `);
     }
 </script>
 
 <div class="container" id="viewBOM">
     <script>renderHeader('BOM 查詢', 'BOM');</script>
-    <textarea id="inputSearch" placeholder="例如輸入 PC-0427-4X 或 42242"></textarea>
+    <div class="query-entry-row">
+        <textarea id="inputSearch" placeholder="例如輸入 PC-0427-4X 或 42242"></textarea>
+        <div class="query-entry-actions">
+            <button id="btnSearch" onclick="runFuzzyQuery()" disabled>搜尋</button>
+            <button class="clear-btn" onclick="clearBOMSearch()">清除</button>
+        </div>
+    </div>
     <div class="hint">* 自動比對 PC-00XX-XX 格式，完整輸入或局部輸入皆可精準搜尋。</div>
 
     <div id="bomStickyHeader" class="bom-sticky-header">
         <div class="btn-group bom-action-row">
-            <button id="btnSearch" onclick="runFuzzyQuery()" disabled>搜尋</button>
-            <button class="clear-btn" onclick="clearBOMSearch()">清除</button>
             <button class="filter-btn filter-state-neutral" id="btnOnlyCommon" onclick="toggleCommonFilter()" style="display:none;">共用料</button>
             <button class="filter-btn fixed-btn filter-state-neutral" id="btnFixedFilter" onclick="toggleFixedFilter()" style="display:none;">固定料</button>
         </div>
@@ -498,12 +1208,16 @@
 <div class="container" id="viewDISCHARGE" style="display: none;">
     <script>renderHeader('下料系統', 'DISCHARGE');</script>
     <p>輸入要進行下料分析的母件編號，可多個:</p>
-    <textarea id="inputDischarge" placeholder="例如輸入 PC-0427-4X 或 42242"></textarea>
+    <div class="query-entry-row">
+        <textarea id="inputDischarge" placeholder="例如輸入 PC-0427-4X 或 42242"></textarea>
+        <div class="query-entry-actions">
+            <button id="btnDischarge" onclick="runDischargeQuery()" disabled>搜尋</button>
+            <button class="clear-btn" onclick="clearDischarge()">清除</button>
+        </div>
+    </div>
     <div class="hint">* 點擊「進行中」母件可標記為「已完成」/ 點擊「已完成」母件可移回 / 右側 × 可移除</div>
 
     <div class="btn-group discharge-action-row">
-        <button id="btnDischarge" onclick="runDischargeQuery()" disabled>搜尋</button>
-        <button class="clear-btn" onclick="clearDischarge()">清除</button>
         <button class="filter-btn fixed-btn filter-state-neutral" id="btnDischargeFixedFilter" onclick="toggleDischargeFixedFilter()" style="display:none;">固定料</button>
     </div>
 
@@ -586,6 +1300,81 @@
 </div>
 
 
+
+
+
+<div class="container" id="viewPICKING" style="display: none;">
+    <script>renderHeader('\u53d6\u6599\u8a08\u7b97', 'PICKING');</script>
+
+    <div class="work-panel">
+        <div class="btn-group picking-top-actions">
+            <button type="button" onclick="loadScheduleFromDatabase()">&#35712;&#25490;&#31243;</button>
+            <button type="button" id="btnPickingWarehouse" class="warehouse-btn" onclick="showScheduledWarehouseMaterials()">&#20489;&#31649;</button>
+            <button type="button" class="filter-btn" onclick="pastePickingToBOM()">&#26597; BOM</button>
+            <button type="button" class="clear-btn" onclick="clearPickingSelection()">&#28165;&#38500;</button>
+        </div>
+        <div id="pickingStatus" class="status-box"></div>
+    </div>
+
+    <div class="work-panel">
+        <div class="schedule-panel-head">
+            <h3>&#25490;&#31243;&#21015;&#34920;</h3>
+            <button type="button" id="scheduleCollapseBtn" class="schedule-collapse-btn" onclick="toggleScheduleListCollapsed()" title="收闔排程列表" aria-label="收闔排程列表">▲</button>
+        </div>
+        <div id="scheduleFilterTabs" class="schedule-filter-tabs" role="group" aria-label="排程篩選">
+            <button type="button" id="scheduleFilterAll" onclick="setScheduleFilter('all')">全部</button>
+            <button type="button" id="scheduleFilterScheduled" class="active" onclick="setScheduleFilter('scheduled')">已排程</button>
+            <button type="button" id="scheduleFilterUnscheduled" onclick="setScheduleFilter('unscheduled')">未排程</button>
+        </div>
+        <div id="pickingScheduleList" class="schedule-list"></div>
+    </div>
+
+    <div class="work-panel">
+        <div class="picking-result-head">
+            <h3>&#21462;&#26009;&#32080;&#26524;</h3>
+        </div>
+        <div id="pickingResultArea" class="table-wrap"></div>
+    </div>
+</div>
+
+<div class="picking-note-backdrop" id="pickingNoteBackdrop" onclick="cancelPickingNoteDialog(event)">
+    <div class="picking-note-dialog" role="dialog" aria-modal="true" aria-labelledby="pickingNoteDialogTitle" onclick="event.stopPropagation()">
+        <div class="picking-note-dialog-title" id="pickingNoteDialogTitle">備註數量</div>
+        <input id="pickingNoteDialogInput" type="text" inputmode="decimal" autocomplete="off">
+        <div class="picking-note-dialog-actions">
+            <button type="button" class="clear-btn" onclick="cancelPickingNoteDialog()">取消</button>
+            <button type="button" onclick="confirmPickingNoteDialog()">確定</button>
+        </div>
+    </div>
+</div>
+
+<div class="container" id="viewMAINTENANCE" style="display: none;">
+    <script>renderHeader('\u8cc7\u6599\u7dad\u8b77', 'MAINTENANCE');</script>
+
+    <div class="work-panel">
+        <div class="work-field">
+            <label for="adminToken">&#31649;&#29702; Token</label>
+            <input id="adminToken" type="password" autocomplete="off" placeholder="&#26412;&#27231;&#26410;&#35373;&#23450;&#21487;&#30041;&#31354;">
+        </div>
+        <div id="maintenanceStatus" class="status-box"></div>
+    </div>
+
+    <div class="work-panel">
+        <h3>&#19978;&#20659;&#36039;&#26009;&#65288;&#21487;&#19968;&#27425;&#36984;&#22810;&#24373;&#65292;&#19968;&#37749;&#19978;&#20659;&#65289;</h3>
+        <div class="maintenance-upload-grid">
+            <label class="maintenance-upload-row"><span>BOM</span><input id="maintenanceFile_bom" type="file" accept=".xlsx"></label>
+            <label class="maintenance-upload-row"><span>&#22266;&#23450;&#26009;</span><input id="maintenanceFile_fixed_parts" type="file" accept=".xlsx"></label>
+            <label class="maintenance-upload-row"><span>&#29992;&#37327;</span><input id="maintenanceFile_usage_items" type="file" accept=".xlsx"></label>
+            <label class="maintenance-upload-row"><span>&#21253;&#35037;</span><input id="maintenanceFile_packaging" type="file" accept=".xlsx"></label>
+            <label class="maintenance-upload-row"><span>&#25490;&#31243;</span><input id="maintenanceFile_schedule_items" type="file" accept=".xlsx"></label>
+        </div>
+        <div class="btn-group">
+            <button type="button" onclick="importAllMaintenanceSheets()">&#19978;&#20659;</button>
+            <button type="button" class="filter-btn" onclick="exportMaintenanceExcel()">&#21295;&#20986; Excel</button>
+        </div>
+    </div>
+</div>
+
 <script>
     const dataUrl = "/api/bom";
     
@@ -630,9 +1419,14 @@
         document.getElementById('viewBOM').style.display = (viewType === 'BOM') ? 'block' : 'none';
         document.getElementById('viewDISCHARGE').style.display = (viewType === 'DISCHARGE') ? 'block' : 'none';
         document.getElementById('viewMACHINE_TIME').style.display = (viewType === 'MACHINE_TIME') ? 'block' : 'none';
+        document.getElementById('viewPICKING').style.display = (viewType === 'PICKING') ? 'block' : 'none';
+        document.getElementById('viewMAINTENANCE').style.display = (viewType === 'MAINTENANCE') ? 'block' : 'none';
 
         if (viewType === 'MACHINE_TIME') {
             calculateMachineTime();
+        }
+        if (viewType === 'PICKING') {
+            loadScheduleFromDatabase();
         }
     }
 
@@ -1130,6 +1924,837 @@
         }
     }
 
+
+    const maintenanceSheetConfigs = {
+        bom: {
+            label: 'BOM',
+            sheetNames: ['BOM'],
+            fields: ['parent_number', 'child_parts'],
+            aliases: {
+                parent_number: ['\u6bcd\u4ef6\u7de8\u865f', 'parent_number'],
+                child_parts: ['\u5b50\u4ef6\u7de8\u865f', 'child_parts']
+            }
+        },
+        fixed_parts: {
+            label: '\u56fa\u5b9a\u6599',
+            sheetNames: ['\u56fa\u5b9a\u6599'],
+            fields: ['part_number'],
+            aliases: { part_number: ['\u56fa\u5b9a\u6599', 'part_number'] }
+        },
+        usage_items: {
+            label: '\u7528\u91cf',
+            sheetNames: ['\u7528\u91cf'],
+            fields: ['parent_number', 'child_part_number', 'batch_quantity', 'item_name'],
+            aliases: {
+                parent_number: ['\u6bcd\u4ef6\u7de8\u865f', 'parent_number'],
+                child_part_number: ['\u5b50\u4ef6\u7de8\u865f', 'child_part_number'],
+                batch_quantity: ['\u6279\u91cf\u7528\u91cf', 'batch_quantity'],
+                item_name: ['\u54c1\u540d', 'item_name']
+            }
+        },
+        packaging: {
+            label: '\u5305\u88dd',
+            sheetNames: ['\u5305\u88dd'],
+            fields: ['product_number', 'specification', 'package_1'],
+            aliases: {
+                product_number: ['\u7522\u54c1\u7de8\u865f', 'product_number'],
+                specification: ['\u54c1\u540d\u898f\u683c', 'specification'],
+                package_1: ['\u5305\u88dd1', 'package_1']
+            }
+        },
+        schedule_items: {
+            label: '\u6392\u7a0b',
+            sheetNames: ['\u5de5\u4f5c\u88681', '\u6392\u7a0b', 'Schedule'],
+            useFirstSheetFallback: true,
+            fields: ['wo_id', 'part_no', 'side', 'plan_qty', 'real_qty', 'start_date', 'end_date', 'panel_size'],
+            aliases: {
+                wo_id: ['wo_id', '\u5de5\u55ae\u865f\u78bc', '\u5de5\u55ae'],
+                part_no: ['part_no', '\u578b\u865f', '\u54c1\u865f', '\u6bcd\u4ef6\u7de8\u865f'],
+                side: ['side', '\u9762\u5225'],
+                plan_qty: ['plan_qty', '\u751f\u7522\u6578\u91cf', '\u8a08\u756b\u6578\u91cf', '\u6392\u7a0b\u6578\u91cf'],
+                real_qty: ['real_qty', '\u5be6\u969b\u6578\u91cf'],
+                start_date: ['start_date', '\u4e0a\u7dda\u65e5\u671f', '\u958b\u59cb\u65e5\u671f'],
+                end_date: ['end_date', '\u7d50\u675f\u65e5\u671f'],
+                panel_size: ['panel_size', '\u9023\u677f\u6578', 'panel']
+            }
+        }
+    };
+
+    let scheduleGroups = [];
+    let selectedPickingItems = new Map();
+    let pickingAllItems = [];
+    let warehouseView = false;
+    let pickingComboKey = '';
+    let pickingNotes = {};
+    let scheduleFilterMode = 'scheduled';
+    let scheduleListCollapsed = false;
+    const pickingNoteSaveTimers = {};
+    const statusToastTimers = {};
+    let activePickingNoteInput = null;
+    let activePickingNotePart = '';
+    let scheduleDeleteMode = false;
+    let scheduleDeleteSelection = new Set();
+    let scheduleLongPressTimer = null;
+    let scheduleLongPressTriggered = false;
+
+    function setStatusBox(id, message, kind = 'ok') {
+        const box = document.getElementById(id);
+        if (!box) return;
+        if (statusToastTimers[id]) clearTimeout(statusToastTimers[id]);
+        box.className = `status-box ${kind}`;
+        box.innerHTML = message;
+        if (id === 'pickingStatus') {
+            const delay = kind === 'error' ? 4200 : 2600;
+            statusToastTimers[id] = setTimeout(() => clearStatusBox(id), delay);
+        }
+    }
+
+    function clearStatusBox(id) {
+        const box = document.getElementById(id);
+        if (!box) return;
+        if (statusToastTimers[id]) {
+            clearTimeout(statusToastTimers[id]);
+            delete statusToastTimers[id];
+        }
+        box.className = 'status-box';
+        box.innerHTML = '';
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function escapeXml(value) {
+        return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function readCell(row, aliases) {
+        for (const key of aliases) {
+            if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== '') return String(row[key]).trim();
+        }
+        const lowerMap = Object.fromEntries(Object.keys(row).map(key => [String(key).trim().toLowerCase(), key]));
+        for (const key of aliases) {
+            const actualKey = lowerMap[String(key).trim().toLowerCase()];
+            if (actualKey && row[actualKey] !== undefined && row[actualKey] !== null) return String(row[actualKey]).trim();
+        }
+        return '';
+    }
+
+    function toClientNumber(value) {
+        const parsed = Number(String(value ?? '').replace(/,/g, '').trim());
+        return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    function formatClientNumber(value, decimals = 0) {
+        const number = Number(value);
+        if (!Number.isFinite(number)) return '';
+        return number.toLocaleString('zh-TW', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+    }
+
+    function getAdminHeaders(isJson = false) {
+        const headers = {};
+        const token = document.getElementById('adminToken')?.value.trim();
+        if (token) headers['x-admin-token'] = token;
+        if (isJson) headers['content-type'] = 'application/json; charset=utf-8';
+        return headers;
+    }
+
+    function zipReadUint16(view, offset) { return view.getUint16(offset, true); }
+    function zipReadUint32(view, offset) { return view.getUint32(offset, true); }
+
+    function parseZipEntries(buffer) {
+        const view = new DataView(buffer);
+        let eocd = -1;
+        for (let i = buffer.byteLength - 22; i >= 0; i--) {
+            if (zipReadUint32(view, i) === 0x06054b50) { eocd = i; break; }
+        }
+        if (eocd < 0) throw new Error('\u4e0d\u662f\u6709\u6548\u7684 xlsx \u6a94\u6848');
+        const totalEntries = zipReadUint16(view, eocd + 10);
+        let offset = zipReadUint32(view, eocd + 16);
+        const decoder = new TextDecoder('utf-8');
+        const entries = new Map();
+        for (let i = 0; i < totalEntries; i++) {
+            if (zipReadUint32(view, offset) !== 0x02014b50) throw new Error('xlsx \u76ee\u9304\u7d50\u69cb\u7121\u6cd5\u8b80\u53d6');
+            const method = zipReadUint16(view, offset + 10);
+            const compressedSize = zipReadUint32(view, offset + 20);
+            const fileNameLength = zipReadUint16(view, offset + 28);
+            const extraLength = zipReadUint16(view, offset + 30);
+            const commentLength = zipReadUint16(view, offset + 32);
+            const localOffset = zipReadUint32(view, offset + 42);
+            const name = decoder.decode(new Uint8Array(buffer, offset + 46, fileNameLength));
+            if (zipReadUint32(view, localOffset) !== 0x04034b50) throw new Error('xlsx \u76ee\u9304\u7d50\u69cb\u7121\u6cd5\u8b80\u53d6');
+            const localNameLength = zipReadUint16(view, localOffset + 26);
+            const localExtraLength = zipReadUint16(view, localOffset + 28);
+            const dataStart = localOffset + 30 + localNameLength + localExtraLength;
+            entries.set(name, { method, bytes: new Uint8Array(buffer, dataStart, compressedSize) });
+            offset += 46 + fileNameLength + extraLength + commentLength;
+        }
+        return entries;
+    }
+
+    async function inflateZipEntry(entry) {
+        if (entry.method === 0) return entry.bytes;
+        if (entry.method !== 8) throw new Error('xlsx \u58d3\u7e2e\u683c\u5f0f\u4e0d\u652f\u63f4');
+        if (!window.DecompressionStream) throw new Error('\u6b64\u700f\u89bd\u5668\u4e0d\u652f\u63f4\u672c\u6a5f xlsx \u89e3\u58d3\u7e2e');
+        const stream = new Blob([entry.bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+        return new Uint8Array(await new Response(stream).arrayBuffer());
+    }
+
+    function parseXml(text) {
+        const xml = new DOMParser().parseFromString(text, 'application/xml');
+        if (xml.getElementsByTagName('parsererror').length) throw new Error('xlsx XML \u89e3\u6790\u5931\u6557');
+        return xml;
+    }
+
+    async function readZipText(entries, name) {
+        const entry = entries.get(name);
+        if (!entry) return '';
+        const bytes = await inflateZipEntry(entry);
+        return new TextDecoder('utf-8').decode(bytes);
+    }
+
+    function getSheetCellText(cell, sharedStrings) {
+        const type = cell.getAttribute('t');
+        const valueNode = cell.getElementsByTagName('v')[0];
+        if (type === 'inlineStr') return Array.from(cell.getElementsByTagName('t')).map(node => node.textContent || '').join('');
+        const raw = valueNode ? valueNode.textContent || '' : '';
+        if (type === 's') return sharedStrings[Number(raw)] || '';
+        return raw;
+    }
+
+    function cellColumnIndex(ref) {
+        const letters = String(ref || '').replace(/[^A-Z]/gi, '').toUpperCase();
+        let index = 0;
+        for (const letter of letters) index = index * 26 + (letter.charCodeAt(0) - 64);
+        return Math.max(0, index - 1);
+    }
+
+    function sheetXmlToRows(xml, sharedStrings) {
+        const arrays = Array.from(xml.getElementsByTagName('row')).map(rowNode => {
+            const values = [];
+            Array.from(rowNode.getElementsByTagName('c')).forEach(cell => {
+                values[cellColumnIndex(cell.getAttribute('r'))] = getSheetCellText(cell, sharedStrings);
+            });
+            return values.map(value => value ?? '');
+        }).filter(row => row.some(value => String(value).trim() !== ''));
+        if (arrays.length === 0) return [];
+        const headers = arrays[0].map(value => String(value).trim());
+        return arrays.slice(1).map(row => {
+            const object = {};
+            headers.forEach((header, index) => { if (header) object[header] = row[index] ?? ''; });
+            return object;
+        });
+    }
+
+    async function readXlsxWorkbook(file) {
+        const entries = parseZipEntries(await file.arrayBuffer());
+        const workbookXml = parseXml(await readZipText(entries, 'xl/workbook.xml'));
+        const relsXml = parseXml(await readZipText(entries, 'xl/_rels/workbook.xml.rels'));
+        const sharedXmlText = await readZipText(entries, 'xl/sharedStrings.xml');
+        const sharedStrings = sharedXmlText ? Array.from(parseXml(sharedXmlText).getElementsByTagName('si')).map(si => Array.from(si.getElementsByTagName('t')).map(t => t.textContent || '').join('')) : [];
+        const rels = new Map(Array.from(relsXml.getElementsByTagName('Relationship')).map(rel => [rel.getAttribute('Id'), rel.getAttribute('Target')?.replace(/^\//, '') || '']));
+        const workbook = { SheetNames: [], Sheets: {} };
+        for (const sheet of Array.from(workbookXml.getElementsByTagName('sheet'))) {
+            const name = sheet.getAttribute('name') || '';
+            const relId = sheet.getAttribute('r:id');
+            const target = rels.get(relId);
+            if (!name || !target) continue;
+            const path = target.startsWith('xl/') ? target : `xl/${target}`;
+            const sheetText = await readZipText(entries, path);
+            if (!sheetText) continue;
+            workbook.SheetNames.push(name);
+            workbook.Sheets[name] = sheetXmlToRows(parseXml(sheetText), sharedStrings);
+        }
+        return workbook;
+    }
+
+    async function readWorkbookFromInput(inputId) {
+        const file = document.getElementById(inputId)?.files?.[0];
+        if (!file) throw new Error('\u8acb\u5148\u9078\u64c7 Excel \u6a94\u6848');
+        if (!/\.xlsx$/i.test(file.name)) throw new Error('\u76ee\u524d\u652f\u63f4 .xlsx \u6a94\u6848');
+        return readXlsxWorkbook(file);
+    }
+
+    function getConfiguredSheetRows(workbook, config) {
+        let sheetName = workbook.SheetNames.find(name => config.sheetNames.some(target => name.trim().toLowerCase() === target.toLowerCase()));
+        if (!sheetName && config.useFirstSheetFallback) sheetName = workbook.SheetNames[0];
+        if (!sheetName) throw new Error(`\u627e\u4e0d\u5230 ${config.label} \u5de5\u4f5c\u8868`);
+        return workbook.Sheets[sheetName] || [];
+    }
+
+    function mapRowsForTable(workbook, tableName) {
+        const config = maintenanceSheetConfigs[tableName];
+        const rows = getConfiguredSheetRows(workbook, config);
+        return rows.map(row => {
+            const mapped = {};
+            config.fields.forEach(field => { mapped[field] = readCell(row, config.aliases[field]); });
+            return mapped;
+        }).filter(row => Object.values(row).some(value => String(value).trim() !== ''));
+    }
+
+    async function importAllMaintenanceSheets() {
+        clearStatusBox('maintenanceStatus');
+        try {
+            const tables = {};
+            const labels = [];
+            for (const [tableName, config] of Object.entries(maintenanceSheetConfigs)) {
+                const file = document.getElementById(`maintenanceFile_${tableName}`)?.files?.[0];
+                if (!file) continue;
+                if (!/\.xlsx$/i.test(file.name)) throw new Error(`${config.label}\uff1a\u50c5\u652f\u63f4 .xlsx \u6a94\u6848`);
+                const workbook = await readXlsxWorkbook(file);
+                const mappedRows = mapRowsForTable(workbook, tableName);
+                const rows = tableName === 'schedule_items' ? mergeScheduleRowsForImport(mappedRows) : mappedRows;
+                if (rows.length === 0) throw new Error(`${config.label} \u6c92\u6709\u53ef\u532f\u5165\u7684\u8cc7\u6599`);
+                tables[tableName] = rows;
+                labels.push(`${config.label} ${rows.length} \u7b46`);
+            }
+            if (Object.keys(tables).length === 0) throw new Error('\u8acb\u5148\u9078\u64c7\u81f3\u5c11\u4e00\u500b Excel \u6a94\u6848');
+            const overwriteLabels = labels.filter(label => !label.startsWith(maintenanceSheetConfigs.schedule_items.label));
+            const scheduleLabel = labels.find(label => label.startsWith(maintenanceSheetConfigs.schedule_items.label));
+            const confirmLines = [];
+            if (overwriteLabels.length) confirmLines.push(`即將覆蓋：\n${overwriteLabels.join('\n')}`);
+            if (scheduleLabel) confirmLines.push(`排程將覆蓋現有資料，匯入前會先將相同工單數量加總：\n${scheduleLabel}`);
+            if (!confirm(`${confirmLines.join('\n\n')}\n\n確定上傳？`)) return;
+            setStatusBox('maintenanceStatus', '\u4e0a\u50b3\u4e2d\uff0c\u8acb\u7a0d\u5019...', 'warn');
+            const response = await fetch('/api/admin/import', {
+                method: 'POST',
+                headers: getAdminHeaders(true),
+                body: JSON.stringify({ tables })
+            });
+            const data = await response.json();
+            if (!response.ok || data.error) throw new Error(data.error || '\u5931\u6557');
+            const summary = Object.entries(data.counts || {}).map(([k, v]) => {
+                const label = maintenanceSheetConfigs[k]?.label || k;
+                if (k === 'schedule_items' && data.totals?.schedule_items !== undefined) {
+                    return `${label} 覆蓋 ${v}（共 ${data.totals.schedule_items}）`;
+                }
+                return `${label} ${v}`;
+            }).join('\u3001');
+            setStatusBox('maintenanceStatus', `\u4e0a\u50b3\u5b8c\u6210\uff1a${summary}`, 'ok');
+            if (tables.bom || tables.fixed_parts) fetchCSV();
+            if (tables.schedule_items) loadScheduleFromDatabase();
+        } catch (error) {
+            setStatusBox('maintenanceStatus', error.message || '\u5931\u6557', 'error');
+        }
+    }
+
+    function downloadExcelXml(fileName, sheets) {
+        const worksheets = sheets.map(sheet => `<Worksheet ss:Name="${escapeXml(sheet.name)}"><Table>${sheet.rows.map(row => `<Row>${row.map(cell => {
+            const numeric = typeof cell === 'number' && Number.isFinite(cell);
+            return `<Cell><Data ss:Type="${numeric ? 'Number' : 'String'}">${escapeXml(cell)}</Data></Cell>`;
+        }).join('')}</Row>`).join('')}</Table></Worksheet>`).join('');
+        const xml = `<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">${worksheets}</Workbook>`;
+        const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+    }
+
+    async function exportMaintenanceExcel() {
+        clearStatusBox('maintenanceStatus');
+        try {
+            setStatusBox('maintenanceStatus', '\u532f\u51fa\u4e2d\uff0c\u8acb\u7a0d\u5019...', 'warn');
+            const response = await fetch('/api/admin/export', { headers: getAdminHeaders(false) });
+            const data = await response.json();
+            if (!response.ok || data.error) throw new Error(data.error || '\u5931\u6557');
+            downloadExcelXml(`D1\u8cc7\u6599\u5eab_${new Date().toISOString().slice(0, 10)}.xls`, [
+                { name: 'BOM', rows: [['\u6bcd\u4ef6\u7de8\u865f', '\u5b50\u4ef6\u7de8\u865f'], ...(data.tables?.bom || []).map(row => [row.parent_number, row.child_parts])] },
+                { name: '\u56fa\u5b9a\u6599', rows: [['\u56fa\u5b9a\u6599'], ...(data.tables?.fixed_parts || []).map(row => [row.part_number])] },
+                { name: '\u7528\u91cf', rows: [['\u6bcd\u4ef6\u7de8\u865f', '\u5b50\u4ef6\u7de8\u865f', '\u6279\u91cf\u7528\u91cf', '\u54c1\u540d'], ...(data.tables?.usage_items || []).map(row => [row.parent_number, row.child_part_number, row.batch_quantity, row.item_name])] },
+                { name: '\u5305\u88dd', rows: [['\u7522\u54c1\u7de8\u865f', '\u54c1\u540d\u898f\u683c', '\u5305\u88dd1'], ...(data.tables?.packaging || []).map(row => [row.product_number, row.specification, row.package_1])] },
+                { name: '\u6392\u7a0b', rows: [['wo_id', 'part_no', 'side', 'plan_qty', 'real_qty', 'start_date', 'end_date', 'panel_size'], ...(data.tables?.schedule_items || []).map(row => [row.wo_id, row.part_no, row.side, row.plan_qty, row.real_qty, row.start_date, row.end_date, row.panel_size])] }
+            ]);
+            setStatusBox('maintenanceStatus', '\u532f\u51fa\u5b8c\u6210', 'ok');
+        } catch (error) {
+            setStatusBox('maintenanceStatus', error.message || '\u5931\u6557', 'error');
+        }
+    }
+
+    async function loadScheduleFromDatabase() {
+        clearStatusBox('pickingStatus');
+        try {
+            const response = await fetch(`/api/schedule?t=${Date.now()}`);
+            const data = await response.json();
+            if (!response.ok || data.error) throw new Error(data.error || '\u6392\u7a0b\u8b80\u53d6\u5931\u6557');
+            scheduleGroups = sortScheduleGroups(data.groups || []);
+            selectedPickingItems.clear();
+            pickingAllItems = [];
+            pickingComboKey = '';
+            pickingNotes = {};
+            warehouseView = false;
+            scheduleDeleteMode = false;
+            scheduleDeleteSelection.clear();
+            renderScheduleGroups();
+            document.getElementById('pickingResultArea').innerHTML = '';
+            setStatusBox('pickingStatus', `\u6392\u7a0b\u8b80\u53d6\u5b8c\u6210\uff1a${data.count || 0} \u7b46\u5de5\u55ae`, 'ok');
+        } catch (error) {
+            setStatusBox('pickingStatus', error.message || '\u6392\u7a0b\u8b80\u53d6\u5931\u6557', 'error');
+            renderScheduleGroups();
+        }
+    }
+
+    function pickingModelDisplay(partNo) {
+        const s = String(partNo || '');
+        const i = s.indexOf('PC-');
+        return i >= 0 ? s.slice(i) : s;
+    }
+
+    function formatScheduleDate(value) {
+        const m = String(value || '').match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+        if (!m) return value || '';
+        return `${parseInt(m[2], 10)}/${parseInt(m[3], 10)}`;
+    }
+
+    function mergeImportText(a, b, separator = '/') {
+        const parts = new Set(String(a || '').split(separator).map(value => value.trim()).filter(Boolean));
+        const next = String(b || '').trim();
+        if (next) parts.add(next);
+        return [...parts].join(separator);
+    }
+
+    function mergeImportEarlierDate(a, b) {
+        const current = String(a || '').trim();
+        const next = String(b || '').trim();
+        if (!current) return next;
+        if (!next) return current;
+        return next < current ? next : current;
+    }
+
+    function mergeImportLaterDate(a, b) {
+        const current = String(a || '').trim();
+        const next = String(b || '').trim();
+        if (!current) return next;
+        if (!next) return current;
+        return next > current ? next : current;
+    }
+
+    function mergeScheduleRowsForImport(rows) {
+        const byWo = new Map();
+        rows.forEach(row => {
+            const woId = String(row.wo_id || '').trim();
+            const partNo = String(row.part_no || '').trim();
+            const planQty = toClientNumber(row.plan_qty);
+            const realQty = toClientNumber(row.real_qty);
+            if (!woId || !partNo || planQty <= 0) return;
+
+            const existing = byWo.get(woId);
+            if (existing) {
+                existing.plan_qty = toClientNumber(existing.plan_qty) + planQty;
+                existing.real_qty = toClientNumber(existing.real_qty) + realQty;
+                existing.side = mergeImportText(existing.side, row.side);
+                existing.start_date = mergeImportEarlierDate(existing.start_date, row.start_date);
+                existing.end_date = mergeImportLaterDate(existing.end_date, row.end_date);
+                if (!String(existing.panel_size || '').trim()) existing.panel_size = String(row.panel_size || '').trim();
+                return;
+            }
+
+            byWo.set(woId, {
+                ...row,
+                wo_id: woId,
+                part_no: partNo,
+                side: String(row.side || '').trim(),
+                plan_qty: planQty,
+                real_qty: realQty,
+                start_date: String(row.start_date || '').trim(),
+                end_date: String(row.end_date || '').trim(),
+                panel_size: String(row.panel_size || '').trim()
+            });
+        });
+        return [...byWo.values()];
+    }
+
+    function isScheduledDate(value) {
+        const text = String(value || '').trim();
+        return text !== '' && text !== '未排日期';
+    }
+
+    function isScheduledGroup(group) {
+        return isScheduledDate(group?.date);
+    }
+
+    function sortScheduleGroups(groups) {
+        return [...(groups || [])].sort((a, b) => {
+            const aScheduled = isScheduledGroup(a);
+            const bScheduled = isScheduledGroup(b);
+            if (aScheduled !== bScheduled) return aScheduled ? -1 : 1;
+            return String(a.date || '').localeCompare(String(b.date || ''), undefined, { numeric: true });
+        });
+    }
+
+    function visibleScheduleGroups() {
+        if (scheduleFilterMode === 'scheduled') return scheduleGroups.filter(isScheduledGroup);
+        if (scheduleFilterMode === 'unscheduled') return scheduleGroups.filter(group => !isScheduledGroup(group));
+        return scheduleGroups;
+    }
+
+    function countScheduleItems(groups) {
+        return groups.reduce((sum, group) => sum + ((group.items || []).length), 0);
+    }
+
+    function setScheduleFilter(mode) {
+        scheduleFilterMode = mode;
+        renderScheduleGroups();
+    }
+
+    function renderScheduleCollapseState() {
+        const button = document.getElementById('scheduleCollapseBtn');
+        const tabs = document.getElementById('scheduleFilterTabs');
+        const list = document.getElementById('pickingScheduleList');
+        if (button) {
+            button.textContent = scheduleListCollapsed ? '▼' : '▲';
+            button.title = scheduleListCollapsed ? '展開排程列表' : '收闔排程列表';
+            button.setAttribute('aria-label', button.title);
+            button.setAttribute('aria-expanded', String(!scheduleListCollapsed));
+        }
+        if (tabs) tabs.style.display = scheduleListCollapsed ? 'none' : '';
+        if (list) list.style.display = scheduleListCollapsed ? 'none' : '';
+    }
+
+    function toggleScheduleListCollapsed() {
+        scheduleListCollapsed = !scheduleListCollapsed;
+        renderScheduleCollapseState();
+    }
+
+    function renderScheduleFilterTabs() {
+        const scheduledCount = countScheduleItems(scheduleGroups.filter(isScheduledGroup));
+        const unscheduledCount = countScheduleItems(scheduleGroups.filter(group => !isScheduledGroup(group)));
+        const allCount = scheduledCount + unscheduledCount;
+        [
+            ['scheduleFilterAll', 'all', `全部 ${allCount}`],
+            ['scheduleFilterScheduled', 'scheduled', `已排程 ${scheduledCount}`],
+            ['scheduleFilterUnscheduled', 'unscheduled', `未排程 ${unscheduledCount}`]
+        ].forEach(([id, mode, label]) => {
+            const button = document.getElementById(id);
+            if (!button) return;
+            button.textContent = label;
+            button.classList.toggle('active', scheduleFilterMode === mode);
+        });
+    }
+
+    function renderScheduleGroups() {
+        const list = document.getElementById('pickingScheduleList');
+        if (!list) return;
+        renderScheduleFilterTabs();
+        renderScheduleCollapseState();
+        if (scheduleGroups.length === 0) {
+            list.innerHTML = '<div class="hint">\u5c1a\u672a\u4e0a\u50b3\u6392\u7a0b\u3002</div>';
+            return;
+        }
+        const groups = visibleScheduleGroups();
+        if (groups.length === 0) {
+            list.innerHTML = '<div class="hint">此篩選沒有排程。</div>';
+            return;
+        }
+        const toolbarClass = scheduleDeleteMode ? 'schedule-delete-toolbar show' : 'schedule-delete-toolbar';
+        const toolbarText = scheduleDeleteMode ? `已選 ${scheduleDeleteSelection.size} 筆排程` : '';
+        const toolbar = `<div class="${toolbarClass}"><span>${toolbarText || '長按型號可多選刪除排程'}</span><button type="button" class="clear-btn" onclick="cancelScheduleDeleteMode()">取消</button><button type="button" class="filter-btn" onclick="deleteSelectedScheduleItems()">刪除</button></div>`;
+        let rows = '';
+        groups.forEach(group => {
+            (group.items || []).forEach(item => {
+                const key = encodeURIComponent(item.wo_id);
+                const checked = selectedPickingItems.has(item.wo_id);
+                const deleteSelected = scheduleDeleteSelection.has(item.wo_id);
+                const model = pickingModelDisplay(item.part_no);
+                const qty = formatClientNumber(item.plan_qty);
+                rows += `<tr class="schedule-row${checked ? ' is-checked' : ''}${deleteSelected ? ' is-delete-selected' : ''}" onmousedown="startScheduleLongPress('${key}', event)" onmouseup="clearScheduleLongPress()" onmouseleave="clearScheduleLongPress()" ontouchstart="startScheduleLongPress('${key}', event)" ontouchend="clearScheduleLongPress()" ontouchcancel="clearScheduleLongPress()" oncontextmenu="event.preventDefault()"><td>${escapeHtml(formatScheduleDate(group.date))}</td><td class="schedule-model">${escapeHtml(model)}</td><td class="result-number">${qty}</td><td class="schedule-check" onclick="toggleScheduleRow('${key}')"><input type="checkbox" tabindex="-1"${(scheduleDeleteMode ? deleteSelected : checked) ? ' checked' : ''}></td></tr>`;
+            });
+        });
+        list.innerHTML = `${toolbar}<table class="schedule-table"><thead><tr><th>\u4e0a\u7dda\u65e5</th><th>\u578b\u865f</th><th>\u6578\u91cf</th><th>\u2713</th></tr></thead><tbody>${rows}</tbody></table>`;
+    }
+
+    function findScheduleItem(woId) {
+        for (const group of scheduleGroups) {
+            const found = (group.items || []).find(item => item.wo_id === woId);
+            if (found) return found;
+        }
+        return null;
+    }
+
+    function toggleScheduleRow(encodedWoId) {
+        if (scheduleLongPressTriggered) {
+            scheduleLongPressTriggered = false;
+            return;
+        }
+        const woId = decodeURIComponent(encodedWoId);
+        if (scheduleDeleteMode) {
+            toggleScheduleDeleteSelection(woId);
+            return;
+        }
+        const item = findScheduleItem(woId);
+        if (!item) return;
+        if (selectedPickingItems.has(woId)) selectedPickingItems.delete(woId);
+        else selectedPickingItems.set(woId, item);
+        warehouseView = false;
+        renderScheduleGroups();
+        calculatePickingMaterials();
+    }
+
+    function startScheduleLongPress(encodedWoId, event) {
+        clearScheduleLongPress();
+        const woId = decodeURIComponent(encodedWoId);
+        scheduleLongPressTriggered = false;
+        scheduleLongPressTimer = setTimeout(() => {
+            scheduleLongPressTriggered = true;
+            scheduleDeleteMode = true;
+            scheduleDeleteSelection.add(woId);
+            renderScheduleGroups();
+            setStatusBox('pickingStatus', '已進入排程刪除模式，可多選後刪除。', 'warn');
+        }, 1000);
+    }
+
+    function clearScheduleLongPress() {
+        if (scheduleLongPressTimer) {
+            clearTimeout(scheduleLongPressTimer);
+            scheduleLongPressTimer = null;
+        }
+    }
+
+    function toggleScheduleDeleteSelection(woId) {
+        if (scheduleDeleteSelection.has(woId)) scheduleDeleteSelection.delete(woId);
+        else scheduleDeleteSelection.add(woId);
+        if (scheduleDeleteSelection.size === 0) scheduleDeleteMode = false;
+        renderScheduleGroups();
+    }
+
+    function cancelScheduleDeleteMode() {
+        scheduleDeleteMode = false;
+        scheduleDeleteSelection.clear();
+        clearStatusBox('pickingStatus');
+        renderScheduleGroups();
+    }
+
+    async function deleteSelectedScheduleItems() {
+        const woIds = [...scheduleDeleteSelection];
+        if (woIds.length === 0) {
+            setStatusBox('pickingStatus', '請先選擇要刪除的排程。', 'warn');
+            return;
+        }
+        if (!confirm(`即將刪除 ${woIds.length} 筆排程，並移除包含這些工單組合的備註紀錄。確定刪除？`)) return;
+        try {
+            setStatusBox('pickingStatus', '刪除排程中，請稍候...', 'warn');
+            const response = await fetch('/api/schedule/delete', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json; charset=utf-8' },
+                body: JSON.stringify({ wo_ids: woIds })
+            });
+            const data = await response.json();
+            if (!response.ok || data.error) throw new Error(data.error || '刪除失敗');
+            await loadScheduleFromDatabase();
+            setStatusBox('pickingStatus', `刪除完成：排程 ${data.deleted_schedule || 0} 筆，備註組合 ${data.deleted_note_combos || 0} 組`, 'ok');
+        } catch (error) {
+            setStatusBox('pickingStatus', error.message || '刪除失敗', 'error');
+        }
+    }
+
+    function clearPickingSelection() {
+        selectedPickingItems.clear();
+        pickingAllItems = [];
+        pickingComboKey = '';
+        pickingNotes = {};
+        warehouseView = false;
+        scheduleDeleteMode = false;
+        scheduleDeleteSelection.clear();
+        document.getElementById('pickingResultArea').innerHTML = '';
+        renderScheduleGroups();
+    }
+
+    let pickingCalcSeq = 0;
+    async function calculatePickingMaterials(modelSource = null) {
+        const sourceItems = modelSource || [...selectedPickingItems.values()];
+        const models = sourceItems.map(item => ({ wo_id: item.wo_id, part_no: item.part_no, plan_qty: item.plan_qty }));
+        if (models.length === 0) {
+            pickingAllItems = [];
+            pickingComboKey = '';
+            pickingNotes = {};
+            document.getElementById('pickingResultArea').innerHTML = '';
+            clearStatusBox('pickingStatus');
+            return;
+        }
+        const seq = ++pickingCalcSeq;
+        setStatusBox('pickingStatus', '\u8a08\u7b97\u4e2d\uff0c\u8acb\u7a0d\u5019...', 'warn');
+        try {
+            const response = await fetch('/api/materials/calculate', { method: 'POST', headers: { 'content-type': 'application/json; charset=utf-8' }, body: JSON.stringify({ models }) });
+            const data = await response.json();
+            if (seq !== pickingCalcSeq) return;
+            if (!response.ok || data.error) throw new Error(data.error || '\u5931\u6557');
+            pickingComboKey = pickingComboKeyFromModels(models);
+            await loadPickingNotes(pickingComboKey, seq);
+            if (seq !== pickingCalcSeq) return;
+            renderPickingResults(data.items || []);
+            setStatusBox('pickingStatus', `\u8a08\u7b97\u5b8c\u6210\uff1a${data.count || 0} \u7b46\u7269\u6599`, 'ok');
+        } catch (error) {
+            if (seq !== pickingCalcSeq) return;
+            setStatusBox('pickingStatus', error.message || '\u8a08\u7b97\u5931\u6557', 'error');
+        }
+    }
+
+    function isWarehouseItem(item) {
+        const name = String(item.item_name || '').toUpperCase();
+        const code = String(item.child_part_number || '').toUpperCase().trim();
+        return name.includes('MCU') || code.startsWith('EL-');
+    }
+
+    function renderPickingResults(items) {
+        pickingAllItems = items || [];
+        renderPickingTable();
+    }
+
+    function renderPickingTable() {
+        const area = document.getElementById('pickingResultArea');
+        if (!area) return;
+        let items = pickingAllItems;
+        if (warehouseView) items = items.filter(isWarehouseItem);
+        if (!items.length) {
+            area.innerHTML = `<div class="hint">${warehouseView ? '\u6c92\u6709 EL-\uff0fMCU \u5009\u7ba1\u6599\u3002' : '\u6c92\u6709\u627e\u5230\u7528\u91cf\u8cc7\u6599\u3002'}</div>`;
+            return;
+        }
+        area.innerHTML = `<table><colgroup><col class="picking-col-part"><col class="picking-col-qty"><col class="picking-col-roll"><col class="picking-col-note"></colgroup><thead><tr><th>\u7269\u6599</th><th>\u7528\u91cf</th><th>\u6372\u6578</th><th>\u5099\u8a3b</th></tr></thead><tbody>${items.map(item => {
+            const pkg = (item.package_count === null || item.package_count === undefined) ? null : item.package_count;
+            const pkgText = pkg === null ? '' : formatClientNumber(pkg, Number.isInteger(pkg) ? 0 : 1);
+            const pkgClass = (pkg !== null && pkg > 1) ? ' roll-warn' : '';
+            const part = item.child_part_number;
+            const noteVal = (pickingNotes[part] === undefined || pickingNotes[part] === null) ? '' : pickingNotes[part];
+            return `<tr class="picking-result-row" onclick="this.classList.toggle('dimmed')"><td>${escapeHtml(part)}</td><td class="result-number">${formatClientNumber(item.required_quantity, Number.isInteger(item.required_quantity) ? 0 : 3)}</td><td class="result-number picking-roll-cell${pkgClass}">${pkgText}</td><td class="picking-note-cell" onclick="event.stopPropagation()"><input type="text" inputmode="decimal" class="picking-note-input" value="${escapeHtml(String(noteVal))}" data-part="${escapeHtml(part)}" readonly onclick="openPickingNoteDialog(this)"></td></tr>`;
+        }).join('')}</tbody></table>`;
+    }
+
+    function pickingComboKeyFromSelection() {
+        // 「相同組合」以選取的工單號碼集合判定（不分順序）
+        return pickingComboKeyFromModels([...selectedPickingItems.values()]);
+    }
+
+    function pickingComboKeyFromModels(models) {
+        return [...(models || [])]
+            .map(item => item?.wo_id)
+            .map(id => String(id).trim())
+            .filter(Boolean)
+            .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+            .join('|');
+    }
+
+    async function loadPickingNotes(key, seq) {
+        pickingNotes = {};
+        if (!key) return;
+        try {
+            const response = await fetch(`/api/picking/notes?key=${encodeURIComponent(key)}&t=${Date.now()}`);
+            const data = await response.json();
+            if (seq !== pickingCalcSeq) return;
+            if (response.ok && data && data.notes) pickingNotes = data.notes;
+        } catch (error) {
+            // 備註讀取失敗不影響計算結果，維持空白即可
+        }
+    }
+
+    function cleanPickingNoteValue(value) {
+        let valueText = String(value || '').replace(/[^\d.]/g, '');
+        const firstDot = valueText.indexOf('.');
+        if (firstDot !== -1) {
+            valueText = valueText.slice(0, firstDot + 1) + valueText.slice(firstDot + 1).replace(/\./g, '');
+        }
+        return valueText;
+    }
+
+    function openPickingNoteDialog(input) {
+        activePickingNoteInput = input;
+        activePickingNotePart = input.getAttribute('data-part') || '';
+        const backdrop = document.getElementById('pickingNoteBackdrop');
+        const dialogInput = document.getElementById('pickingNoteDialogInput');
+        const title = document.getElementById('pickingNoteDialogTitle');
+        if (!backdrop || !dialogInput || !title) return;
+
+        title.textContent = `備註數量：${activePickingNotePart}`;
+        dialogInput.value = input.value || '';
+        dialogInput.oninput = () => { dialogInput.value = cleanPickingNoteValue(dialogInput.value); };
+        dialogInput.onkeydown = event => {
+            if (event.key === 'Enter') confirmPickingNoteDialog();
+            if (event.key === 'Escape') cancelPickingNoteDialog();
+        };
+        backdrop.classList.add('show');
+        setTimeout(() => {
+            dialogInput.focus();
+            dialogInput.select();
+        }, 0);
+    }
+
+    function cancelPickingNoteDialog(event) {
+        if (event && event.target !== event.currentTarget) return;
+        const backdrop = document.getElementById('pickingNoteBackdrop');
+        if (backdrop) backdrop.classList.remove('show');
+        if (activePickingNoteInput) activePickingNoteInput.focus();
+        activePickingNoteInput = null;
+        activePickingNotePart = '';
+    }
+
+    function confirmPickingNoteDialog() {
+        if (!activePickingNoteInput || !activePickingNotePart) {
+            cancelPickingNoteDialog();
+            return;
+        }
+        const dialogInput = document.getElementById('pickingNoteDialogInput');
+        const value = cleanPickingNoteValue(dialogInput?.value || '');
+        activePickingNoteInput.value = value;
+        updatePickingNote(activePickingNotePart, value);
+        cancelPickingNoteDialog();
+    }
+
+    function updatePickingNote(part, value) {
+        if (value === '') delete pickingNotes[part];
+        else pickingNotes[part] = value;
+        const key = pickingComboKey;
+        clearTimeout(pickingNoteSaveTimers[part]);
+        pickingNoteSaveTimers[part] = setTimeout(() => savePickingNote(key, part, value), 400);
+    }
+
+    async function savePickingNote(key, part, note) {
+        if (!key || !part) return;
+        try {
+            await fetch('/api/picking/notes', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json; charset=utf-8' },
+                body: JSON.stringify({ key, child_part_number: part, note })
+            });
+        } catch (error) {
+            // 備註儲存失敗時靜默處理，下次輸入會再嘗試
+        }
+    }
+
+    function getScheduledItems() {
+        return scheduleGroups
+            .filter(isScheduledGroup)
+            .flatMap(group => group.items || []);
+    }
+
+    function showScheduledWarehouseMaterials() {
+        const items = getScheduledItems();
+        if (items.length === 0) {
+            setStatusBox('pickingStatus', '目前沒有已排程的工單。', 'warn');
+            return;
+        }
+        warehouseView = true;
+        calculatePickingMaterials(items);
+    }
+
+    function pastePickingToBOM() {
+        const selected = [...selectedPickingItems.values()];
+        if (selected.length === 0) { setStatusBox('pickingStatus', '\u8acb\u5148\u52a0\u5165\u8981\u8cbc\u5230 BOM \u67e5\u8a62\u7684\u578b\u865f', 'warn'); return; }
+        const input = document.getElementById('inputSearch');
+        const nextText = [...new Set(selected.map(item => item.part_no))].join('\n');
+        if (input.value.trim()) {
+            const shouldClear = confirm('BOM \u67e5\u8a62\u5df2\u6709\u8f38\u5165\u5167\u5bb9\uff0c\u662f\u5426\u6e05\u7a7a\u5f8c\u8cbc\u4e0a\uff1f\u6309\u53d6\u6d88\u6703\u9644\u52a0\u5728\u539f\u5167\u5bb9\u5f8c\u9762\u3002');
+            input.value = shouldClear ? nextText : `${input.value.trim()}\n${nextText}`;
+        } else {
+            input.value = nextText;
+        }
+        localStorage.setItem(storageKeys.bomInput, input.value);
+        toggleView('BOM');
+    }
+
+    renderScheduleGroups();
     const machineEls = {
         doneCount: document.getElementById('machineDoneCount'),
         startTime: document.getElementById('machineStartTime'),

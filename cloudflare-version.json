@@ -1,0 +1,15 @@
+{
+    "account_id":  "d015cadd5a857ea10b617679c148d37c",
+    "worker":  "smt-pcb-search",
+    "requested_version":  "de3cee5b-e8cb-486c-8d74-a0f5e34cb34b",
+    "version_number":  24,
+    "version_created_on_utc":  "2026-06-30T05:13:19.968357Z",
+    "active_deployment_id":  "15cd3d75-1154-4f8d-99b3-ea7c34ef476b",
+    "active_deployment_created_on_utc":  "2026-06-30T05:13:22.737031Z",
+    "active_deployment_author_email":  "",
+    "script_etag_from_version_metadata":  "c75edade677cc9b56654ea1f6806c61264cb4a1489ff1affc7b6570018cf1c9c",
+    "script_content_v2_downloaded":  true,
+    "assets_index_downloaded_from":  "https://smt-pcb-search.s110513202.workers.dev/",
+    "d1_database_downloaded":  false,
+    "note":  "Latest active Worker script was downloaded from content/v2. Assets index.html was fetched from the deployed workers.dev URL. D1 data was not downloaded."
+}

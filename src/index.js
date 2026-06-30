@@ -1,172 +1,292 @@
-const JSON_HEADERS = {
-  "content-type": "application/json; charset=utf-8",
-  "cache-control": "no-store"
-};
+var __defProp = Object.defineProperty;
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-export default {
-  async fetch(request, env, ctx) {
-    const url = new URL(request.url);
-
-    if (url.pathname.startsWith("/api/")) {
-      return handleApi(request, env, url);
-    }
-
-    if (env.ASSETS) {
-      return env.ASSETS.fetch(request);
-    }
-
-    return new Response("Not found", { status: 404 });
-  }
-};
-
-async function handleApi(request, env, url) {
-  if (request.method !== "GET") {
-    return json({ error: "只支援 GET 請求" }, 405, {
-      allow: "GET"
-    });
-  }
-
-  if (!env.DB) {
-    return json({ error: "D1 資料庫尚未綁定" }, 500);
-  }
-
+// src/index.js
+var w = Object.defineProperty;
+var p = /* @__PURE__ */ __name((a, e) => w(a, "name", { value: e, configurable: true }), "p");
+var B = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" };
+var X = { async fetch(a, e, t) {
+  let n = new URL(a.url);
+  return n.pathname.startsWith("/api/") ? L(a, e, n) : e.ASSETS ? e.ASSETS.fetch(a) : new Response("Not found", { status: 404 });
+} };
+async function L(a, e, t) {
+  if (!e.DB) return l({ error: "D1 \u8CC7\u6599\u5EAB\u672A\u8A2D\u5B9A" }, 500);
   try {
-    if (url.pathname === "/api/health") {
-      return json({ ok: true });
+    if (a.method === "GET" && t.pathname === "/api/health") return l({ ok: true });
+    if (a.method === "GET" && t.pathname === "/api/bom") return l(await A(e.DB));
+    if (a.method === "GET" && t.pathname === "/api/usage") return l(await C(e.DB, t.searchParams));
+    if (a.method === "GET" && t.pathname === "/api/packaging") return l(await j(e.DB, t.searchParams));
+    if (a.method === "GET" && t.pathname === "/api/schedule") return l(await I(e.DB));
+    if (a.method === "GET" && t.pathname === "/api/admin/export") {
+      let n = M(a, e, t);
+      return n || l(await N(e.DB));
     }
-
-    if (url.pathname === "/api/bom") {
-      return json(await getBomPayload(env.DB));
+    if (a.method === "POST" && t.pathname === "/api/admin/import") {
+      let n = M(a, e, t);
+      return n || l(await x(e.DB, await a.json()));
     }
-
-    if (url.pathname === "/api/usage") {
-      return json(await queryUsage(env.DB, url.searchParams));
+    return a.method === "POST" && t.pathname === "/api/materials/calculate" ? l(await z(e.DB, await a.json())) : t.pathname.startsWith("/api/") ? l({ error: "\u4E0D\u652F\u63F4\u7684 API \u65B9\u6CD5" }, 405, { allow: "GET, POST" }) : l({ error: "\u627E\u4E0D\u5230 API" }, 404);
+  } catch (n) {
+    return console.error(JSON.stringify({ event: "api_error", path: t.pathname, message: n instanceof Error ? n.message : String(n) })), l({ error: "\u4F3A\u670D\u5668\u932F\u8AA4" }, 500);
+  }
+}
+__name(L, "L");
+p(L, "handleApi");
+async function A(a) {
+  let [e, t] = await Promise.all([a.prepare("SELECT parent_number, child_parts FROM bom ORDER BY parent_number").all(), a.prepare("SELECT part_number FROM fixed_parts ORDER BY part_number").all()]), n = (e.results || []).map((i) => ({ parent_number: i.parent_number, child_parts: i.child_parts })), r = (t.results || []).map((i) => i.part_number);
+  return { updated_at: (/* @__PURE__ */ new Date()).toISOString(), counts: { bom: n.length, fixed: r.length }, bom: n, fixed: r };
+}
+__name(A, "A");
+p(A, "getBomPayload");
+async function I(a) {
+  let t = (await a.prepare("SELECT wo_id, part_no, side, plan_qty, real_qty, start_date, end_date, panel_size FROM schedule_items ORDER BY start_date, part_no, wo_id").all()).results || [], n = [], r = /* @__PURE__ */ new Map();
+  return t.forEach((i) => {
+    let c = R(i.start_date) || "\u672A\u6392\u65E5\u671F";
+    if (!r.has(c)) {
+      let _ = { date: c, items: [], total_quantity: 0 };
+      r.set(c, _), n.push(_);
     }
-
-    if (url.pathname === "/api/packaging") {
-      return json(await queryPackaging(env.DB, url.searchParams));
+    let s = { wo_id: i.wo_id, part_no: i.part_no, side: i.side || "", plan_qty: m(i.plan_qty), real_qty: m(i.real_qty), start_date: i.start_date || "", end_date: i.end_date || "", panel_size: i.panel_size || "" };
+    r.get(c).items.push(s), r.get(c).total_quantity += s.plan_qty;
+  }), { updated_at: (/* @__PURE__ */ new Date()).toISOString(), count: t.length, groups: n };
+}
+__name(I, "I");
+p(I, "getSchedulePayload");
+async function N(a) {
+  let [e, t, n, r, i] = await Promise.all([a.prepare("SELECT parent_number, child_parts FROM bom ORDER BY parent_number").all(), a.prepare("SELECT part_number FROM fixed_parts ORDER BY part_number").all(), a.prepare("SELECT parent_number, child_part_number, batch_quantity, item_name FROM usage_items ORDER BY parent_number, child_part_number").all(), a.prepare("SELECT product_number, specification, package_1 FROM packaging ORDER BY product_number").all(), a.prepare("SELECT wo_id, part_no, side, plan_qty, real_qty, start_date, end_date, panel_size FROM schedule_items ORDER BY start_date, part_no, wo_id").all()]), c = { bom: e.results || [], fixed_parts: t.results || [], usage_items: n.results || [], packaging: r.results || [], schedule_items: i.results || [] };
+  return { exported_at: (/* @__PURE__ */ new Date()).toISOString(), counts: Object.fromEntries(Object.entries(c).map(([s, _]) => [s, _.length])), tables: c };
+}
+__name(N, "N");
+p(N, "exportDatabase");
+async function x(a, e) {
+  let t = e?.tables || {}, n = {};
+  if (Array.isArray(t.packaging)) {
+    let r = W(t.packaging);
+    await y(a, "packaging", ["product_number", "specification", "package_1"], r), n.packaging = r.length;
+  }
+  if (Array.isArray(t.usage_items)) {
+    let r = $(t.usage_items);
+    await y(a, "usage_items", ["parent_number", "child_part_number", "batch_quantity", "item_name"], r, { resetSequence: true }), n.usage_items = r.length;
+  }
+  if (Array.isArray(t.fixed_parts)) {
+    let r = Y(t.fixed_parts);
+    await y(a, "fixed_parts", ["part_number"], r), n.fixed_parts = r.length;
+  }
+  if (Array.isArray(t.bom)) {
+    let r = P(t.bom);
+    await y(a, "bom", ["parent_number", "child_parts"], r), n.bom = r.length;
+  }
+  if (Array.isArray(t.schedule_items)) {
+    let r = G(t.schedule_items);
+    await y(a, "schedule_items", ["wo_id", "part_no", "side", "plan_qty", "real_qty", "start_date", "end_date", "panel_size"], r), n.schedule_items = r.length;
+  }
+  return Object.keys(n).length === 0 ? { error: "\u6C92\u6709\u53EF\u532F\u5165\u7684\u8CC7\u6599" } : { imported_at: (/* @__PURE__ */ new Date()).toISOString(), counts: n };
+}
+__name(x, "x");
+p(x, "importDatabase");
+var F = 100;
+var O = 50;
+async function y(a, e, t, n, r = {}) {
+  let i = [a.prepare(`DELETE FROM ${e}`)];
+  if (r.resetSequence && i.push(a.prepare("DELETE FROM sqlite_sequence WHERE name = ?").bind(e)), await a.batch(i), n.length === 0) return;
+  let c = Math.max(1, Math.floor((F - 1) / t.length)), s = [];
+  for (let _ = 0; _ < n.length; _ += c) {
+    let b = n.slice(_, _ + c), d = b.map(() => `(${t.map(() => "?").join(", ")})`).join(", "), o = `INSERT INTO ${e} (${t.join(", ")}) VALUES ${d}`, h = b.flatMap((f) => t.map((g) => f[g] ?? ""));
+    s.push(a.prepare(o).bind(...h));
+  }
+  for (let _ = 0; _ < s.length; _ += O) await a.batch(s.slice(_, _ + O));
+}
+__name(y, "y");
+p(y, "replaceTable");
+async function z(a, e) {
+  let t = Q(e?.models || []);
+  if (t.length === 0) return { count: 0, items: [] };
+  let n = /* @__PURE__ */ new Map();
+  t.forEach((o) => {
+    n.set(o.part_no, (n.get(o.part_no) || 0) + o.plan_qty);
+  });
+  let r = [...n.keys()], i = await k(a, "SELECT parent_number, child_part_number, batch_quantity, item_name FROM usage_items WHERE parent_number IN (__IN__) ORDER BY child_part_number", r), c = /* @__PURE__ */ new Map();
+  for (let o of i) {
+    let h = n.get(o.parent_number) || 0, f = m(o.batch_quantity), g = h * f;
+    if (!o.child_part_number || g === 0) continue;
+    let q = o.child_part_number, E = c.get(q) || { child_part_number: q, required_quantity: 0, item_name: "", parents: [] };
+    !E.item_name && o.item_name && (E.item_name = String(o.item_name).trim()), E.required_quantity += g, E.parents.push({ parent_number: o.parent_number, plan_qty: h, batch_quantity: f, required_quantity: g }), c.set(q, E);
+  }
+  let s = [...c.keys()], _ = await k(a, "SELECT product_number, package_1 FROM packaging WHERE product_number IN (__IN__)", s), b = new Map(_.map((o) => [o.product_number, o])), d = [...c.values()].map((o) => {
+    let h = b.get(o.child_part_number) || {}, f = m(h.package_1), g = f > 0 ? o.required_quantity / f : null;
+    return { child_part_number: o.child_part_number, item_name: o.item_name || "", required_quantity: T(o.required_quantity, 4), package_quantity: f || null, package_count: g === null ? null : T(g, 1), parents: o.parents };
+  }).sort((o, h) => o.child_part_number.localeCompare(h.child_part_number, void 0, { numeric: true }));
+  return { selected_count: t.length, model_count: r.length, count: d.length, items: d };
+}
+__name(z, "z");
+p(z, "calculateMaterials");
+async function k(a, e, t, n = 80) {
+  let r = [];
+  for (let i = 0; i < t.length; i += n) {
+    let c = t.slice(i, i + n);
+    if (c.length === 0) continue;
+    let s = c.map(() => "?").join(", "), _ = await a.prepare(e.replace("__IN__", s)).bind(...c).all();
+    r.push(..._.results || []);
+  }
+  return r;
+}
+__name(k, "k");
+p(k, "queryByIn");
+async function C(a, e) {
+  let t = S(e.get("parent")), n = S(e.get("part")), r = S(e.get("q")), i = D(e.get("limit")), c = "SELECT parent_number, child_part_number, batch_quantity, item_name FROM usage_items", s = [], _ = [];
+  if (t && (s.push("parent_number = ?"), _.push(t)), n && (s.push("child_part_number = ?"), _.push(n)), r) {
+    s.push("(parent_number LIKE ? OR child_part_number LIKE ? OR item_name LIKE ?)");
+    let d = `%${r}%`;
+    _.push(d, d, d);
+  }
+  s.length > 0 && (c += ` WHERE ${s.join(" AND ")}`), c += " ORDER BY parent_number, child_part_number LIMIT ?", _.push(i);
+  let b = await a.prepare(c).bind(..._).all();
+  return { count: b.results?.length || 0, usage: b.results || [] };
+}
+__name(C, "C");
+p(C, "queryUsage");
+async function j(a, e) {
+  let t = S(e.get("q")), n = D(e.get("limit")), r = "SELECT product_number, specification, package_1 FROM packaging", i = [];
+  if (t) {
+    r += " WHERE product_number LIKE ? OR specification LIKE ?";
+    let s = `%${t}%`;
+    i.push(s, s);
+  }
+  r += " ORDER BY product_number LIMIT ?", i.push(n);
+  let c = await a.prepare(r).bind(...i).all();
+  return { count: c.results?.length || 0, packaging: c.results || [] };
+}
+__name(j, "j");
+p(j, "queryPackaging");
+function P(a) {
+  let e = /* @__PURE__ */ new Map();
+  return a.forEach((t) => {
+    let n = u(t.parent_number), r = u(t.child_parts);
+    if (!n || !r) return;
+    let i = e.get(n) || /* @__PURE__ */ new Set();
+    r.split(",").map(u).filter(Boolean).forEach((c) => i.add(c)), e.set(n, i);
+  }), [...e.entries()].map(([t, n]) => ({ parent_number: t, child_parts: [...n].join(",") }));
+}
+__name(P, "P");
+p(P, "normalizeBomRows");
+function Y(a) {
+  return J(a.map((e) => u(e.part_number))).map((e) => ({ part_number: e }));
+}
+__name(Y, "Y");
+p(Y, "normalizeFixedRows");
+function $(a) {
+  return a.map((e) => ({ parent_number: u(e.parent_number), child_part_number: u(e.child_part_number), batch_quantity: m(e.batch_quantity), item_name: u(e.item_name) })).filter((e) => e.parent_number && e.child_part_number && e.batch_quantity > 0);
+}
+__name($, "$");
+p($, "normalizeUsageRows");
+function W(a) {
+  let e = /* @__PURE__ */ new Map();
+  return a.forEach((t) => {
+    let n = u(t.product_number);
+    n && e.set(n, { product_number: n, specification: u(t.specification), package_1: m(t.package_1) });
+  }), [...e.values()];
+}
+__name(W, "W");
+p(W, "normalizePackagingRows");
+function G(a) {
+  let e = /* @__PURE__ */ new Map();
+  return a.forEach((t) => {
+    let n = u(t.wo_id), r = u(t.part_no), i = m(t.plan_qty), c = m(t.real_qty);
+    if (!n || !r || i <= 0) return;
+    let s = e.get(n);
+    if (s) {
+      s.plan_qty += i, s.real_qty += c, s.side = H(s.side, u(t.side)), s.start_date = K(s.start_date, R(t.start_date) || u(t.start_date)), s.end_date = U(s.end_date, R(t.end_date) || u(t.end_date)), s.panel_size || (s.panel_size = u(t.panel_size));
+      return;
     }
-
-    return json({ error: "找不到 API" }, 404);
-  } catch (error) {
-    console.error(JSON.stringify({
-      event: "api_error",
-      path: url.pathname,
-      message: error instanceof Error ? error.message : String(error)
-    }));
-
-    return json({ error: "資料讀取失敗" }, 500);
-  }
+    e.set(n, { wo_id: n, part_no: r, side: u(t.side), plan_qty: i, real_qty: c, start_date: R(t.start_date) || u(t.start_date), end_date: R(t.end_date) || u(t.end_date), panel_size: u(t.panel_size) });
+  }), [...e.values()];
 }
-
-async function getBomPayload(db) {
-  const bomQuery = db
-    .prepare("SELECT parent_number, child_parts FROM bom ORDER BY parent_number")
-    .all();
-  const fixedQuery = db
-    .prepare("SELECT part_number FROM fixed_parts ORDER BY part_number")
-    .all();
-
-  const [bomResult, fixedResult] = await Promise.all([bomQuery, fixedQuery]);
-  const bom = (bomResult.results || []).map((row) => ({
-    parent_number: row.parent_number,
-    child_parts: row.child_parts
-  }));
-  const fixed = (fixedResult.results || []).map((row) => row.part_number);
-
-  return {
-    updated_at: new Date().toISOString(),
-    counts: {
-      bom: bom.length,
-      fixed: fixed.length
-    },
-    bom,
-    fixed
-  };
+__name(G, "G");
+p(G, "normalizeScheduleRows");
+function H(a, e) {
+  let t = new Set(String(a || "").split("/").map(u).filter(Boolean));
+  return e && t.add(e), [...t].join("/");
 }
-
-async function queryUsage(db, searchParams) {
-  const parent = cleanParam(searchParams.get("parent"));
-  const part = cleanParam(searchParams.get("part"));
-  const q = cleanParam(searchParams.get("q"));
-  const limit = getLimit(searchParams.get("limit"));
-
-  let sql = "SELECT parent_number, child_part_number, batch_quantity, item_name FROM usage_items";
-  const where = [];
-  const binds = [];
-
-  if (parent) {
-    where.push("parent_number = ?");
-    binds.push(parent);
-  }
-
-  if (part) {
-    where.push("child_part_number = ?");
-    binds.push(part);
-  }
-
-  if (q) {
-    where.push("(parent_number LIKE ? OR child_part_number LIKE ? OR item_name LIKE ?)");
-    const token = `%${q}%`;
-    binds.push(token, token, token);
-  }
-
-  if (where.length > 0) {
-    sql += ` WHERE ${where.join(" AND ")}`;
-  }
-
-  sql += " ORDER BY parent_number, child_part_number LIMIT ?";
-  binds.push(limit);
-
-  const result = await db.prepare(sql).bind(...binds).all();
-
-  return {
-    count: result.results?.length || 0,
-    usage: result.results || []
-  };
+__name(H, "H");
+p(H, "mergeTextList");
+function K(a, e) {
+  return a ? e && e < a ? e : a : e || "";
 }
-
-async function queryPackaging(db, searchParams) {
-  const q = cleanParam(searchParams.get("q"));
-  const limit = getLimit(searchParams.get("limit"));
-
-  let sql = "SELECT product_number, specification, package_1 FROM packaging";
-  const binds = [];
-
-  if (q) {
-    sql += " WHERE product_number LIKE ? OR specification LIKE ?";
-    const token = `%${q}%`;
-    binds.push(token, token);
-  }
-
-  sql += " ORDER BY product_number LIMIT ?";
-  binds.push(limit);
-
-  const result = await db.prepare(sql).bind(...binds).all();
-
-  return {
-    count: result.results?.length || 0,
-    packaging: result.results || []
-  };
+__name(K, "K");
+p(K, "mergeEarlierDate");
+function U(a, e) {
+  return a ? e && e > a ? e : a : e || "";
 }
-
-function cleanParam(value) {
-  const text = String(value || "").trim();
-  return text || null;
-}
-
-function getLimit(value) {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return 100;
-  return Math.max(1, Math.min(500, Math.floor(parsed)));
-}
-
-function json(payload, status = 200, headers = {}) {
-  return new Response(JSON.stringify(payload), {
-    status,
-    headers: {
-      ...JSON_HEADERS,
-      ...headers
+__name(U, "U");
+p(U, "mergeLaterDate");
+function Q(a) {
+  let e = /* @__PURE__ */ new Set();
+  return a.map((t) => ({ wo_id: u(t.wo_id), part_no: u(t.part_no), plan_qty: m(t.plan_qty) })).filter((t) => {
+    if (!t.part_no || t.plan_qty <= 0) return false;
+    if (t.wo_id) {
+      if (e.has(t.wo_id)) return false;
+      e.add(t.wo_id);
     }
+    return true;
   });
 }
+__name(Q, "Q");
+p(Q, "normalizeSelectedModels");
+function J(a) {
+  return [...new Set(a.filter(Boolean))].sort((e, t) => e.localeCompare(t, void 0, { numeric: true }));
+}
+__name(J, "J");
+p(J, "uniqueRows");
+function M(a, e, t) {
+  let n = u(e.ADMIN_TOKEN);
+  return !n || (u(a.headers.get("x-admin-token")) || u(t.searchParams.get("token"))) === n ? null : l({ error: "\u7BA1\u7406\u6B0A\u9650\u9A57\u8B49\u5931\u6557" }, 401);
+}
+__name(M, "M");
+p(M, "checkAdminAuth");
+function S(a) {
+  return String(a || "").trim() || null;
+}
+__name(S, "S");
+p(S, "cleanParam");
+function D(a) {
+  let e = Number(a);
+  return Number.isFinite(e) ? Math.max(1, Math.min(500, Math.floor(e))) : 100;
+}
+__name(D, "D");
+p(D, "getLimit");
+function u(a) {
+  return String(a ?? "").trim();
+}
+__name(u, "u");
+p(u, "cleanText");
+function m(a) {
+  let e = String(a ?? "").replace(/,/g, "").replace(/[^\d.+-]/g, "").trim(), t = Number(e);
+  return Number.isFinite(t) ? t : 0;
+}
+__name(m, "m");
+p(m, "toNumber");
+function R(a) {
+  let e = u(a);
+  if (!e) return "";
+  let t = e.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (t) return `${t[1]}-${t[2].padStart(2, "0")}-${t[3].padStart(2, "0")}`;
+  let n = Number(e);
+  return Number.isFinite(n) && n > 2e4 && n < 8e4 ? new Date(Date.UTC(1899, 11, 30 + Math.floor(n))).toISOString().slice(0, 10) : e;
+}
+__name(R, "R");
+p(R, "normalizeDate");
+function T(a, e) {
+  let t = 10 ** e;
+  return Math.round((a + Number.EPSILON) * t) / t;
+}
+__name(T, "T");
+p(T, "roundNumber");
+function l(a, e = 200, t = {}) {
+  return new Response(JSON.stringify(a), { status: e, headers: { ...B, ...t } });
+}
+__name(l, "l");
+p(l, "json");
+export {
+  X as default
+};
+//# sourceMappingURL=index.js.map
