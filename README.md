@@ -23,13 +23,13 @@
 ## 檔案用途
 
 - `public/index.html`：Cloudflare Worker Assets 前端頁面。
-- `src/index.js`：從目前 Cloudflare 部署抓回的 Worker API 入口。
+- `src/index.js`：Worker API 入口，透過 GitHub Actions 部署到 Cloudflare。
 - `wrangler.jsonc`：Cloudflare Worker、Assets、observability 與 D1 binding 設定。
 - `cloudflare-version.json`：本機記錄的 Cloudflare 部署版本資訊。
 - `migrations/`：D1 資料表 migration。
 - `scripts/`：Excel 與 D1 匯入/匯出輔助腳本。
 
-原本根目錄的 GitHub Pages 網址導向頁已移除；正式服務以 Cloudflare Worker Assets 提供。
+GitHub Pages 已停用，根目錄也不保留網址導向頁；正式入口只使用 Cloudflare Worker Assets。
 
 ## API
 
