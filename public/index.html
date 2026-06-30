@@ -2334,7 +2334,7 @@
     }
 
     function mergeScheduleRowsForImport(rows) {
-        const byWo = new Map();
+        const groups = new Map();
         rows.forEach(row => {
             const woId = String(row.wo_id || '').trim();
             const partNo = String(row.part_no || '').trim();
@@ -2342,18 +2342,7 @@
             const realQty = toClientNumber(row.real_qty);
             if (!woId || !partNo || planQty <= 0) return;
 
-            const existing = byWo.get(woId);
-            if (existing) {
-                existing.plan_qty = toClientNumber(existing.plan_qty) + planQty;
-                existing.real_qty = toClientNumber(existing.real_qty) + realQty;
-                existing.side = mergeImportText(existing.side, row.side);
-                existing.start_date = mergeImportEarlierDate(existing.start_date, row.start_date);
-                existing.end_date = mergeImportLaterDate(existing.end_date, row.end_date);
-                if (!String(existing.panel_size || '').trim()) existing.panel_size = String(row.panel_size || '').trim();
-                return;
-            }
-
-            byWo.set(woId, {
+            const normalized = {
                 ...row,
                 wo_id: woId,
                 part_no: partNo,
@@ -2363,9 +2352,31 @@
                 start_date: String(row.start_date || '').trim(),
                 end_date: String(row.end_date || '').trim(),
                 panel_size: String(row.panel_size || '').trim()
-            });
+            };
+            if (!groups.has(woId)) groups.set(woId, []);
+            groups.get(woId).push(normalized);
         });
-        return [...byWo.values()];
+
+        return [...groups.values()].map(group => {
+            const datedRows = group.filter(row => String(row.start_date || '').trim() !== '');
+            const baseRows = datedRows.length > 0 ? datedRows : group;
+            const base = { ...baseRows[0] };
+
+            if (datedRows.length === 0) {
+                base.plan_qty = group.reduce((sum, row) => sum + toClientNumber(row.plan_qty), 0);
+                base.real_qty = group.reduce((sum, row) => sum + toClientNumber(row.real_qty), 0);
+            } else {
+                base.plan_qty = toClientNumber(base.plan_qty);
+                base.real_qty = toClientNumber(base.real_qty);
+            }
+
+            base.side = group.reduce((value, row) => mergeImportText(value, row.side), '');
+            base.start_date = baseRows.reduce((value, row) => mergeImportEarlierDate(value, row.start_date), '');
+            base.end_date = group.reduce((value, row) => mergeImportLaterDate(value, row.end_date), '');
+            const panelRow = group.find(row => String(row.panel_size || '').trim() !== '');
+            base.panel_size = panelRow ? String(panelRow.panel_size || '').trim() : '';
+            return base;
+        });
     }
 
     function isScheduledDate(value) {

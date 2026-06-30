@@ -193,13 +193,19 @@ function G(a) {
   return a.forEach((t) => {
     let n = u(t.wo_id), r = u(t.part_no), i = m(t.plan_qty), c = m(t.real_qty);
     if (!n || !r || i <= 0) return;
-    let s = e.get(n);
-    if (s) {
-      s.plan_qty += i, s.real_qty += c, s.side = H(s.side, u(t.side)), s.start_date = K(s.start_date, R(t.start_date) || u(t.start_date)), s.end_date = U(s.end_date, R(t.end_date) || u(t.end_date)), s.panel_size || (s.panel_size = u(t.panel_size));
-      return;
+    let s = { wo_id: n, part_no: r, side: u(t.side), plan_qty: i, real_qty: c, start_date: R(t.start_date) || u(t.start_date), end_date: R(t.end_date) || u(t.end_date), panel_size: u(t.panel_size) };
+    e.has(n) || e.set(n, []), e.get(n).push(s);
+  }), [...e.values()].map((t) => {
+    let n = t.filter((i) => u(i.start_date)), r = n.length > 0 ? n : t, i = { ...r[0] };
+    if (n.length === 0) {
+      i.plan_qty = t.reduce((c, s) => c + m(s.plan_qty), 0), i.real_qty = t.reduce((c, s) => c + m(s.real_qty), 0);
+    } else {
+      i.plan_qty = m(i.plan_qty), i.real_qty = m(i.real_qty);
     }
-    e.set(n, { wo_id: n, part_no: r, side: u(t.side), plan_qty: i, real_qty: c, start_date: R(t.start_date) || u(t.start_date), end_date: R(t.end_date) || u(t.end_date), panel_size: u(t.panel_size) });
-  }), [...e.values()];
+    i.side = t.reduce((c, s) => H(c, s.side), ""), i.start_date = r.reduce((c, s) => K(c, s.start_date), ""), i.end_date = t.reduce((c, s) => U(c, s.end_date), "");
+    let c = t.find((s) => u(s.panel_size));
+    return i.panel_size = c ? u(c.panel_size) : "", i;
+  });
 }
 __name(G, "G");
 p(G, "normalizeScheduleRows");
