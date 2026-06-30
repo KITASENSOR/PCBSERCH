@@ -6,3 +6,4 @@ node_modules/
 *.local
 BOM.xlsx
 data/*.sql
+文件/
