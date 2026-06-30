@@ -1,37 +1,37 @@
-# SMT PCB Search
+# SMT PCB 查詢
 
-Cloudflare Workers + D1 application for SMT PCB BOM, material usage, packaging, production schedule, and material requirement queries.
+這是 Cloudflare Workers + D1 專案，用於 SMT PCB 的 BOM、用量、包裝、排程與物料需求查詢。
 
-## Current Deployment
+## 目前部署資訊
 
-- Worker URL: https://smt-pcb-search.s110513202.workers.dev
-- Worker name: `smt-pcb-search`
-- Cloudflare account ID: `d015cadd5a857ea10b617679c148d37c`
-- Active deployment ID: `15cd3d75-1154-4f8d-99b3-ea7c34ef476b`
-- Active version ID: `de3cee5b-e8cb-486c-8d74-a0f5e34cb34b`
-- Version number: `24`
-- Version created: `2026-06-30T05:13:19.968357Z`
-- Deployment created: `2026-06-30T05:13:22.737031Z`
-- Script ETag: `c75edade677cc9b56654ea1f6806c61264cb4a1489ff1affc7b6570018cf1c9c`
+- 正式網址：https://smt-pcb-search.s110513202.workers.dev
+- Worker 名稱：`smt-pcb-search`
+- Cloudflare Account ID：`d015cadd5a857ea10b617679c148d37c`
+- 目前部署 ID：`15cd3d75-1154-4f8d-99b3-ea7c34ef476b`
+- 目前版本 ID：`de3cee5b-e8cb-486c-8d74-a0f5e34cb34b`
+- 版本號：`24`
+- 版本建立時間：`2026-06-30T05:13:19.968357Z`
+- 部署建立時間：`2026-06-30T05:13:22.737031Z`
+- Script ETag：`c75edade677cc9b56654ea1f6806c61264cb4a1489ff1affc7b6570018cf1c9c`
 
-## D1 Database
+## D1 資料庫
 
-- Database name: `smt-pcb-search-db`
-- Database ID: `76d8928e-b9ba-4720-9709-43590abbef7f`
-- Binding: `DB`
+- 資料庫名稱：`smt-pcb-search-db`
+- Database ID：`76d8928e-b9ba-4720-9709-43590abbef7f`
+- Binding：`DB`
 
-## Project Files
+## 檔案用途
 
-- `public/index.html`: Cloudflare Worker Assets frontend.
-- `src/index.js`: Worker API entrypoint downloaded from the current Cloudflare deployment.
-- `wrangler.jsonc`: Cloudflare Worker, Assets, observability, and D1 binding config.
-- `cloudflare-version.json`: Local record of the Cloudflare deployment synced into this repository.
-- `migrations/`: D1 schema migrations.
-- `scripts/`: Excel-to-D1 import/export helpers.
+- `public/index.html`：Cloudflare Worker Assets 前端頁面。
+- `src/index.js`：從目前 Cloudflare 部署抓回的 Worker API 入口。
+- `wrangler.jsonc`：Cloudflare Worker、Assets、observability 與 D1 binding 設定。
+- `cloudflare-version.json`：本機記錄的 Cloudflare 部署版本資訊。
+- `migrations/`：D1 資料表 migration。
+- `scripts/`：Excel 與 D1 匯入/匯出輔助腳本。
 
-The old root-level GitHub Pages redirect page has been removed. The app should be served through Cloudflare Worker Assets.
+原本根目錄的 GitHub Pages 網址導向頁已移除；正式服務以 Cloudflare Worker Assets 提供。
 
-## API Surface
+## API
 
 - `GET /api/health`
 - `GET /api/bom`
@@ -42,37 +42,37 @@ The old root-level GitHub Pages redirect page has been removed. The app should b
 - `GET /api/admin/export`
 - `POST /api/admin/import`
 
-Admin endpoints require `ADMIN_TOKEN` when that environment variable is configured.
+若 Cloudflare 環境變數有設定 `ADMIN_TOKEN`，管理端 API 需要帶入 token 驗證。
 
-## Local Development
+## 本機開發
 
 ```powershell
 npm install
 npm run dev
 ```
 
-Local URL:
+本機網址：
 
 ```text
 http://127.0.0.1:8790/
 ```
 
-## Deploy
+## 部署
 
 ```powershell
 npm run deploy
 ```
 
-## Future Workflow
+## 之後作業流程
 
-After this Cloudflare-to-GitHub synchronization, future changes should use this order:
+本次已完成 Cloudflare 最新部署同步到 GitHub。之後修改請依照以下順序：
 
-1. Pull the latest files from GitHub `main`.
-2. Modify and test locally.
-3. Commit and push changes back to GitHub.
-4. Deploy the GitHub-synced project to Cloudflare.
-5. Record any new Cloudflare deployment/version details in `cloudflare-version.json` and this README when they change.
+1. 先從 GitHub `main` 拉回最新檔案。
+2. 在本機修改並測試。
+3. commit 後推回 GitHub。
+4. 用 GitHub 已同步的專案部署到 Cloudflare。
+5. 若 Cloudflare 部署版本有變更，同步更新 `cloudflare-version.json` 與本 README。
 
-## Branch Policy
+## 分支規定
 
-The GitHub repository should keep only the `main` branch.
+GitHub 專案只保留 `main` 分支。
