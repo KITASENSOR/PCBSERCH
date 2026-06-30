@@ -44,25 +44,6 @@
 
 若 Cloudflare 環境變數有設定 `ADMIN_TOKEN`，管理端 API 需要帶入 token 驗證。
 
-## 本機開發
-
-```powershell
-npm install
-npm run dev
-```
-
-本機網址：
-
-```text
-http://127.0.0.1:8790/
-```
-
-## 部署
-
-```powershell
-npm run deploy
-```
-
 ## 之後作業流程
 
 本次已完成 Cloudflare 最新部署同步到 GitHub。之後修改請依照以下順序：
