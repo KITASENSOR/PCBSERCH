@@ -56,10 +56,20 @@ GitHub Pages 已停用，根目錄也不保留網址導向頁；正式入口只�
 本次已完成 Cloudflare 最新部署同步到 GitHub。之後修改請依照以下順序：
 
 1. 先從 GitHub `main` 拉回最新檔案。
-2. 在本機修改並測試。
+2. 在本機修改並測試，同時檢查相關 Markdown 文件是否需要同步更新。
 3. commit 後推回 GitHub。
-4. 用 GitHub 已同步的專案部署到 Cloudflare。
+4. 由 GitHub Actions 使用 GitHub 上的最新內容部署到 Cloudflare。
 5. 若 Cloudflare 部署版本有變更，同步更新 `cloudflare-version.json` 與本 README。
+
+## 同步範圍
+
+每次修改都必須一併檢查並同步以下內容：
+
+- 程式碼與前端頁面：`src/`、`public/`
+- Cloudflare 設定：`wrangler.jsonc`
+- D1 migration 與輔助腳本：`migrations/`、`scripts/`
+- 部署版本紀錄：`cloudflare-version.json`
+- Markdown 文件：`README.md` 與其他 `.md` 文件
 
 ## 分支規定
 
