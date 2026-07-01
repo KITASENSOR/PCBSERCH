@@ -17,6 +17,7 @@ async function L(a, e, t) {
     if (a.method === "GET" && t.pathname === "/api/usage") return l(await C(e.DB, t.searchParams));
     if (a.method === "GET" && t.pathname === "/api/packaging") return l(await j(e.DB, t.searchParams));
     if (a.method === "GET" && t.pathname === "/api/schedule") return l(await I(e.DB));
+    if (a.method === "POST" && t.pathname === "/api/schedule/delete") return l(await V(e.DB, await a.json()));
     if (a.method === "GET" && t.pathname === "/api/admin/export") {
       let n = M(a, e, t);
       return n || l(await N(e.DB));
@@ -52,6 +53,44 @@ async function I(a) {
 }
 __name(I, "I");
 p(I, "getSchedulePayload");
+async function V(a, e) {
+  let t = J((Array.isArray(e?.wo_ids) ? e.wo_ids : []).map(u));
+  if (t.length === 0) return { error: "\u8ACB\u63D0\u4F9B\u8981\u522A\u9664\u7684\u5DE5\u55AE" };
+  let n = 0;
+  for (let r = 0; r < t.length; r += 80) {
+    let i = t.slice(r, r + 80), c = i.map(() => "?").join(", "), s = await a.prepare(`SELECT COUNT(*) AS count FROM schedule_items WHERE wo_id IN (${c})`).bind(...i).all();
+    n += m(s.results?.[0]?.count);
+    await a.prepare(`DELETE FROM schedule_items WHERE wo_id IN (${c})`).bind(...i).run();
+  }
+  let r = await Z(a, t);
+  return { deleted_schedule: n, deleted_note_combos: r };
+}
+__name(V, "V");
+p(V, "deleteScheduleItems");
+async function Z(a, e) {
+  let t = 0;
+  try {
+    let n = new Set(e.map(u).filter(Boolean)), r = await a.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('picking_notes', 'picking_note_items')").all();
+    for (let i of r.results || []) {
+      let c = u(i.name);
+      if (!c) continue;
+      let s = await a.prepare(`PRAGMA table_info(${c})`).all(), _ = new Set((s.results || []).map((o) => u(o.name))), b = _.has("combo_key") ? "combo_key" : _.has("key") ? "key" : _.has("picking_key") ? "picking_key" : "";
+      if (!b) continue;
+      let d = await a.prepare(`SELECT DISTINCT ${b} AS combo_key FROM ${c}`).all(), o = (d.results || []).map((h) => u(h.combo_key)).filter((h) => h && h.split("|").map(u).some((f) => n.has(f)));
+      if (o.length === 0) continue;
+      t += o.length;
+      for (let h = 0; h < o.length; h += 80) {
+        let f = o.slice(h, h + 80), g = f.map(() => "?").join(", ");
+        await a.prepare(`DELETE FROM ${c} WHERE ${b} IN (${g})`).bind(...f).run();
+      }
+    }
+  } catch (n) {
+    console.warn(JSON.stringify({ event: "picking_note_delete_skipped", message: n instanceof Error ? n.message : String(n) }));
+  }
+  return t;
+}
+__name(Z, "Z");
+p(Z, "deletePickingNoteCombos");
 async function N(a) {
   let [e, t, n, r, i] = await Promise.all([a.prepare("SELECT parent_number, child_parts FROM bom ORDER BY parent_number").all(), a.prepare("SELECT part_number FROM fixed_parts ORDER BY part_number").all(), a.prepare("SELECT parent_number, child_part_number, batch_quantity, item_name FROM usage_items ORDER BY parent_number, child_part_number").all(), a.prepare("SELECT product_number, specification, package_1 FROM packaging ORDER BY product_number").all(), a.prepare("SELECT wo_id, part_no, side, plan_qty, real_qty, start_date, end_date, panel_size FROM schedule_items ORDER BY rowid").all()]), c = { bom: e.results || [], fixed_parts: t.results || [], usage_items: n.results || [], packaging: r.results || [], schedule_items: i.results || [] };
   return { exported_at: (/* @__PURE__ */ new Date()).toISOString(), counts: Object.fromEntries(Object.entries(c).map(([s, _]) => [s, _.length])), tables: c };
