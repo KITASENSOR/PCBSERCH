@@ -16,10 +16,14 @@
             margin-bottom: 12px;
         }
         h2 { color: #333; border-left: 5px solid #28a745; padding-left: 15px; margin: 0; min-width: 0; }
-        .header-buttons { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; width: 100%; margin-bottom: 20px; }
-        .header-buttons .switch-btn { width: 100%; min-width: 0; }
+        .header-buttons { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; width: 100%; margin-bottom: 20px; }
+        .header-buttons .switch-btn { width: 100%; min-width: 0; box-sizing: border-box; }
         .switch-btn { background: #17a2b8; padding: 8px 15px; font-size: 14px; border-radius: 5px; color: white; border: none; cursor: pointer; }
         .switch-btn:hover { background: #138496; }
+        .switch-btn.active {
+            outline: 3px solid rgba(40,167,69,0.25);
+            filter: brightness(0.95);
+        }
         .header-icon-btn {
             width: 44px;
             height: 44px;
@@ -53,6 +57,8 @@
 
         .switch-discharge-btn { background: #16a085; }
         .switch-discharge-btn:hover { background: #138d75; }
+        .report-btn { background: #475569; }
+        .report-btn:hover { background: #334155; }
 
         .machine-time-btn { background: #34495e; }
         .machine-time-btn:hover { background: #2c3e50; }
@@ -372,7 +378,7 @@
             .header-row { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }
             .header-row h2 { margin-bottom: 5px; }
             .header-icon-btn { width: 42px; height: 42px; font-size: 21px; }
-            .header-buttons { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; width: 100%; }
+            .header-buttons { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; width: 100%; }
             .header-buttons .switch-btn { width: 100%; margin-bottom: 0 !important; padding: 10px; }
             .query-entry-row { grid-template-columns: minmax(0, 1fr) 74px; gap: 6px; }
             .query-entry-actions { gap: 6px; }
@@ -450,7 +456,7 @@
         }
         #viewMACHINE_TIME .header-buttons {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 6px;
             width: 100%;
         }
@@ -538,7 +544,7 @@
         #viewPICKING .header-buttons,
         #viewMAINTENANCE .header-buttons {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 6px;
             width: 100%;
         }
@@ -636,7 +642,7 @@
         }
         #viewBOM .header-buttons {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 6px;
             width: 100%;
         }
@@ -842,17 +848,13 @@
         @media screen and (min-width: 601px) {
             .header-row { flex-wrap: nowrap; }
             .header-buttons {
-                display: flex;
-                flex-wrap: nowrap;
+                display: grid;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
                 gap: 8px;
-                width: auto;
+                width: 100%;
                 min-width: 0;
-                flex: 0 1 auto;
-                justify-content: flex-end;
-                grid-template-columns: none;
             }
             .header-buttons .switch-btn {
-                flex: 0 1 auto;
                 min-width: 0;
                 white-space: nowrap;
                 overflow: hidden;
@@ -1159,6 +1161,20 @@
             padding: 8px 12px;
             font-size: 13px;
         }
+        .report-frame-wrap {
+            border: 1px solid #dde5e8;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #fff;
+            min-height: 78vh;
+        }
+        .report-frame {
+            display: block;
+            width: 100%;
+            height: 78vh;
+            border: 0;
+            background: #fff;
+        }
 
     </style>
 </head>
@@ -1174,17 +1190,18 @@
                     <button class="header-icon-btn machine-time-btn${viewId === 'MACHINE_TIME' ? ' active' : ''}" type="button" title="機台時間試算" aria-label="機台時間試算" onclick="toggleView('MACHINE_TIME')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"></rect><rect x="7" y="5" width="10" height="4" rx="1"></rect><path d="M8 13h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01M16 17h.01"></path></svg></button>
                 </div>
             </div>
-                <div class="header-buttons">
-                    ${viewId !== 'BOM' ? `<button class="switch-btn" onclick="toggleView('BOM')">BOM 查詢</button>` : ''}
-                    ${viewId !== 'DISCHARGE' ? `<button class="switch-btn switch-discharge-btn" onclick="toggleView('DISCHARGE')">下料系統 📦</button>` : ''}
-                    ${viewId !== 'PICKING' ? `<button class="switch-btn picking-btn" onclick="toggleView('PICKING')">取料計算</button>` : ''}
-                </div>
+            <div class="header-buttons">
+                <button class="switch-btn${viewId === 'BOM' ? ' active' : ''}" type="button" onclick="toggleView('BOM')">查BOM</button>
+                <button class="switch-btn switch-discharge-btn${viewId === 'DISCHARGE' ? ' active' : ''}" type="button" onclick="toggleView('DISCHARGE')">下料</button>
+                <button class="switch-btn picking-btn${viewId === 'PICKING' ? ' active' : ''}" type="button" onclick="toggleView('PICKING')">取料</button>
+                <button class="switch-btn report-btn${viewId === 'REPORT' ? ' active' : ''}" type="button" onclick="toggleView('REPORT')">回報</button>
+            </div>
         `);
     }
 </script>
 
 <div class="container" id="viewBOM">
-    <script>renderHeader('BOM 查詢', 'BOM');</script>
+    <script>renderHeader('查BOM', 'BOM');</script>
     <div class="query-entry-row">
         <textarea id="inputSearch" placeholder="例如輸入 PC-0427-4X 或 42242"></textarea>
         <div class="query-entry-actions">
@@ -1206,7 +1223,7 @@
 </div>
 
 <div class="container" id="viewDISCHARGE" style="display: none;">
-    <script>renderHeader('下料系統', 'DISCHARGE');</script>
+    <script>renderHeader('下料', 'DISCHARGE');</script>
     <p>輸入要進行下料分析的母件編號，可多個:</p>
     <div class="query-entry-row">
         <textarea id="inputDischarge" placeholder="例如輸入 PC-0427-4X 或 42242"></textarea>
@@ -1304,7 +1321,7 @@
 
 
 <div class="container" id="viewPICKING" style="display: none;">
-    <script>renderHeader('\u53d6\u6599\u8a08\u7b97', 'PICKING');</script>
+    <script>renderHeader('\u53d6\u6599', 'PICKING');</script>
 
     <div class="work-panel">
         <div class="btn-group picking-top-actions">
@@ -1345,6 +1362,13 @@
             <button type="button" class="clear-btn" onclick="cancelPickingNoteDialog()">取消</button>
             <button type="button" onclick="confirmPickingNoteDialog()">確定</button>
         </div>
+    </div>
+</div>
+
+<div class="container" id="viewREPORT" style="display: none;">
+    <script>renderHeader('\u56de\u5831', 'REPORT');</script>
+    <div class="report-frame-wrap">
+        <iframe class="report-frame" title="回報" src="https://wip-progress-page.kitasensorpd.workers.dev"></iframe>
     </div>
 </div>
 
@@ -1420,6 +1444,7 @@
         document.getElementById('viewDISCHARGE').style.display = (viewType === 'DISCHARGE') ? 'block' : 'none';
         document.getElementById('viewMACHINE_TIME').style.display = (viewType === 'MACHINE_TIME') ? 'block' : 'none';
         document.getElementById('viewPICKING').style.display = (viewType === 'PICKING') ? 'block' : 'none';
+        document.getElementById('viewREPORT').style.display = (viewType === 'REPORT') ? 'block' : 'none';
         document.getElementById('viewMAINTENANCE').style.display = (viewType === 'MAINTENANCE') ? 'block' : 'none';
 
         if (viewType === 'MACHINE_TIME') {
