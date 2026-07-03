@@ -12,6 +12,7 @@
     "d1:seed:local": "wrangler d1 execute smt-pcb-search-db --local --file ./data/bom_seed.sql",
     "d1:seed:remote": "wrangler d1 execute smt-pcb-search-db --remote --file ./data/bom_seed.sql",
     "data:seed": "python ./scripts/export_bom_to_sql.py --workbook ./BOM.xlsx --output ./data/bom_seed.sql",
+    "data:static": "python ./scripts/export_static_data.py --workbook ./文件/BOM.xlsx --output ./public/data",
     "data:sheet:bom": "python ./scripts/export_bom_to_sql.py --workbook ./BOM.xlsx --sheet bom --output ./data/bom_only_seed.sql",
     "data:sheet:fixed": "python ./scripts/export_bom_to_sql.py --workbook ./BOM.xlsx --sheet fixed --output ./data/fixed_only_seed.sql",
     "data:sheet:usage": "python ./scripts/export_bom_to_sql.py --workbook ./BOM.xlsx --sheet usage --output ./data/usage_only_seed.sql",
