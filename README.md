@@ -73,3 +73,20 @@ GitHub Pages 已停用，根目錄也不保留網址導向頁；正式入口只�
     - `查BOM` 與 `下料` 改讀 `public/data/bom.json`，不再透過 `/api/bom` 讀取 D1。
     - `取料` 改在前端依選取工單讀取 `public/data/usage/*.json` 與 `public/data/packaging.json` 計算，不再透過 `/api/materials/calculate` 讀取 D1。
     - D1 保留給排程、排程刪除與取料備註等動態資料。
+
+
+2026-07-04排程Excel巨集連接API規劃-Plus
+
+    - 排程自動匯入來源確認為 `打件明細/SMT_WO_DATA.xlsx`，不是其他排程整理檔。
+    - 不修改現有排程匯入規則、欄位對應、去重或合併邏輯。
+    - 實作方向改為在 Excel 端加入巨集，於 `SMT_WO_DATA.xlsx` 存檔時呼叫既有 `/api/admin/import`。
+    - API 端維持使用現有 `schedule_items` 匯入入口，避免改動取料計算與排程顯示邏輯。
+
+
+2026-07-04排程匯入改由專案8直推-Fable
+
+    - 上一條「Excel 巨集連接 API」方案作廢，`打件明細/SMT_WO_DATA.xlsm` 的存檔巨集與該資料夾副本不再是排程資料來源。
+    - 排程改由 `8 排程匯入工作整合` 規劃中的 `API_Server_V03` 常駐程式直接 `POST /api/admin/import` 推送 `schedule_items`（上半部＋下半部排程，下半部只有工單、生產機種、數量三欄，`side`、日期與 `panel_size` 留空）。
+    - 本專案 API 端不需改動：維持既有 `/api/admin/import` 匯入入口與 `schedule_items` 正規化邏輯。
+    - 已知行為：匯入為整表重建，排程頁手動長按刪除的工單在下次推送會重新出現。
+    - 詳細轉換與去重規則見 `8 排程匯入工作整合\README.md`。
