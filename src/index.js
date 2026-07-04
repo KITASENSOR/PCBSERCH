@@ -18,6 +18,9 @@ async function L(a, e, t) {
     if (a.method === "GET" && t.pathname === "/api/packaging") return l(await j(e.DB, t.searchParams));
     if (a.method === "GET" && t.pathname === "/api/schedule") return l(await I(e.DB));
     if (a.method === "POST" && t.pathname === "/api/schedule/delete") return l(await V(e.DB, await a.json()));
+    if (a.method === "POST" && t.pathname === "/api/schedule/complete") return l(await ee(e.DB, await a.json()));
+    if (a.method === "GET" && t.pathname === "/api/picking/notes") return l(await oe(e.DB, t.searchParams));
+    if (a.method === "POST" && t.pathname === "/api/picking/notes") return l(await re(e.DB, await a.json()));
     if (a.method === "GET" && t.pathname === "/api/admin/export") {
       let n = M(a, e, t);
       return n || l(await N(e.DB));
@@ -40,19 +43,28 @@ async function A(a) {
 __name(A, "A");
 p(A, "getBomPayload");
 async function I(a) {
-  let t = (await a.prepare("SELECT wo_id, part_no, side, plan_qty, real_qty, start_date, end_date, panel_size FROM schedule_items ORDER BY rowid").all()).results || [], n = [], r = /* @__PURE__ */ new Map();
-  return t.forEach((i) => {
-    let c = R(i.start_date) || "\u672A\u6392\u65E5\u671F";
-    if (!r.has(c)) {
-      let _ = { date: c, items: [], total_quantity: 0 };
-      r.set(c, _), n.push(_);
-    }
-    let s = { wo_id: i.wo_id, part_no: i.part_no, side: i.side || "", plan_qty: m(i.plan_qty), real_qty: m(i.real_qty), start_date: i.start_date || "", end_date: i.end_date || "", panel_size: i.panel_size || "" };
-    r.get(c).items.push(s), r.get(c).total_quantity += s.plan_qty;
-  }), { updated_at: (/* @__PURE__ */ new Date()).toISOString(), count: t.length, groups: n };
+  let [t, n] = await Promise.all([
+    a.prepare("SELECT wo_id, part_no, side, plan_qty, real_qty, start_date, end_date, panel_size FROM schedule_items ORDER BY rowid").all(),
+    a.prepare("SELECT wo_id, part_no, side, plan_qty, real_qty, start_date, end_date, panel_size, completed_at FROM schedule_completed_work_orders ORDER BY completed_at DESC, rowid DESC").all()
+  ]), r = t.results || [], i = n.results || [], c = te(r, false), s = te(i, true);
+  return { updated_at: (/* @__PURE__ */ new Date()).toISOString(), count: r.length, completed_count: i.length, groups: c, completed_groups: s };
 }
 __name(I, "I");
 p(I, "getSchedulePayload");
+function te(a, e) {
+  let t = [], n = /* @__PURE__ */ new Map();
+  return (a || []).forEach((r) => {
+    let i = e ? R(r.completed_at) || "\u5DF2\u5B8C\u5DE5" : R(r.start_date) || "\u672A\u6392\u65E5\u671F";
+    if (!n.has(i)) {
+      let s = { date: i, items: [], total_quantity: 0, completed: e };
+      n.set(i, s), t.push(s);
+    }
+    let c = { wo_id: r.wo_id, part_no: r.part_no, side: r.side || "", plan_qty: m(r.plan_qty), real_qty: m(r.real_qty), start_date: r.start_date || "", end_date: r.end_date || "", panel_size: r.panel_size || "", completed_at: r.completed_at || "", completed: e };
+    n.get(i).items.push(c), n.get(i).total_quantity += c.plan_qty;
+  }), t;
+}
+__name(te, "te");
+p(te, "buildScheduleGroups");
 async function V(a, e) {
   let t = J((Array.isArray(e?.wo_ids) ? e.wo_ids : []).map(u));
   if (t.length === 0) return { error: "\u8ACB\u63D0\u4F9B\u8981\u522A\u9664\u7684\u5DE5\u55AE" };
@@ -67,6 +79,31 @@ async function V(a, e) {
 }
 __name(V, "V");
 p(V, "deleteScheduleItems");
+async function ee(a, e) {
+  let t = J((Array.isArray(e?.wo_ids) ? e.wo_ids : []).map(u));
+  if (t.length === 0) return { error: "\u8ACB\u63D0\u4F9B\u8981\u5B8C\u5DE5\u7684\u5DE5\u55AE" };
+  let n = await k(a, "SELECT wo_id, part_no, side, plan_qty, real_qty, start_date, end_date, panel_size FROM schedule_items WHERE wo_id IN (__IN__) ORDER BY rowid", t);
+  for (let c of n)
+    await a.prepare(`INSERT INTO schedule_completed_work_orders(wo_id, part_no, side, plan_qty, real_qty, start_date, end_date, panel_size, completed_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(wo_id) DO UPDATE SET
+        part_no = excluded.part_no,
+        side = excluded.side,
+        plan_qty = excluded.plan_qty,
+        real_qty = excluded.real_qty,
+        start_date = excluded.start_date,
+        end_date = excluded.end_date,
+        panel_size = excluded.panel_size,
+        completed_at = CURRENT_TIMESTAMP`).bind(c.wo_id, c.part_no, c.side || "", m(c.plan_qty), m(c.real_qty), c.start_date || "", c.end_date || "", c.panel_size || "").run();
+  let r = 0;
+  for (let c = 0; c < t.length; c += 80) {
+    let s = t.slice(c, c + 80), _ = s.map(() => "?").join(", "), b = await a.prepare(`SELECT COUNT(*) AS count FROM schedule_items WHERE wo_id IN (${_})`).bind(...s).all();
+    r += m(b.results?.[0]?.count), await a.prepare(`DELETE FROM schedule_items WHERE wo_id IN (${_})`).bind(...s).run();
+  }
+  return { completed_schedule: n.length, removed_active_schedule: r };
+}
+__name(ee, "ee");
+p(ee, "completeScheduleItems");
 async function Z(a, e) {
   let t = 0;
   try {
@@ -91,6 +128,24 @@ async function Z(a, e) {
 }
 __name(Z, "Z");
 p(Z, "deletePickingNoteCombos");
+async function oe(a, e) {
+  let t = u(e.get("key")), n = await a.prepare("SELECT child_part_number, note FROM picking_notes WHERE combo_key = ? ORDER BY child_part_number").bind(t).all(), r = {};
+  for (let i of n.results || []) r[i.child_part_number] = i.note;
+  return { key: t, notes: r };
+}
+__name(oe, "oe");
+p(oe, "getPickingNotes");
+async function re(a, e) {
+  let t = u(e?.key), n = u(e?.child_part_number), r = u(e?.note);
+  if (!t || !n) return { error: "\u7F3A\u5C11\u53D6\u6599\u5099\u8A3B\u9375\u503C\u6216\u6599\u865F" };
+  return r ? (await a.prepare(`INSERT INTO picking_notes(combo_key, child_part_number, note, updated_at)
+    VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(combo_key, child_part_number) DO UPDATE SET
+      note = excluded.note,
+      updated_at = CURRENT_TIMESTAMP`).bind(t, n, r).run(), { ok: true }) : (await a.prepare("DELETE FROM picking_notes WHERE combo_key = ? AND child_part_number = ?").bind(t, n).run(), { ok: true });
+}
+__name(re, "re");
+p(re, "savePickingNote");
 async function N(a) {
   let [e, t, n, r, i] = await Promise.all([a.prepare("SELECT parent_number, child_parts FROM bom ORDER BY parent_number").all(), a.prepare("SELECT part_number FROM fixed_parts ORDER BY part_number").all(), a.prepare("SELECT parent_number, child_part_number, batch_quantity, item_name FROM usage_items ORDER BY parent_number, child_part_number").all(), a.prepare("SELECT product_number, specification, package_1 FROM packaging ORDER BY product_number").all(), a.prepare("SELECT wo_id, part_no, side, plan_qty, real_qty, start_date, end_date, panel_size FROM schedule_items ORDER BY rowid").all()]), c = { bom: e.results || [], fixed_parts: t.results || [], usage_items: n.results || [], packaging: r.results || [], schedule_items: i.results || [] };
   return { exported_at: (/* @__PURE__ */ new Date()).toISOString(), counts: Object.fromEntries(Object.entries(c).map(([s, _]) => [s, _.length])), tables: c };
@@ -117,12 +172,25 @@ async function x(a, e) {
   }
   if (Array.isArray(t.schedule_items)) {
     let r = G(t.schedule_items);
-    await y(a, "schedule_items", ["wo_id", "part_no", "side", "plan_qty", "real_qty", "start_date", "end_date", "panel_size"], r), n.schedule_items = r.length;
+    let i = await ne(a, r);
+    await y(a, "schedule_items", ["wo_id", "part_no", "side", "plan_qty", "real_qty", "start_date", "end_date", "panel_size"], i.rows), n.schedule_items = i.rows.length, n.completed_skipped = i.skipped, n.completed_removed = i.removed;
   }
   return Object.keys(n).length === 0 ? { error: "\u6C92\u6709\u53EF\u532F\u5165\u7684\u8CC7\u6599" } : { imported_at: (/* @__PURE__ */ new Date()).toISOString(), counts: n };
 }
 __name(x, "x");
 p(x, "importDatabase");
+async function ne(a, e) {
+  let t = new Set((e || []).map((c) => u(c.wo_id)).filter(Boolean)), n = await a.prepare("SELECT wo_id FROM schedule_completed_work_orders").all(), r = new Set((n.results || []).map((c) => u(c.wo_id)).filter(Boolean)), i = [...r].filter((c) => !t.has(c));
+  for (let c = 0; c < i.length; c += 80) {
+    let s = i.slice(c, c + 80), _ = s.map(() => "?").join(", ");
+    await a.prepare(`DELETE FROM schedule_completed_work_orders WHERE wo_id IN (${_})`).bind(...s).run();
+  }
+  i.forEach((c) => r.delete(c));
+  let c = (e || []).filter((s) => !r.has(u(s.wo_id)));
+  return { rows: c, skipped: (e || []).length - c.length, removed: i.length };
+}
+__name(ne, "ne");
+p(ne, "filterCompletedScheduleRows");
 var F = 100;
 var O = 50;
 async function y(a, e, t, n, r = {}) {

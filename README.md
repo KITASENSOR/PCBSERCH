@@ -41,8 +41,9 @@ GitHub Pages 已停用，根目錄也不保留網址導向頁；正式入口只�
 1. 除非使用者要求從Github拉回檔案到本機，否則直接在本機修改並測試，Github拉回檔案後直接覆蓋本機檔案。
 2. 同時將修改內容寫入 Markdown，修改內容寫入格式為在上次修改內容空一列後：YYYY-MM-DD+修改內容標題-代號，空一列後寫修改內容。
 3. commit 後推回 GitHub。
-4. 由 GitHub Actions 使用 GitHub 上的最新內容部署到 Cloudflare。
-5. 作業流程說明上方的內容不增加新的內容，只有在API或檔案用途有變動才修改。
+4. D1 schema 變更使用 Wrangler migrations；正式套用由 GitHub Actions 使用 Cloudflare secrets 執行，避免本機 Wrangler 帳號指錯 Cloudflare account。
+5. Cloudflare Worker/Assets 部署依 GitHub 流程，由 GitHub Actions 使用 GitHub 上的最新內容部署到 Cloudflare，不在本機直接 `wrangler deploy`。
+6. 作業流程說明上方的內容不增加新的內容，只有在API或檔案用途有變動才修改。
 
 ## 修改紀錄
 2026-06-30排程匯入與顯示規則-plus
@@ -98,7 +99,7 @@ GitHub Pages 已停用，根目錄也不保留網址導向頁；正式入口只�
     - 陷阱：Cloudflare 以 `403 error 1010` 阻擋 `Python-urllib` 預設 User-Agent，程式端呼叫本站 API 必須自訂 `user-agent`。
     - 排程列表切換選單新增「完工」分頁：完工＝`end_date` 早於今天（當天完工日仍視為進行中）；此判斷後續已確認不是使用者要的刪除工單清單來源。
     - 完工分頁為項目層級過濾（同日期群組內只顯示已完工項目），分頁標籤同步顯示各分類筆數。
-    - 已知行為（既有匯入行為，非本次新增）：匯入為整表重建，排程頁手動長按刪除的工單在下次推送會重新出現。
+    - 已知行為（當時既有匯入行為，非本次新增）：匯入為整表重建，排程頁手動長按刪除的工單在下次推送會重新出現；此行為後續已改為完工表比對。
     - 詳細轉換與去重規則見 `8 排程匯入工作整合\README.md`。
 
 
@@ -109,3 +110,13 @@ GitHub Pages 已停用，根目錄也不保留網址導向頁；正式入口只�
     - 不新增 D1 表；已回退錯誤新增的 `schedule_completed_items`。
     - 目前已找到既有刪除工單表來源：`打件明細/排程在製工單介面V1.html` 使用瀏覽器 `localStorage` 的 `scheduleDeletedWorkOrdersV1` 保存刪除工單，匯入時會略過該清單。
     - 目前已部署 Worker 的 `/api/schedule/delete` 仍是刪除 `schedule_items` 內的排程，並嘗試清理 `picking_notes` / `picking_note_items` 的取料備註；未使用新的完工 D1 表。
+
+
+2026-07-04取料排程長按完工與匯入比對-Plus
+
+    - 取料排程列表長按操作由「刪除」改為「完工」，前端改呼叫 `/api/schedule/complete`。
+    - 新增 D1 表 `schedule_completed_work_orders` 保存完工工單，完工分頁改顯示此表資料。
+    - 完工後工單會從 `schedule_items` 移到 `schedule_completed_work_orders`，不再只從 active 排程刪除。
+    - `/api/admin/import` 匯入 `schedule_items` 時會比對完工表：來源仍存在且已完工的工單不匯入 active 排程；來源已不存在但完工表仍有的工單會從完工表移除。
+    - 補上正式 Worker 的 `/api/picking/notes` GET/POST，取料備註可在 D1 `picking_notes` 正常讀寫與清空刪除。
+    - 新增 migration 補齊排程、取料備註與完工表，讓新環境套 migrations 後可支援目前動態資料表。

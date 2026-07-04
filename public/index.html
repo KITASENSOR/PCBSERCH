@@ -2022,6 +2022,7 @@
     };
 
     let scheduleGroups = [];
+    let completedScheduleGroups = [];
     let selectedPickingItems = new Map();
     let pickingAllItems = [];
     let warehouseView = false;
@@ -2421,6 +2422,7 @@
             const data = await response.json();
             if (!response.ok || data.error) throw new Error(data.error || '\u6392\u7a0b\u8b80\u53d6\u5931\u6557');
             scheduleGroups = data.groups || [];
+            completedScheduleGroups = data.completed_groups || [];
             selectedPickingItems.clear();
             pickingAllItems = [];
             pickingComboKey = '';
@@ -2430,7 +2432,7 @@
             scheduleDeleteSelection.clear();
             renderScheduleGroups();
             document.getElementById('pickingResultArea').innerHTML = '';
-            setStatusBox('pickingStatus', `\u6392\u7a0b\u8b80\u53d6\u5b8c\u6210\uff1a${data.count || 0} \u7b46\u5de5\u55ae`, 'ok');
+            setStatusBox('pickingStatus', `\u6392\u7a0b\u8b80\u53d6\u5b8c\u6210\uff1a${data.count || 0} \u7b46\u5de5\u55AE，完工 ${data.completed_count || 0} \u7b46`, 'ok');
         } catch (error) {
             setStatusBox('pickingStatus', error.message || '\u6392\u7a0b\u8b80\u53d6\u5931\u6557', 'error');
             renderScheduleGroups();
@@ -2538,9 +2540,7 @@
     }
 
     function doneScheduleGroups() {
-        return scheduleGroups
-            .map(group => ({ ...group, items: (group.items || []).filter(isDoneItem) }))
-            .filter(group => group.items.length > 0);
+        return completedScheduleGroups || [];
     }
 
     function visibleScheduleGroups() {
@@ -2601,7 +2601,7 @@
         if (!list) return;
         renderScheduleFilterTabs();
         renderScheduleCollapseState();
-        if (scheduleGroups.length === 0) {
+        if (scheduleGroups.length === 0 && completedScheduleGroups.length === 0) {
             list.innerHTML = '<div class="hint">\u5c1a\u672a\u4e0a\u50b3\u6392\u7a0b\u3002</div>';
             return;
         }
@@ -2610,18 +2610,21 @@
             list.innerHTML = '<div class="hint">此篩選沒有排程。</div>';
             return;
         }
-        const toolbarClass = scheduleDeleteMode ? 'schedule-delete-toolbar show' : 'schedule-delete-toolbar';
+        const toolbarClass = scheduleDeleteMode && scheduleFilterMode !== 'done' ? 'schedule-delete-toolbar show' : 'schedule-delete-toolbar';
         const toolbarText = scheduleDeleteMode ? `已選 ${scheduleDeleteSelection.size} 筆排程` : '';
-        const toolbar = `<div class="${toolbarClass}"><span>${toolbarText || '長按型號可多選刪除排程'}</span><button type="button" class="clear-btn" onclick="cancelScheduleDeleteMode()">取消</button><button type="button" class="filter-btn" onclick="deleteSelectedScheduleItems()">刪除</button></div>`;
+        const toolbar = scheduleFilterMode === 'done' ? '' : `<div class="${toolbarClass}"><span>${toolbarText || '長按型號可多選完工排程'}</span><button type="button" class="clear-btn" onclick="cancelScheduleDeleteMode()">取消</button><button type="button" class="filter-btn" onclick="deleteSelectedScheduleItems()">完工</button></div>`;
         let rows = '';
         groups.forEach(group => {
             (group.items || []).forEach(item => {
                 const key = encodeURIComponent(item.wo_id);
-                const checked = selectedPickingItems.has(item.wo_id);
+                const isCompleted = !!item.completed || scheduleFilterMode === 'done';
+                const checked = !isCompleted && selectedPickingItems.has(item.wo_id);
                 const deleteSelected = scheduleDeleteSelection.has(item.wo_id);
                 const model = pickingModelDisplay(item.part_no);
                 const qty = formatClientNumber(item.plan_qty);
-                rows += `<tr class="schedule-row${checked ? ' is-checked' : ''}${deleteSelected ? ' is-delete-selected' : ''}" onmousedown="startScheduleLongPress('${key}', event)" onmouseup="clearScheduleLongPress()" onmouseleave="clearScheduleLongPress()" ontouchstart="startScheduleLongPress('${key}', event)" ontouchend="clearScheduleLongPress()" ontouchcancel="clearScheduleLongPress()" oncontextmenu="event.preventDefault()"><td>${escapeHtml(formatScheduleDate(group.date))}</td><td class="schedule-model">${escapeHtml(model)}</td><td class="result-number">${qty}</td><td class="schedule-check" onclick="toggleScheduleRow('${key}')"><input type="checkbox" tabindex="-1"${(scheduleDeleteMode ? deleteSelected : checked) ? ' checked' : ''}></td></tr>`;
+                const rowEvents = isCompleted ? '' : ` onmousedown="startScheduleLongPress('${key}', event)" onmouseup="clearScheduleLongPress()" onmouseleave="clearScheduleLongPress()" ontouchstart="startScheduleLongPress('${key}', event)" ontouchend="clearScheduleLongPress()" ontouchcancel="clearScheduleLongPress()" oncontextmenu="event.preventDefault()"`;
+                const checkCell = isCompleted ? '<td class="schedule-check">完</td>' : `<td class="schedule-check" onclick="toggleScheduleRow('${key}')"><input type="checkbox" tabindex="-1"${(scheduleDeleteMode ? deleteSelected : checked) ? ' checked' : ''}></td>`;
+                rows += `<tr class="schedule-row${checked ? ' is-checked' : ''}${deleteSelected ? ' is-delete-selected' : ''}"${rowEvents}><td>${escapeHtml(formatScheduleDate(group.date))}</td><td class="schedule-model">${escapeHtml(model)}</td><td class="result-number">${qty}</td>${checkCell}</tr>`;
             });
         });
         list.innerHTML = `${toolbar}<table class="schedule-table"><thead><tr><th>\u4e0a\u7dda\u65e5</th><th>\u578b\u865f</th><th>\u6578\u91cf</th><th>\u2713</th></tr></thead><tbody>${rows}</tbody></table>`;
@@ -2663,7 +2666,7 @@
             scheduleDeleteMode = true;
             scheduleDeleteSelection.add(woId);
             renderScheduleGroups();
-            setStatusBox('pickingStatus', '已進入排程刪除模式，可多選後刪除。', 'warn');
+            setStatusBox('pickingStatus', '已進入排程完工模式，可多選後標記完工。', 'warn');
         }, 800);
     }
 
@@ -2691,23 +2694,23 @@
     async function deleteSelectedScheduleItems() {
         const woIds = [...scheduleDeleteSelection];
         if (woIds.length === 0) {
-            setStatusBox('pickingStatus', '請先選擇要刪除的排程。', 'warn');
+            setStatusBox('pickingStatus', '請先選擇要完工的排程。', 'warn');
             return;
         }
-        if (!confirm(`即將刪除 ${woIds.length} 筆排程，並移除包含這些工單組合的備註紀錄。確定刪除？`)) return;
+        if (!confirm(`即將將 ${woIds.length} 筆排程標記為完工，並移到完工列表。確定完工？`)) return;
         try {
-            setStatusBox('pickingStatus', '刪除排程中，請稍候...', 'warn');
-            const response = await fetch('/api/schedule/delete', {
+            setStatusBox('pickingStatus', '排程完工中，請稍候...', 'warn');
+            const response = await fetch('/api/schedule/complete', {
                 method: 'POST',
                 headers: { 'content-type': 'application/json; charset=utf-8' },
                 body: JSON.stringify({ wo_ids: woIds })
             });
             const data = await response.json();
-            if (!response.ok || data.error) throw new Error(data.error || '刪除失敗');
+            if (!response.ok || data.error) throw new Error(data.error || '完工失敗');
             await loadScheduleFromDatabase();
-            setStatusBox('pickingStatus', `刪除完成：排程 ${data.deleted_schedule || 0} 筆，備註組合 ${data.deleted_note_combos || 0} 組`, 'ok');
+            setStatusBox('pickingStatus', `完工完成：排程 ${data.completed_schedule || 0} 筆`, 'ok');
         } catch (error) {
-            setStatusBox('pickingStatus', error.message || '刪除失敗', 'error');
+            setStatusBox('pickingStatus', error.message || '完工失敗', 'error');
         }
     }
 
