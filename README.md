@@ -41,8 +41,8 @@ GitHub Pages 已停用，根目錄也不保留網址導向頁；正式入口只�
 1. 除非使用者要求從Github拉回檔案到本機，否則直接在本機修改並測試，Github拉回檔案後直接覆蓋本機檔案。
 2. 同時將修改內容寫入 Markdown，修改內容寫入格式為在上次修改內容空一列後：YYYY-MM-DD+修改內容標題-代號，空一列後寫修改內容。
 3. commit 後推回 GitHub。
-4. D1 schema 變更使用 Wrangler migrations；正式套用由 GitHub Actions 使用 Cloudflare secrets 執行，避免本機 Wrangler 帳號指錯 Cloudflare account。
-5. Cloudflare Worker/Assets 部署依 GitHub 流程，由 GitHub Actions 使用 GitHub 上的最新內容部署到 Cloudflare，不在本機直接 `wrangler deploy`。
+4. D1 schema 變更使用本機 Wrangler OAuth 套用；多 Cloudflare 帳號時需指定正確 `CLOUDFLARE_ACCOUNT_ID`，不走 GitHub Actions。
+5. GitHub Actions 只負責 Cloudflare Worker/Assets 部署，不負責 D1 migration。
 6. 作業流程說明上方的內容不增加新的內容，只有在API或檔案用途有變動才修改。
 
 ## 修改紀錄
