@@ -1061,20 +1061,22 @@
         .schedule-collapse-btn:hover { background: #dde6ef; }
         .schedule-filter-tabs {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 6px;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 4px;
             margin: 8px 0 10px;
         }
         .schedule-filter-tabs button {
             width: 100%;
             min-width: 0;
-            padding: 8px 6px;
+            padding: 8px 4px;
             border: 1px solid #cfd8dc;
             border-radius: 7px;
             background: #fff;
             color: #344054;
+            font-size: 13px;
             font-weight: bold;
             cursor: pointer;
+            white-space: nowrap;
         }
         .schedule-filter-tabs button.active {
             border-color: #0f766e;
@@ -1340,8 +1342,8 @@
         </div>
         <div id="scheduleFilterTabs" class="schedule-filter-tabs" role="group" aria-label="排程篩選">
             <button type="button" id="scheduleFilterAll" onclick="setScheduleFilter('all')">全部</button>
-            <button type="button" id="scheduleFilterScheduled" class="active" onclick="setScheduleFilter('scheduled')">已排程</button>
-            <button type="button" id="scheduleFilterUnscheduled" onclick="setScheduleFilter('unscheduled')">未排程</button>
+            <button type="button" id="scheduleFilterScheduled" class="active" onclick="setScheduleFilter('scheduled')">已排</button>
+            <button type="button" id="scheduleFilterUnscheduled" onclick="setScheduleFilter('unscheduled')">未排</button>
             <button type="button" id="scheduleFilterDone" onclick="setScheduleFilter('done')">完工</button>
         </div>
         <div id="pickingScheduleList" class="schedule-list"></div>
@@ -2583,8 +2585,8 @@
         const doneCount = countScheduleItems(doneScheduleGroups());
         [
             ['scheduleFilterAll', 'all', `全部 ${allCount}`],
-            ['scheduleFilterScheduled', 'scheduled', `已排程 ${scheduledCount}`],
-            ['scheduleFilterUnscheduled', 'unscheduled', `未排程 ${unscheduledCount}`],
+            ['scheduleFilterScheduled', 'scheduled', `已排 ${scheduledCount}`],
+            ['scheduleFilterUnscheduled', 'unscheduled', `未排 ${unscheduledCount}`],
             ['scheduleFilterDone', 'done', `完工 ${doneCount}`]
         ].forEach(([id, mode, label]) => {
             const button = document.getElementById(id);
