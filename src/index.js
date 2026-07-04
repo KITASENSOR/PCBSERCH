@@ -1,584 +1,337 @@
-const JSON_HEADERS = {
-  "content-type": "application/json; charset=utf-8",
-  "cache-control": "no-store"
-};
+var __defProp = Object.defineProperty;
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-export default {
-  async fetch(request, env) {
-    const url = new URL(request.url);
-    if (url.pathname.startsWith("/api/")) return handleApi(request, env, url);
-    if (env.ASSETS) return env.ASSETS.fetch(request);
-    return new Response("Not found", { status: 404 });
-  }
-};
-
-async function handleApi(request, env, url) {
-  if (!env.DB) return json({ error: "D1 資料庫未設定" }, 500);
+// src/index.js
+var w = Object.defineProperty;
+var p = /* @__PURE__ */ __name((a, e) => w(a, "name", { value: e, configurable: true }), "p");
+var B = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" };
+var X = { async fetch(a, e, t) {
+  let n = new URL(a.url);
+  return n.pathname.startsWith("/api/") ? L(a, e, n) : e.ASSETS ? e.ASSETS.fetch(a) : new Response("Not found", { status: 404 });
+} };
+async function L(a, e, t) {
+  if (!e.DB) return l({ error: "D1 \u8CC7\u6599\u5EAB\u672A\u8A2D\u5B9A" }, 500);
   try {
-    if (request.method === "GET" && url.pathname === "/api/health") return json({ ok: true });
-    if (request.method === "GET" && url.pathname === "/api/bom") return json(await getBomPayload(env.DB));
-    if (request.method === "GET" && url.pathname === "/api/usage") return json(await queryUsage(env.DB, url.searchParams));
-    if (request.method === "GET" && url.pathname === "/api/packaging") return json(await queryPackaging(env.DB, url.searchParams));
-    if (request.method === "GET" && url.pathname === "/api/schedule") return json(await getSchedulePayload(env.DB));
-    if (request.method === "POST" && url.pathname === "/api/schedule/delete") {
-      return json(await deleteScheduleItems(env.DB, await request.json()));
+    if (a.method === "GET" && t.pathname === "/api/health") return l({ ok: true });
+    if (a.method === "GET" && t.pathname === "/api/bom") return l(await A(e.DB));
+    if (a.method === "GET" && t.pathname === "/api/usage") return l(await C(e.DB, t.searchParams));
+    if (a.method === "GET" && t.pathname === "/api/packaging") return l(await j(e.DB, t.searchParams));
+    if (a.method === "GET" && t.pathname === "/api/schedule") return l(await I(e.DB));
+    if (a.method === "POST" && t.pathname === "/api/schedule/delete") return l(await V(e.DB, await a.json()));
+    if (a.method === "GET" && t.pathname === "/api/admin/export") {
+      let n = M(a, e, t);
+      return n || l(await N(e.DB));
     }
-    if (request.method === "GET" && url.pathname === "/api/admin/export") {
-      const auth = checkAdminAuth(request, env, url);
-      return auth || json(await exportDatabase(env.DB));
+    if (a.method === "POST" && t.pathname === "/api/admin/import") {
+      let n = M(a, e, t);
+      return n || l(await x(e.DB, await a.json()));
     }
-    if (request.method === "POST" && url.pathname === "/api/admin/import") {
-      const auth = checkAdminAuth(request, env, url);
-      return auth || json(await importDatabase(env.DB, await request.json()));
-    }
-    if (request.method === "POST" && url.pathname === "/api/materials/calculate") {
-      return json(await calculateMaterials(env.DB, await request.json()));
-    }
-    if (url.pathname.startsWith("/api/")) {
-      return json({ error: "不支援的 API 方法" }, 405, { allow: "GET, POST" });
-    }
-    return json({ error: "找不到 API" }, 404);
-  } catch (error) {
-    console.error(JSON.stringify({
-      event: "api_error",
-      path: url.pathname,
-      message: error instanceof Error ? error.message : String(error)
-    }));
-    return json({ error: "伺服器錯誤" }, 500);
+    return a.method === "POST" && t.pathname === "/api/materials/calculate" ? l(await z(e.DB, await a.json())) : t.pathname.startsWith("/api/") ? l({ error: "\u4E0D\u652F\u63F4\u7684 API \u65B9\u6CD5" }, 405, { allow: "GET, POST" }) : l({ error: "\u627E\u4E0D\u5230 API" }, 404);
+  } catch (n) {
+    return console.error(JSON.stringify({ event: "api_error", path: t.pathname, message: n instanceof Error ? n.message : String(n) })), l({ error: "\u4F3A\u670D\u5668\u932F\u8AA4" }, 500);
   }
 }
-
-async function getBomPayload(db) {
-  const [bomResult, fixedResult] = await Promise.all([
-    db.prepare("SELECT parent_number, child_parts FROM bom ORDER BY parent_number").all(),
-    db.prepare("SELECT part_number FROM fixed_parts ORDER BY part_number").all()
-  ]);
-  return {
-    updated_at: new Date().toISOString(),
-    counts: {
-      bom: (bomResult.results || []).length,
-      fixed: (fixedResult.results || []).length
-    },
-    bom: (bomResult.results || []).map(row => ({
-      parent_number: row.parent_number,
-      child_parts: row.child_parts
-    })),
-    fixed: (fixedResult.results || []).map(row => row.part_number)
-  };
+__name(L, "L");
+p(L, "handleApi");
+async function A(a) {
+  let [e, t] = await Promise.all([a.prepare("SELECT parent_number, child_parts FROM bom ORDER BY parent_number").all(), a.prepare("SELECT part_number FROM fixed_parts ORDER BY part_number").all()]), n = (e.results || []).map((i) => ({ parent_number: i.parent_number, child_parts: i.child_parts })), r = (t.results || []).map((i) => i.part_number);
+  return { updated_at: (/* @__PURE__ */ new Date()).toISOString(), counts: { bom: n.length, fixed: r.length }, bom: n, fixed: r };
 }
-
-async function getSchedulePayload(db) {
-  await ensureScheduleCompletedTable(db);
-  const [activeResult, completedResult] = await Promise.all([
-    db.prepare("SELECT wo_id, part_no, side, plan_qty, real_qty, start_date, end_date, panel_size FROM schedule_items ORDER BY rowid").all(),
-    db.prepare("SELECT wo_id, part_no, side, plan_qty, real_qty, start_date, end_date, panel_size FROM schedule_completed_items ORDER BY completed_at DESC, wo_id").all()
-  ]);
-  const activeRows = activeResult.results || [];
-  const completedRows = completedResult.results || [];
-  return {
-    updated_at: new Date().toISOString(),
-    count: activeRows.length,
-    completed_count: completedRows.length,
-    groups: groupScheduleRows(activeRows),
-    completed_groups: groupScheduleRows(completedRows)
-  };
-}
-
-function groupScheduleRows(rows) {
-  const groups = [];
-  const byDate = new Map();
-  rows.forEach(row => {
-    const date = normalizeDate(row.start_date) || "未排日期";
-    if (!byDate.has(date)) {
-      const group = { date, items: [], total_quantity: 0 };
-      byDate.set(date, group);
-      groups.push(group);
+__name(A, "A");
+p(A, "getBomPayload");
+async function I(a) {
+  let t = (await a.prepare("SELECT wo_id, part_no, side, plan_qty, real_qty, start_date, end_date, panel_size FROM schedule_items ORDER BY rowid").all()).results || [], n = [], r = /* @__PURE__ */ new Map();
+  return t.forEach((i) => {
+    let c = R(i.start_date) || "\u672A\u6392\u65E5\u671F";
+    if (!r.has(c)) {
+      let _ = { date: c, items: [], total_quantity: 0 };
+      r.set(c, _), n.push(_);
     }
-    const item = {
-      wo_id: row.wo_id,
-      part_no: row.part_no,
-      side: row.side || "",
-      plan_qty: toNumber(row.plan_qty),
-      real_qty: toNumber(row.real_qty),
-      start_date: row.start_date || "",
-      end_date: row.end_date || "",
-      panel_size: row.panel_size || ""
-    };
-    byDate.get(date).items.push(item);
-    byDate.get(date).total_quantity += item.plan_qty;
-  });
-  return groups;
+    let s = { wo_id: i.wo_id, part_no: i.part_no, side: i.side || "", plan_qty: m(i.plan_qty), real_qty: m(i.real_qty), start_date: i.start_date || "", end_date: i.end_date || "", panel_size: i.panel_size || "" };
+    r.get(c).items.push(s), r.get(c).total_quantity += s.plan_qty;
+  }), { updated_at: (/* @__PURE__ */ new Date()).toISOString(), count: t.length, groups: n };
 }
-
-async function deleteScheduleItems(db, payload) {
-  await ensureScheduleCompletedTable(db);
-  const woIds = uniqueRows((Array.isArray(payload?.wo_ids) ? payload.wo_ids : []).map(cleanText));
-  if (woIds.length === 0) return { error: "請提供要刪除的工單" };
-
-  let deletedSchedule = 0;
-  for (let index = 0; index < woIds.length; index += 80) {
-    const chunk = woIds.slice(index, index + 80);
-    const placeholders = chunk.map(() => "?").join(", ");
-    const countResult = await db.prepare(`SELECT COUNT(*) AS count FROM schedule_items WHERE wo_id IN (${placeholders})`).bind(...chunk).all();
-    deletedSchedule += toNumber(countResult.results?.[0]?.count);
-    await db.prepare(`
-      INSERT INTO schedule_completed_items (
-        wo_id, part_no, side, plan_qty, real_qty, start_date, end_date, panel_size, completed_at
-      )
-      SELECT wo_id, part_no, side, plan_qty, real_qty, start_date, end_date, panel_size, CURRENT_TIMESTAMP
-      FROM schedule_items
-      WHERE wo_id IN (${placeholders})
-      ON CONFLICT(wo_id) DO UPDATE SET
-        part_no = excluded.part_no,
-        side = excluded.side,
-        plan_qty = excluded.plan_qty,
-        real_qty = excluded.real_qty,
-        start_date = excluded.start_date,
-        end_date = excluded.end_date,
-        panel_size = excluded.panel_size,
-        completed_at = CURRENT_TIMESTAMP
-    `).bind(...chunk).run();
-    await db.prepare(`DELETE FROM schedule_items WHERE wo_id IN (${placeholders})`).bind(...chunk).run();
+__name(I, "I");
+p(I, "getSchedulePayload");
+async function V(a, e) {
+  let t = J((Array.isArray(e?.wo_ids) ? e.wo_ids : []).map(u));
+  if (t.length === 0) return { error: "\u8ACB\u63D0\u4F9B\u8981\u522A\u9664\u7684\u5DE5\u55AE" };
+  let n = 0;
+  for (let r = 0; r < t.length; r += 80) {
+    let i = t.slice(r, r + 80), c = i.map(() => "?").join(", "), s = await a.prepare(`SELECT COUNT(*) AS count FROM schedule_items WHERE wo_id IN (${c})`).bind(...i).all();
+    n += m(s.results?.[0]?.count);
+    await a.prepare(`DELETE FROM schedule_items WHERE wo_id IN (${c})`).bind(...i).run();
   }
-  const deletedNoteCombos = await deletePickingNoteCombos(db, woIds);
-  return { deleted_schedule: deletedSchedule, completed_schedule: deletedSchedule, deleted_note_combos: deletedNoteCombos };
+  let r = await Z(a, t);
+  return { deleted_schedule: n, deleted_note_combos: r };
 }
-
-async function deletePickingNoteCombos(db, woIds) {
-  let deleted = 0;
+__name(V, "V");
+p(V, "deleteScheduleItems");
+async function Z(a, e) {
+  let t = 0;
   try {
-    const targetIds = new Set(woIds.map(cleanText).filter(Boolean));
-    const tables = await db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('picking_notes', 'picking_note_items')").all();
-    for (const tableRow of tables.results || []) {
-      const tableName = cleanText(tableRow.name);
-      if (!tableName) continue;
-      const info = await db.prepare(`PRAGMA table_info(${tableName})`).all();
-      const columns = new Set((info.results || []).map(row => cleanText(row.name)));
-      const keyColumn = columns.has("combo_key")
-        ? "combo_key"
-        : columns.has("key")
-          ? "key"
-          : columns.has("picking_key")
-            ? "picking_key"
-            : "";
-      if (!keyColumn) continue;
-      const combos = await db.prepare(`SELECT DISTINCT ${keyColumn} AS combo_key FROM ${tableName}`).all();
-      const matched = (combos.results || [])
-        .map(row => cleanText(row.combo_key))
-        .filter(key => key && key.split("|").map(cleanText).some(id => targetIds.has(id)));
-      if (matched.length === 0) continue;
-      deleted += matched.length;
-      for (let index = 0; index < matched.length; index += 80) {
-        const chunk = matched.slice(index, index + 80);
-        const placeholders = chunk.map(() => "?").join(", ");
-        await db.prepare(`DELETE FROM ${tableName} WHERE ${keyColumn} IN (${placeholders})`).bind(...chunk).run();
+    let n = new Set(e.map(u).filter(Boolean)), r = await a.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('picking_notes', 'picking_note_items')").all();
+    for (let i of r.results || []) {
+      let c = u(i.name);
+      if (!c) continue;
+      let s = await a.prepare(`PRAGMA table_info(${c})`).all(), _ = new Set((s.results || []).map((o) => u(o.name))), b = _.has("combo_key") ? "combo_key" : _.has("key") ? "key" : _.has("picking_key") ? "picking_key" : "";
+      if (!b) continue;
+      let d = await a.prepare(`SELECT DISTINCT ${b} AS combo_key FROM ${c}`).all(), o = (d.results || []).map((h) => u(h.combo_key)).filter((h) => h && h.split("|").map(u).some((f) => n.has(f)));
+      if (o.length === 0) continue;
+      t += o.length;
+      for (let h = 0; h < o.length; h += 80) {
+        let f = o.slice(h, h + 80), g = f.map(() => "?").join(", ");
+        await a.prepare(`DELETE FROM ${c} WHERE ${b} IN (${g})`).bind(...f).run();
       }
     }
-  } catch (error) {
-    console.warn(JSON.stringify({
-      event: "picking_note_delete_skipped",
-      message: error instanceof Error ? error.message : String(error)
-    }));
+  } catch (n) {
+    console.warn(JSON.stringify({ event: "picking_note_delete_skipped", message: n instanceof Error ? n.message : String(n) }));
   }
-  return deleted;
+  return t;
 }
-
-async function exportDatabase(db) {
-  await ensureScheduleCompletedTable(db);
-  const [bom, fixed, usage, packaging, schedule, completed] = await Promise.all([
-    db.prepare("SELECT parent_number, child_parts FROM bom ORDER BY parent_number").all(),
-    db.prepare("SELECT part_number FROM fixed_parts ORDER BY part_number").all(),
-    db.prepare("SELECT parent_number, child_part_number, batch_quantity, item_name FROM usage_items ORDER BY parent_number, child_part_number").all(),
-    db.prepare("SELECT product_number, specification, package_1 FROM packaging ORDER BY product_number").all(),
-    db.prepare("SELECT wo_id, part_no, side, plan_qty, real_qty, start_date, end_date, panel_size FROM schedule_items ORDER BY rowid").all(),
-    db.prepare("SELECT wo_id, part_no, side, plan_qty, real_qty, start_date, end_date, panel_size, completed_at FROM schedule_completed_items ORDER BY completed_at DESC, wo_id").all()
-  ]);
-  const tables = {
-    bom: bom.results || [],
-    fixed_parts: fixed.results || [],
-    usage_items: usage.results || [],
-    packaging: packaging.results || [],
-    schedule_items: schedule.results || [],
-    schedule_completed_items: completed.results || []
-  };
-  return {
-    exported_at: new Date().toISOString(),
-    counts: Object.fromEntries(Object.entries(tables).map(([name, rows]) => [name, rows.length])),
-    tables
-  };
+__name(Z, "Z");
+p(Z, "deletePickingNoteCombos");
+async function N(a) {
+  let [e, t, n, r, i] = await Promise.all([a.prepare("SELECT parent_number, child_parts FROM bom ORDER BY parent_number").all(), a.prepare("SELECT part_number FROM fixed_parts ORDER BY part_number").all(), a.prepare("SELECT parent_number, child_part_number, batch_quantity, item_name FROM usage_items ORDER BY parent_number, child_part_number").all(), a.prepare("SELECT product_number, specification, package_1 FROM packaging ORDER BY product_number").all(), a.prepare("SELECT wo_id, part_no, side, plan_qty, real_qty, start_date, end_date, panel_size FROM schedule_items ORDER BY rowid").all()]), c = { bom: e.results || [], fixed_parts: t.results || [], usage_items: n.results || [], packaging: r.results || [], schedule_items: i.results || [] };
+  return { exported_at: (/* @__PURE__ */ new Date()).toISOString(), counts: Object.fromEntries(Object.entries(c).map(([s, _]) => [s, _.length])), tables: c };
 }
-
-async function importDatabase(db, payload) {
-  await ensureScheduleCompletedTable(db);
-  const tables = payload?.tables || {};
-  const counts = {};
-  if (Array.isArray(tables.packaging)) {
-    const rows = normalizePackagingRows(tables.packaging);
-    await replaceTable(db, "packaging", ["product_number", "specification", "package_1"], rows);
-    counts.packaging = rows.length;
+__name(N, "N");
+p(N, "exportDatabase");
+async function x(a, e) {
+  let t = e?.tables || {}, n = {};
+  if (Array.isArray(t.packaging)) {
+    let r = W(t.packaging);
+    await y(a, "packaging", ["product_number", "specification", "package_1"], r), n.packaging = r.length;
   }
-  if (Array.isArray(tables.usage_items)) {
-    const rows = normalizeUsageRows(tables.usage_items);
-    await replaceTable(db, "usage_items", ["parent_number", "child_part_number", "batch_quantity", "item_name"], rows, { resetSequence: true });
-    counts.usage_items = rows.length;
+  if (Array.isArray(t.usage_items)) {
+    let r = $(t.usage_items);
+    await y(a, "usage_items", ["parent_number", "child_part_number", "batch_quantity", "item_name"], r, { resetSequence: true }), n.usage_items = r.length;
   }
-  if (Array.isArray(tables.fixed_parts)) {
-    const rows = normalizeFixedRows(tables.fixed_parts);
-    await replaceTable(db, "fixed_parts", ["part_number"], rows);
-    counts.fixed_parts = rows.length;
+  if (Array.isArray(t.fixed_parts)) {
+    let r = Y(t.fixed_parts);
+    await y(a, "fixed_parts", ["part_number"], r), n.fixed_parts = r.length;
   }
-  if (Array.isArray(tables.bom)) {
-    const rows = normalizeBomRows(tables.bom);
-    await replaceTable(db, "bom", ["parent_number", "child_parts"], rows);
-    counts.bom = rows.length;
+  if (Array.isArray(t.bom)) {
+    let r = P(t.bom);
+    await y(a, "bom", ["parent_number", "child_parts"], r), n.bom = r.length;
   }
-  if (Array.isArray(tables.schedule_items)) {
-    const rows = await excludeCompletedScheduleRows(db, normalizeScheduleRows(tables.schedule_items));
-    await replaceTable(db, "schedule_items", ["wo_id", "part_no", "side", "plan_qty", "real_qty", "start_date", "end_date", "panel_size"], rows);
-    counts.schedule_items = rows.length;
+  if (Array.isArray(t.schedule_items)) {
+    let r = G(t.schedule_items);
+    await y(a, "schedule_items", ["wo_id", "part_no", "side", "plan_qty", "real_qty", "start_date", "end_date", "panel_size"], r), n.schedule_items = r.length;
   }
-  if (Object.keys(counts).length === 0) return { error: "沒有可匯入的資料" };
-  return { imported_at: new Date().toISOString(), counts };
+  return Object.keys(n).length === 0 ? { error: "\u6C92\u6709\u53EF\u532F\u5165\u7684\u8CC7\u6599" } : { imported_at: (/* @__PURE__ */ new Date()).toISOString(), counts: n };
 }
-
-async function excludeCompletedScheduleRows(db, rows) {
-  if (rows.length === 0) return rows;
-  const ids = rows.map(row => row.wo_id).filter(Boolean);
-  const completed = new Set();
-  for (let index = 0; index < ids.length; index += 80) {
-    const chunk = ids.slice(index, index + 80);
-    const placeholders = chunk.map(() => "?").join(", ");
-    const result = await db.prepare(`SELECT wo_id FROM schedule_completed_items WHERE wo_id IN (${placeholders})`).bind(...chunk).all();
-    (result.results || []).forEach(row => completed.add(cleanText(row.wo_id)));
+__name(x, "x");
+p(x, "importDatabase");
+var F = 100;
+var O = 50;
+async function y(a, e, t, n, r = {}) {
+  let i = [a.prepare(`DELETE FROM ${e}`)];
+  if (r.resetSequence && i.push(a.prepare("DELETE FROM sqlite_sequence WHERE name = ?").bind(e)), await a.batch(i), n.length === 0) return;
+  let c = Math.max(1, Math.floor((F - 1) / t.length)), s = [];
+  for (let _ = 0; _ < n.length; _ += c) {
+    let b = n.slice(_, _ + c), d = b.map(() => `(${t.map(() => "?").join(", ")})`).join(", "), o = `INSERT INTO ${e} (${t.join(", ")}) VALUES ${d}`, h = b.flatMap((f) => t.map((g) => f[g] ?? ""));
+    s.push(a.prepare(o).bind(...h));
   }
-  return rows.filter(row => !completed.has(cleanText(row.wo_id)));
+  for (let _ = 0; _ < s.length; _ += O) await a.batch(s.slice(_, _ + O));
 }
-
-const D1_MAX_VARIABLES = 100;
-const D1_BATCH_SIZE = 50;
-
-async function replaceTable(db, tableName, columns, rows, options = {}) {
-  const clearStatements = [db.prepare(`DELETE FROM ${tableName}`)];
-  if (options.resetSequence) clearStatements.push(db.prepare("DELETE FROM sqlite_sequence WHERE name = ?").bind(tableName));
-  await db.batch(clearStatements);
-  if (rows.length === 0) return;
-
-  const rowsPerInsert = Math.max(1, Math.floor((D1_MAX_VARIABLES - 1) / columns.length));
-  const statements = [];
-  for (let index = 0; index < rows.length; index += rowsPerInsert) {
-    const chunk = rows.slice(index, index + rowsPerInsert);
-    const valuesSql = chunk.map(() => `(${columns.map(() => "?").join(", ")})`).join(", ");
-    const sql = `INSERT INTO ${tableName} (${columns.join(", ")}) VALUES ${valuesSql}`;
-    const values = chunk.flatMap(row => columns.map(column => row[column] ?? ""));
-    statements.push(db.prepare(sql).bind(...values));
-  }
-  for (let index = 0; index < statements.length; index += D1_BATCH_SIZE) {
-    await db.batch(statements.slice(index, index + D1_BATCH_SIZE));
-  }
-}
-
-async function calculateMaterials(db, payload) {
-  const models = normalizeSelectedModels(payload?.models || []);
-  if (models.length === 0) return { count: 0, items: [] };
-
-  const modelQty = new Map();
-  models.forEach(model => {
-    modelQty.set(model.part_no, (modelQty.get(model.part_no) || 0) + model.plan_qty);
+__name(y, "y");
+p(y, "replaceTable");
+async function z(a, e) {
+  let t = Q(e?.models || []);
+  if (t.length === 0) return { count: 0, items: [] };
+  let n = /* @__PURE__ */ new Map();
+  t.forEach((o) => {
+    n.set(o.part_no, (n.get(o.part_no) || 0) + o.plan_qty);
   });
-
-  const usageRows = await queryByIn(
-    db,
-    "SELECT parent_number, child_part_number, batch_quantity, item_name FROM usage_items WHERE parent_number IN (__IN__) ORDER BY child_part_number",
-    [...modelQty.keys()]
-  );
-  const required = new Map();
-  for (const row of usageRows) {
-    const planQty = modelQty.get(row.parent_number) || 0;
-    const batchQty = toNumber(row.batch_quantity);
-    const requiredQty = planQty * batchQty;
-    if (!row.child_part_number || requiredQty === 0) continue;
-    const part = row.child_part_number;
-    const target = required.get(part) || { child_part_number: part, required_quantity: 0, item_name: "", parents: [] };
-    if (!target.item_name && row.item_name) target.item_name = String(row.item_name).trim();
-    target.required_quantity += requiredQty;
-    target.parents.push({
-      parent_number: row.parent_number,
-      plan_qty: planQty,
-      batch_quantity: batchQty,
-      required_quantity: requiredQty
-    });
-    required.set(part, target);
+  let r = [...n.keys()], i = await k(a, "SELECT parent_number, child_part_number, batch_quantity, item_name FROM usage_items WHERE parent_number IN (__IN__) ORDER BY child_part_number", r), c = /* @__PURE__ */ new Map();
+  for (let o of i) {
+    let h = n.get(o.parent_number) || 0, f = m(o.batch_quantity), g = h * f;
+    if (!o.child_part_number || g === 0) continue;
+    let q = o.child_part_number, E = c.get(q) || { child_part_number: q, required_quantity: 0, item_name: "", parents: [] };
+    !E.item_name && o.item_name && (E.item_name = String(o.item_name).trim()), E.required_quantity += g, E.parents.push({ parent_number: o.parent_number, plan_qty: h, batch_quantity: f, required_quantity: g }), c.set(q, E);
   }
-
-  const packagingRows = await queryByIn(db, "SELECT product_number, package_1 FROM packaging WHERE product_number IN (__IN__)", [...required.keys()]);
-  const packagingByPart = new Map(packagingRows.map(row => [row.product_number, row]));
-  const items = [...required.values()].map(item => {
-    const packaging = packagingByPart.get(item.child_part_number) || {};
-    const packageQty = toNumber(packaging.package_1);
-    const packageCount = packageQty > 0 ? item.required_quantity / packageQty : null;
-    return {
-      child_part_number: item.child_part_number,
-      item_name: item.item_name || "",
-      required_quantity: roundNumber(item.required_quantity, 4),
-      package_quantity: packageQty || null,
-      package_count: packageCount === null ? null : roundNumber(packageCount, 1),
-      parents: item.parents
-    };
-  }).sort((a, b) => a.child_part_number.localeCompare(b.child_part_number, undefined, { numeric: true }));
-
-  return {
-    selected_count: models.length,
-    model_count: modelQty.size,
-    count: items.length,
-    items
-  };
+  let s = [...c.keys()], _ = await k(a, "SELECT product_number, package_1 FROM packaging WHERE product_number IN (__IN__)", s), b = new Map(_.map((o) => [o.product_number, o])), d = [...c.values()].map((o) => {
+    let h = b.get(o.child_part_number) || {}, f = m(h.package_1), g = f > 0 ? o.required_quantity / f : null;
+    return { child_part_number: o.child_part_number, item_name: o.item_name || "", required_quantity: T(o.required_quantity, 4), package_quantity: f || null, package_count: g === null ? null : T(g, 1), parents: o.parents };
+  }).sort((o, h) => o.child_part_number.localeCompare(h.child_part_number, void 0, { numeric: true }));
+  return { selected_count: t.length, model_count: r.length, count: d.length, items: d };
 }
-
-async function queryByIn(db, sqlTemplate, values, chunkSize = 80) {
-  const rows = [];
-  for (let index = 0; index < values.length; index += chunkSize) {
-    const chunk = values.slice(index, index + chunkSize);
-    if (chunk.length === 0) continue;
-    const placeholders = chunk.map(() => "?").join(", ");
-    const result = await db.prepare(sqlTemplate.replace("__IN__", placeholders)).bind(...chunk).all();
-    rows.push(...(result.results || []));
+__name(z, "z");
+p(z, "calculateMaterials");
+async function k(a, e, t, n = 80) {
+  let r = [];
+  for (let i = 0; i < t.length; i += n) {
+    let c = t.slice(i, i + n);
+    if (c.length === 0) continue;
+    let s = c.map(() => "?").join(", "), _ = await a.prepare(e.replace("__IN__", s)).bind(...c).all();
+    r.push(..._.results || []);
   }
-  return rows;
+  return r;
 }
-
-async function queryUsage(db, params) {
-  const parent = cleanParam(params.get("parent"));
-  const part = cleanParam(params.get("part"));
-  const query = cleanParam(params.get("q"));
-  const limit = getLimit(params.get("limit"));
-  let sql = "SELECT parent_number, child_part_number, batch_quantity, item_name FROM usage_items";
-  const where = [];
-  const values = [];
-  if (parent) {
-    where.push("parent_number = ?");
-    values.push(parent);
+__name(k, "k");
+p(k, "queryByIn");
+async function C(a, e) {
+  let t = S(e.get("parent")), n = S(e.get("part")), r = S(e.get("q")), i = D(e.get("limit")), c = "SELECT parent_number, child_part_number, batch_quantity, item_name FROM usage_items", s = [], _ = [];
+  if (t && (s.push("parent_number = ?"), _.push(t)), n && (s.push("child_part_number = ?"), _.push(n)), r) {
+    s.push("(parent_number LIKE ? OR child_part_number LIKE ? OR item_name LIKE ?)");
+    let d = `%${r}%`;
+    _.push(d, d, d);
   }
-  if (part) {
-    where.push("child_part_number = ?");
-    values.push(part);
+  s.length > 0 && (c += ` WHERE ${s.join(" AND ")}`), c += " ORDER BY parent_number, child_part_number LIMIT ?", _.push(i);
+  let b = await a.prepare(c).bind(..._).all();
+  return { count: b.results?.length || 0, usage: b.results || [] };
+}
+__name(C, "C");
+p(C, "queryUsage");
+async function j(a, e) {
+  let t = S(e.get("q")), n = D(e.get("limit")), r = "SELECT product_number, specification, package_1 FROM packaging", i = [];
+  if (t) {
+    r += " WHERE product_number LIKE ? OR specification LIKE ?";
+    let s = `%${t}%`;
+    i.push(s, s);
   }
-  if (query) {
-    where.push("(parent_number LIKE ? OR child_part_number LIKE ? OR item_name LIKE ?)");
-    const like = `%${query}%`;
-    values.push(like, like, like);
-  }
-  if (where.length > 0) sql += ` WHERE ${where.join(" AND ")}`;
-  sql += " ORDER BY parent_number, child_part_number LIMIT ?";
-  values.push(limit);
-  const result = await db.prepare(sql).bind(...values).all();
-  return { count: result.results?.length || 0, usage: result.results || [] };
+  r += " ORDER BY product_number LIMIT ?", i.push(n);
+  let c = await a.prepare(r).bind(...i).all();
+  return { count: c.results?.length || 0, packaging: c.results || [] };
 }
-
-async function queryPackaging(db, params) {
-  const query = cleanParam(params.get("q"));
-  const limit = getLimit(params.get("limit"));
-  let sql = "SELECT product_number, specification, package_1 FROM packaging";
-  const values = [];
-  if (query) {
-    sql += " WHERE product_number LIKE ? OR specification LIKE ?";
-    const like = `%${query}%`;
-    values.push(like, like);
-  }
-  sql += " ORDER BY product_number LIMIT ?";
-  values.push(limit);
-  const result = await db.prepare(sql).bind(...values).all();
-  return { count: result.results?.length || 0, packaging: result.results || [] };
+__name(j, "j");
+p(j, "queryPackaging");
+function P(a) {
+  let e = /* @__PURE__ */ new Map();
+  return a.forEach((t) => {
+    let n = u(t.parent_number), r = u(t.child_parts);
+    if (!n || !r) return;
+    let i = e.get(n) || /* @__PURE__ */ new Set();
+    r.split(",").map(u).filter(Boolean).forEach((c) => i.add(c)), e.set(n, i);
+  }), [...e.entries()].map(([t, n]) => ({ parent_number: t, child_parts: [...n].join(",") }));
 }
-
-function normalizeBomRows(rows) {
-  const byParent = new Map();
-  rows.forEach(row => {
-    const parent = cleanText(row.parent_number);
-    const children = cleanText(row.child_parts);
-    if (!parent || !children) return;
-    const set = byParent.get(parent) || new Set();
-    children.split(",").map(cleanText).filter(Boolean).forEach(child => set.add(child));
-    byParent.set(parent, set);
-  });
-  return [...byParent.entries()].map(([parent_number, children]) => ({
-    parent_number,
-    child_parts: [...children].join(",")
-  }));
+__name(P, "P");
+p(P, "normalizeBomRows");
+function Y(a) {
+  return J(a.map((e) => u(e.part_number))).map((e) => ({ part_number: e }));
 }
-
-function normalizeFixedRows(rows) {
-  return uniqueRows(rows.map(row => cleanText(row.part_number))).map(part_number => ({ part_number }));
+__name(Y, "Y");
+p(Y, "normalizeFixedRows");
+function $(a) {
+  return a.map((e) => ({ parent_number: u(e.parent_number), child_part_number: u(e.child_part_number), batch_quantity: m(e.batch_quantity), item_name: u(e.item_name) })).filter((e) => e.parent_number && e.child_part_number && e.batch_quantity > 0);
 }
-
-function normalizeUsageRows(rows) {
-  return rows.map(row => ({
-    parent_number: cleanText(row.parent_number),
-    child_part_number: cleanText(row.child_part_number),
-    batch_quantity: toNumber(row.batch_quantity),
-    item_name: cleanText(row.item_name)
-  })).filter(row => row.parent_number && row.child_part_number && row.batch_quantity > 0);
+__name($, "$");
+p($, "normalizeUsageRows");
+function W(a) {
+  let e = /* @__PURE__ */ new Map();
+  return a.forEach((t) => {
+    let n = u(t.product_number);
+    n && e.set(n, { product_number: n, specification: u(t.specification), package_1: m(t.package_1) });
+  }), [...e.values()];
 }
-
-function normalizePackagingRows(rows) {
-  const byPart = new Map();
-  rows.forEach(row => {
-    const productNumber = cleanText(row.product_number);
-    if (!productNumber) return;
-    byPart.set(productNumber, {
-      product_number: productNumber,
-      specification: cleanText(row.specification),
-      package_1: toNumber(row.package_1)
-    });
-  });
-  return [...byPart.values()];
-}
-
-function normalizeScheduleRows(rows) {
-  const groups = new Map();
-  rows.forEach(row => {
-    const woId = cleanText(row.wo_id);
-    const partNo = cleanText(row.part_no);
-    const planQty = toNumber(row.plan_qty);
-    const realQty = toNumber(row.real_qty);
-    if (!woId || !partNo || planQty <= 0) return;
-    const normalized = {
-      wo_id: woId,
-      part_no: partNo,
-      side: cleanText(row.side),
-      plan_qty: planQty,
-      real_qty: realQty,
-      start_date: normalizeDate(row.start_date) || cleanText(row.start_date),
-      end_date: normalizeDate(row.end_date) || cleanText(row.end_date),
-      panel_size: cleanText(row.panel_size)
-    };
-    if (!groups.has(woId)) groups.set(woId, []);
-    groups.get(woId).push(normalized);
-  });
-  return [...groups.values()].map(group => {
-    const datedRows = group.filter(row => cleanText(row.start_date));
-    const baseRows = datedRows.length > 0 ? datedRows : group;
-    const base = { ...baseRows[0] };
-    if (datedRows.length === 0) {
-      base.plan_qty = group.reduce((sum, row) => sum + toNumber(row.plan_qty), 0);
-      base.real_qty = group.reduce((sum, row) => sum + toNumber(row.real_qty), 0);
+__name(W, "W");
+p(W, "normalizePackagingRows");
+function G(a) {
+  let e = /* @__PURE__ */ new Map();
+  return a.forEach((t) => {
+    let n = u(t.wo_id), r = u(t.part_no), i = m(t.plan_qty), c = m(t.real_qty);
+    if (!n || !r || i <= 0) return;
+    let s = { wo_id: n, part_no: r, side: u(t.side), plan_qty: i, real_qty: c, start_date: R(t.start_date) || u(t.start_date), end_date: R(t.end_date) || u(t.end_date), panel_size: u(t.panel_size) };
+    e.has(n) || e.set(n, []), e.get(n).push(s);
+  }), [...e.values()].map((t) => {
+    let n = t.filter((i) => u(i.start_date)), r = n.length > 0 ? n : t, i = { ...r[0] };
+    if (n.length === 0) {
+      i.plan_qty = t.reduce((c, s) => c + m(s.plan_qty), 0), i.real_qty = t.reduce((c, s) => c + m(s.real_qty), 0);
     } else {
-      base.plan_qty = toNumber(base.plan_qty);
-      base.real_qty = toNumber(base.real_qty);
+      i.plan_qty = m(i.plan_qty), i.real_qty = m(i.real_qty);
     }
-    base.side = group.reduce((value, row) => mergeTextList(value, row.side), "");
-    base.start_date = baseRows.reduce((value, row) => mergeEarlierDate(value, row.start_date), "");
-    base.end_date = group.reduce((value, row) => mergeLaterDate(value, row.end_date), "");
-    const panelRow = group.find(row => cleanText(row.panel_size));
-    base.panel_size = panelRow ? cleanText(panelRow.panel_size) : "";
-    return base;
+    i.side = t.reduce((c, s) => H(c, s.side), ""), i.start_date = r.reduce((c, s) => K(c, s.start_date), ""), i.end_date = t.reduce((c, s) => U(c, s.end_date), "");
+    let c = t.find((s) => u(s.panel_size));
+    return i.panel_size = c ? u(c.panel_size) : "", i;
   });
 }
-
-function normalizeSelectedModels(rows) {
-  const seen = new Set();
-  return rows.map(row => ({
-    wo_id: cleanText(row.wo_id),
-    part_no: cleanText(row.part_no),
-    plan_qty: toNumber(row.plan_qty)
-  })).filter(row => {
-    if (!row.part_no || row.plan_qty <= 0) return false;
-    if (row.wo_id) {
-      if (seen.has(row.wo_id)) return false;
-      seen.add(row.wo_id);
+__name(G, "G");
+p(G, "normalizeScheduleRows");
+function H(a, e) {
+  let t = new Set(String(a || "").split("/").map(u).filter(Boolean));
+  return e && t.add(e), [...t].join("/");
+}
+__name(H, "H");
+p(H, "mergeTextList");
+function K(a, e) {
+  return a ? e && e < a ? e : a : e || "";
+}
+__name(K, "K");
+p(K, "mergeEarlierDate");
+function U(a, e) {
+  return a ? e && e > a ? e : a : e || "";
+}
+__name(U, "U");
+p(U, "mergeLaterDate");
+function Q(a) {
+  let e = /* @__PURE__ */ new Set();
+  return a.map((t) => ({ wo_id: u(t.wo_id), part_no: u(t.part_no), plan_qty: m(t.plan_qty) })).filter((t) => {
+    if (!t.part_no || t.plan_qty <= 0) return false;
+    if (t.wo_id) {
+      if (e.has(t.wo_id)) return false;
+      e.add(t.wo_id);
     }
     return true;
   });
 }
-
-async function ensureScheduleCompletedTable(db) {
-  await db.prepare(`
-    CREATE TABLE IF NOT EXISTS schedule_completed_items (
-      wo_id TEXT PRIMARY KEY NOT NULL,
-      part_no TEXT NOT NULL DEFAULT '',
-      side TEXT,
-      plan_qty REAL,
-      real_qty REAL,
-      start_date TEXT,
-      end_date TEXT,
-      panel_size TEXT,
-      completed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )
-  `).run();
+__name(Q, "Q");
+p(Q, "normalizeSelectedModels");
+function J(a) {
+  return [...new Set(a.filter(Boolean))].sort((e, t) => e.localeCompare(t, void 0, { numeric: true }));
 }
-
-function mergeTextList(currentValue, nextValue) {
-  const parts = new Set(String(currentValue || "").split("/").map(cleanText).filter(Boolean));
-  const next = cleanText(nextValue);
-  if (next) parts.add(next);
-  return [...parts].join("/");
+__name(J, "J");
+p(J, "uniqueRows");
+function M(a, e, t) {
+  let n = u(e.ADMIN_TOKEN);
+  return !n || (u(a.headers.get("x-admin-token")) || u(t.searchParams.get("token"))) === n ? null : l({ error: "\u7BA1\u7406\u6B0A\u9650\u9A57\u8B49\u5931\u6557" }, 401);
 }
-
-function mergeEarlierDate(currentValue, nextValue) {
-  const current = cleanText(currentValue);
-  const next = cleanText(nextValue);
-  if (!current) return next;
-  if (!next) return current;
-  return next < current ? next : current;
+__name(M, "M");
+p(M, "checkAdminAuth");
+function S(a) {
+  return String(a || "").trim() || null;
 }
-
-function mergeLaterDate(currentValue, nextValue) {
-  const current = cleanText(currentValue);
-  const next = cleanText(nextValue);
-  if (!current) return next;
-  if (!next) return current;
-  return next > current ? next : current;
+__name(S, "S");
+p(S, "cleanParam");
+function D(a) {
+  let e = Number(a);
+  return Number.isFinite(e) ? Math.max(1, Math.min(500, Math.floor(e))) : 100;
 }
-
-function uniqueRows(values) {
-  return [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+__name(D, "D");
+p(D, "getLimit");
+function u(a) {
+  return String(a ?? "").trim();
 }
-
-function checkAdminAuth(request, env, url) {
-  const expected = cleanText(env.ADMIN_TOKEN);
-  if (!expected) return null;
-  const provided = cleanText(request.headers.get("x-admin-token")) || cleanText(url.searchParams.get("token"));
-  return provided === expected ? null : json({ error: "管理權限驗證失敗" }, 401);
+__name(u, "u");
+p(u, "cleanText");
+function m(a) {
+  let e = String(a ?? "").replace(/,/g, "").replace(/[^\d.+-]/g, "").trim(), t = Number(e);
+  return Number.isFinite(t) ? t : 0;
 }
-
-function cleanParam(value) {
-  return String(value || "").trim() || null;
+__name(m, "m");
+p(m, "toNumber");
+function R(a) {
+  let e = u(a);
+  if (!e) return "";
+  let t = e.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (t) return `${t[1]}-${t[2].padStart(2, "0")}-${t[3].padStart(2, "0")}`;
+  let n = Number(e);
+  return Number.isFinite(n) && n > 2e4 && n < 8e4 ? new Date(Date.UTC(1899, 11, 30 + Math.floor(n))).toISOString().slice(0, 10) : e;
 }
-
-function getLimit(value) {
-  const number = Number(value);
-  return Number.isFinite(number) ? Math.max(1, Math.min(500, Math.floor(number))) : 100;
+__name(R, "R");
+p(R, "normalizeDate");
+function T(a, e) {
+  let t = 10 ** e;
+  return Math.round((a + Number.EPSILON) * t) / t;
 }
-
-function cleanText(value) {
-  return String(value ?? "").trim();
+__name(T, "T");
+p(T, "roundNumber");
+function l(a, e = 200, t = {}) {
+  return new Response(JSON.stringify(a), { status: e, headers: { ...B, ...t } });
 }
-
-function toNumber(value) {
-  const text = String(value ?? "").replace(/,/g, "").replace(/[^\d.+-]/g, "").trim();
-  const number = Number(text);
-  return Number.isFinite(number) ? number : 0;
-}
-
-function normalizeDate(value) {
-  const text = cleanText(value);
-  if (!text) return "";
-  const match = text.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
-  if (match) return `${match[1]}-${match[2].padStart(2, "0")}-${match[3].padStart(2, "0")}`;
-  const serial = Number(text);
-  if (Number.isFinite(serial) && serial > 20000 && serial < 80000) {
-    return new Date(Date.UTC(1899, 11, 30 + Math.floor(serial))).toISOString().slice(0, 10);
-  }
-  return text;
-}
-
-function roundNumber(value, decimals) {
-  const factor = 10 ** decimals;
-  return Math.round((value + Number.EPSILON) * factor) / factor;
-}
-
-function json(payload, status = 200, headers = {}) {
-  return new Response(JSON.stringify(payload), {
-    status,
-    headers: { ...JSON_HEADERS, ...headers }
-  });
-}
+__name(l, "l");
+p(l, "json");
+export {
+  X as default
+};
+//# sourceMappingURL=index.js.map

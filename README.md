@@ -14,7 +14,7 @@
 - `src/index.js`：Worker API 入口，透過 GitHub Actions 部署到 Cloudflare。
 - `wrangler.jsonc`：Cloudflare Worker、Assets、observability 與 D1 binding 設定。
 - `cloudflare-version.json`：本機記錄的 Cloudflare 部署版本資訊。
-- `migrations/`：D1 資料表 migration，包含 `schedule_completed_items` 完工清單表。
+- `migrations/`：D1 資料表 migration。
 - `scripts/`：Excel 與 D1 匯入/匯出輔助腳本。
 - `文件/BOM.xlsx`：BOM、固定料、用量、包裝四張基礎資料來源，不由手機直接讀取。
 
@@ -96,18 +96,7 @@ GitHub Pages 已停用，根目錄也不保留網址導向頁；正式入口只�
     - 依使用者定案，Worker 維持不設 `ADMIN_TOKEN`（匯入口全放行），專案 8 的 `API_Server_V03` 以空 token 直推。
     - 實測自動推送成功（36 筆送出、正規化後存入 26 筆），驗證後已依使用者要求還原為推送前的 31 筆排程資料。
     - 陷阱：Cloudflare 以 `403 error 1010` 阻擋 `Python-urllib` 預設 User-Agent，程式端呼叫本站 API 必須自訂 `user-agent`。
-    - 排程列表切換選單新增「完工」分頁；後續已修正為讀取排程列表長按完工後寫入的 `schedule_completed_items`，與 `end_date` 完工日無關。
-    - 完工分頁為完工清單層級顯示，分頁標籤同步顯示各分類筆數。
+    - 排程列表切換選單新增「完工」分頁：完工＝`end_date` 早於今天（當天完工日仍視為進行中）；既有「全部／已排程／未排程」行為不變。
+    - 完工分頁為項目層級過濾（同日期群組內只顯示已完工項目），分頁標籤同步顯示各分類筆數。
+    - 已知行為（既有匯入行為，非本次新增）：匯入為整表重建，排程頁手動長按刪除的工單在下次推送會重新出現。
     - 詳細轉換與去重規則見 `8 排程匯入工作整合\README.md`。
-
-
-2026-07-04排程篩選按鈕與長按刪除表確認-Plus
-
-    - 排程列表篩選按鈕文案由「已排程／未排程」縮短為「已排／未排」。
-    - 排程列表四個篩選按鈕改為固定同一列等寬顯示。
-    - 新增本專案 D1 `schedule_completed_items` 表，排程列表長按後按「完工」會先把 `schedule_items` 中的排程資料寫入此表，再從目前排程移除。
-    - 排程列表「完工」標籤改讀 `schedule_completed_items`，與 `end_date` 完工日無關。
-    - 完工分頁只顯示完工清單資料，不提供再次長按加入完工。
-    - 排程匯入 `schedule_items` 時會排除已存在於 `schedule_completed_items` 的工單，避免已完工工單因整表匯入重新出現在目前排程。
-    - 完工處理時會另外嘗試清理 `picking_notes` / `picking_note_items` 中包含該工單組合的取料備註。
-    - 專案 6 的 `completed_orders` 是在製回報頁完工表，與本專案排程列表完工清單無關。
