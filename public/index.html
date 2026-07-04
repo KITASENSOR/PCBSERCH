@@ -1342,6 +1342,7 @@
             <button type="button" id="scheduleFilterAll" onclick="setScheduleFilter('all')">全部</button>
             <button type="button" id="scheduleFilterScheduled" class="active" onclick="setScheduleFilter('scheduled')">已排程</button>
             <button type="button" id="scheduleFilterUnscheduled" onclick="setScheduleFilter('unscheduled')">未排程</button>
+            <button type="button" id="scheduleFilterDone" onclick="setScheduleFilter('done')">完工</button>
         </div>
         <div id="pickingScheduleList" class="schedule-list"></div>
     </div>
@@ -2524,9 +2525,26 @@
         return isScheduledDate(group?.date);
     }
 
+    function isDoneItem(item) {
+        // 完工＝完工日已過（end_date 早於今天）
+        const match = String(item?.end_date || '').trim().match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+        if (!match) return false;
+        const endDate = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return endDate < today;
+    }
+
+    function doneScheduleGroups() {
+        return scheduleGroups
+            .map(group => ({ ...group, items: (group.items || []).filter(isDoneItem) }))
+            .filter(group => group.items.length > 0);
+    }
+
     function visibleScheduleGroups() {
         if (scheduleFilterMode === 'scheduled') return scheduleGroups.filter(isScheduledGroup);
         if (scheduleFilterMode === 'unscheduled') return scheduleGroups.filter(group => !isScheduledGroup(group));
+        if (scheduleFilterMode === 'done') return doneScheduleGroups();
         return scheduleGroups;
     }
 
@@ -2562,10 +2580,12 @@
         const scheduledCount = countScheduleItems(scheduleGroups.filter(isScheduledGroup));
         const unscheduledCount = countScheduleItems(scheduleGroups.filter(group => !isScheduledGroup(group)));
         const allCount = scheduledCount + unscheduledCount;
+        const doneCount = countScheduleItems(doneScheduleGroups());
         [
             ['scheduleFilterAll', 'all', `全部 ${allCount}`],
             ['scheduleFilterScheduled', 'scheduled', `已排程 ${scheduledCount}`],
-            ['scheduleFilterUnscheduled', 'unscheduled', `未排程 ${unscheduledCount}`]
+            ['scheduleFilterUnscheduled', 'unscheduled', `未排程 ${unscheduledCount}`],
+            ['scheduleFilterDone', 'done', `完工 ${doneCount}`]
         ].forEach(([id, mode, label]) => {
             const button = document.getElementById(id);
             if (!button) return;
