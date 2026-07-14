@@ -10,7 +10,7 @@
 ## 檔案用途
 
 - `public/index.html`：Cloudflare Worker Assets 前端頁面。
-- `public/data/`：由 `文件/BOM.xlsx` 產生的靜態 JSON，供 `查BOM`、`下料`、`取料` 直接讀取。
+- `public/data/`：由 `文件/BOM.xlsx` 產生的舊版靜態 JSON，僅保留作為資料比對參考，不是正式畫面的資料來源。
 - `src/index.js`：Worker API 入口，透過 GitHub Actions 部署到 Cloudflare。
 - `wrangler.jsonc`：Cloudflare Worker、Assets、observability 與 D1 binding 設定。
 - `cloudflare-version.json`：本機記錄的 Cloudflare 部署版本資訊。
@@ -34,7 +34,7 @@ GitHub Pages 已停用，根目錄也不保留網址導向頁；正式入口只�
 
 若 Cloudflare 環境變數有設定 `ADMIN_TOKEN`，管理端 API 需要帶入 token 驗證。
 
-`查BOM`、`下料`、`取料` 使用的 BOM、固定料、用量、包裝資料由 `public/data/` 靜態 JSON 提供，不需在使用時讀取 D1。
+`查BOM` 與 `下料` 透過 `/api/bom` 讀取 D1 的 BOM、固定料；`取料` 透過 `/api/materials/calculate` 使用 D1 的用量與包裝資料計算。Excel 上傳至 `/api/admin/import` 完成後，前端會重新讀取相關 D1 API。
 
 ## 作業流程
 
@@ -120,3 +120,12 @@ GitHub Pages 已停用，根目錄也不保留網址導向頁；正式入口只�
     - `/api/admin/import` 匯入 `schedule_items` 時會比對完工表：來源仍存在且已完工的工單不匯入 active 排程；來源已不存在但完工表仍有的工單會從完工表移除。
     - 補上正式 Worker 的 `/api/picking/notes` GET/POST，取料備註可在 D1 `picking_notes` 正常讀寫與清空刪除。
     - 新增 migration 補齊排程、取料備註與完工表，讓新環境套 migrations 後可支援目前動態資料表。
+
+
+2026-07-14 Excel覆蓋D1與固定料顯示修正-V1
+
+    - `查BOM`、`下料` 改回讀取 `/api/bom`，固定料與 BOM 以 D1 為正式顯示來源。
+    - `取料` 改回呼叫 `/api/materials/calculate`，用量與包裝以 D1 為計算來源。
+    - Excel 上傳完成後等待相關 D1 API 重新載入，再顯示上傳成功，避免畫面沿用舊資料。
+    - 各資料表先寫入獨立暫存區並核對筆數，確認無誤後再透過 D1 批次交易交換正式資料；暫存失敗時不會先清空正式資料。
+    - 新增 `migrations/0003_import_staging_V1.sql`；部署新版 Worker 前必須先套用此 migration。

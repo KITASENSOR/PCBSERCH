@@ -1403,14 +1403,6 @@
 </div>
 
 <script>
-    const staticDataPaths = {
-        bom: "/data/bom.json",
-        packaging: "/data/packaging.json",
-        usageManifest: "/data/usage/manifest.json",
-        usageBase: "/data/usage/"
-    };
-    const staticDataVersion = "2026-07-04";
-    
     const storageKeys = {
         bomInput: "pcb_bom_query_input",
         dischargeInput: "pcb_discharge_query_input",
@@ -1419,9 +1411,6 @@
 
     let rawData = {};
     let fixedFeederParts = new Set(); 
-    let packagingByPart = new Map();
-    let usageManifest = null;
-    const usageCache = new Map();
 
     const palette = ["#90caf9", "#c5e1a5", "#ffcc80", "#e1bee7", "#80cbc4", "#c5cae9", "#cfd8dc", "#f48fb1", "#e6ee9c", "#bcaaa4"];
     let currentGroups = []; 
@@ -1469,7 +1458,12 @@
 
     async function fetchCSV() {
         try {
-            const data = await fetchStaticJson(staticDataPaths.bom);
+            const response = await fetch(`/api/bom?t=${Date.now()}`, {
+                headers: { "Accept": "application/json" },
+                cache: 'no-store'
+            });
+            const data = await response.json();
+            if (!response.ok || data.error) throw new Error(data.error || `資料讀取失敗 HTTP ${response.status}`);
 
             rawData = {};
             fixedFeederParts = new Set();
@@ -1490,17 +1484,11 @@
             document.getElementById('matchStatus').innerText = `資料載入完成。BOM ${bomCount} 筆，固定料 ${fixedCount} 筆。`;
             document.getElementById('btnSearch').disabled = false;
             document.getElementById('btnDischarge').disabled = false;
+            return true;
         } catch (error) {
             document.getElementById('matchStatus').innerText = `載入失敗:${error.message || '請稍後再試'}`;
+            return false;
         }
-    }
-
-    async function fetchStaticJson(url) {
-        const response = await fetch(`${url}?v=${encodeURIComponent(staticDataVersion)}`, {
-            headers: { "Accept": "application/json" }
-        });
-        if (!response.ok) throw new Error(`資料讀取失敗 HTTP ${response.status}`);
-        return response.json();
     }
 
     initInputStorage();
@@ -2093,102 +2081,15 @@
         return number.toLocaleString('zh-TW', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
     }
 
-    function roundClientNumber(value, digits) {
-        const factor = 10 ** digits;
-        return Math.round((Number(value) + Number.EPSILON) * factor) / factor;
-    }
-
-    async function loadPackagingMap() {
-        if (packagingByPart.size > 0) return packagingByPart;
-        const data = await fetchStaticJson(staticDataPaths.packaging);
-        packagingByPart = new Map();
-        (data.packaging || []).forEach(row => {
-            const productNumber = String(row.product_number || '').trim();
-            if (productNumber) packagingByPart.set(productNumber, row);
+    async function calculateMaterialsFromDatabase(models) {
+        const response = await fetch('/api/materials/calculate', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json; charset=utf-8' },
+            body: JSON.stringify({ models })
         });
-        return packagingByPart;
-    }
-
-    async function loadUsageManifest() {
-        if (usageManifest) return usageManifest;
-        usageManifest = await fetchStaticJson(staticDataPaths.usageManifest);
-        return usageManifest;
-    }
-
-    async function loadUsageRows(parentNumber) {
-        const key = String(parentNumber || '').trim();
-        if (!key) return [];
-        if (usageCache.has(key)) return usageCache.get(key);
-
-        const manifest = await loadUsageManifest();
-        const fileName = manifest.parents?.[key];
-        if (!fileName) {
-            usageCache.set(key, []);
-            return [];
-        }
-
-        const data = await fetchStaticJson(staticDataPaths.usageBase + fileName);
-        const rows = data.rows || [];
-        usageCache.set(key, rows);
-        return rows;
-    }
-
-    async function calculateMaterialsFromStaticData(models) {
-        const modelQty = new Map();
-        (models || []).forEach(item => {
-            const partNo = String(item.part_no || '').trim();
-            const planQty = toClientNumber(item.plan_qty);
-            if (!partNo || planQty <= 0) return;
-            modelQty.set(partNo, (modelQty.get(partNo) || 0) + planQty);
-        });
-
-        const parentNumbers = [...modelQty.keys()];
-        if (parentNumbers.length === 0) return { count: 0, items: [] };
-
-        await Promise.all([loadPackagingMap(), loadUsageManifest()]);
-        const usageRowsByParent = await Promise.all(parentNumbers.map(parentNumber => loadUsageRows(parentNumber)));
-        const materialMap = new Map();
-
-        usageRowsByParent.forEach((usageRows, index) => {
-            const parentNumber = parentNumbers[index];
-            const parentQty = modelQty.get(parentNumber) || 0;
-            usageRows.forEach(row => {
-                const childPartNumber = String(row.child_part_number || '').trim();
-                const batchQuantity = toClientNumber(row.batch_quantity);
-                const requiredQuantity = parentQty * batchQuantity;
-                if (!childPartNumber || requiredQuantity === 0) return;
-
-                const existing = materialMap.get(childPartNumber) || {
-                    child_part_number: childPartNumber,
-                    item_name: '',
-                    required_quantity: 0,
-                    parents: []
-                };
-                if (!existing.item_name && row.item_name) existing.item_name = String(row.item_name).trim();
-                existing.required_quantity += requiredQuantity;
-                existing.parents.push({
-                    parent_number: parentNumber,
-                    plan_qty: parentQty,
-                    batch_quantity: batchQuantity,
-                    required_quantity: requiredQuantity
-                });
-                materialMap.set(childPartNumber, existing);
-            });
-        });
-
-        const items = [...materialMap.values()].map(item => {
-            const packaging = packagingByPart.get(item.child_part_number) || {};
-            const packageQuantity = toClientNumber(packaging.package_1);
-            const packageCount = packageQuantity > 0 ? item.required_quantity / packageQuantity : null;
-            return {
-                ...item,
-                required_quantity: roundClientNumber(item.required_quantity, 4),
-                package_quantity: packageQuantity || null,
-                package_count: packageCount === null ? null : roundClientNumber(packageCount, 1)
-            };
-        }).sort((a, b) => a.child_part_number.localeCompare(b.child_part_number, undefined, { numeric: true }));
-
-        return { selected_count: models.length, model_count: parentNumbers.length, count: items.length, items };
+        const data = await response.json();
+        if (!response.ok || data.error) throw new Error(data.error || '物料計算失敗');
+        return data;
     }
 
     function getAdminHeaders(isJson = false) {
@@ -2370,9 +2271,15 @@
                 }
                 return `${label} ${v}`;
             }).join('\u3001');
+            if (tables.bom || tables.fixed_parts) {
+                const loaded = await fetchCSV();
+                if (!loaded) throw new Error('D1 已覆蓋，但 BOM／固定料畫面重新載入失敗');
+            }
+            if (tables.schedule_items) await loadScheduleFromDatabase();
+            if ((tables.usage_items || tables.packaging) && selectedPickingItems.size > 0) {
+                await calculatePickingMaterials();
+            }
             setStatusBox('maintenanceStatus', `\u4e0a\u50b3\u5b8c\u6210\uff1a${summary}`, 'ok');
-            if (tables.bom || tables.fixed_parts) fetchCSV();
-            if (tables.schedule_items) loadScheduleFromDatabase();
         } catch (error) {
             setStatusBox('maintenanceStatus', error.message || '\u5931\u6557', 'error');
         }
@@ -2741,7 +2648,7 @@
         const seq = ++pickingCalcSeq;
         setStatusBox('pickingStatus', '\u8a08\u7b97\u4e2d\uff0c\u8acb\u7a0d\u5019...', 'warn');
         try {
-            const data = await calculateMaterialsFromStaticData(models);
+            const data = await calculateMaterialsFromDatabase(models);
             if (seq !== pickingCalcSeq) return;
             if (data.error) throw new Error(data.error || '\u5931\u6557');
             pickingComboKey = pickingComboKeyFromModels(models);

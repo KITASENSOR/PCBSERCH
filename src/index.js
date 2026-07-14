@@ -156,24 +156,24 @@ async function x(a, e) {
   let t = e?.tables || {}, n = {};
   if (Array.isArray(t.packaging)) {
     let r = W(t.packaging);
-    await y(a, "packaging", ["product_number", "specification", "package_1"], r), n.packaging = r.length;
+    n.packaging = await y(a, "packaging", ["product_number", "specification", "package_1"], r);
   }
   if (Array.isArray(t.usage_items)) {
     let r = $(t.usage_items);
-    await y(a, "usage_items", ["parent_number", "child_part_number", "batch_quantity", "item_name"], r, { resetSequence: true }), n.usage_items = r.length;
+    n.usage_items = await y(a, "usage_items", ["parent_number", "child_part_number", "batch_quantity", "item_name"], r, { resetSequence: true });
   }
   if (Array.isArray(t.fixed_parts)) {
     let r = Y(t.fixed_parts);
-    await y(a, "fixed_parts", ["part_number"], r), n.fixed_parts = r.length;
+    n.fixed_parts = await y(a, "fixed_parts", ["part_number"], r);
   }
   if (Array.isArray(t.bom)) {
     let r = P(t.bom);
-    await y(a, "bom", ["parent_number", "child_parts"], r), n.bom = r.length;
+    n.bom = await y(a, "bom", ["parent_number", "child_parts"], r);
   }
   if (Array.isArray(t.schedule_items)) {
     let r = G(t.schedule_items);
     let i = await ne(a, r);
-    await y(a, "schedule_items", ["wo_id", "part_no", "side", "plan_qty", "real_qty", "start_date", "end_date", "panel_size"], i.rows), n.schedule_items = i.rows.length, n.completed_skipped = i.skipped, n.completed_removed = i.removed;
+    n.schedule_items = await y(a, "schedule_items", ["wo_id", "part_no", "side", "plan_qty", "real_qty", "start_date", "end_date", "panel_size"], i.rows), n.completed_skipped = i.skipped, n.completed_removed = i.removed;
   }
   return Object.keys(n).length === 0 ? { error: "\u6C92\u6709\u53EF\u532F\u5165\u7684\u8CC7\u6599" } : { imported_at: (/* @__PURE__ */ new Date()).toISOString(), counts: n };
 }
@@ -191,17 +191,49 @@ async function ne(a, e) {
 }
 __name(ne, "ne");
 p(ne, "filterCompletedScheduleRows");
-var F = 100;
+var F = 1500000;
 var O = 50;
+var ae = Object.freeze({
+  bom: "bom_import_staging_v1",
+  fixed_parts: "fixed_parts_import_staging_v1",
+  usage_items: "usage_items_import_staging_v1",
+  packaging: "packaging_import_staging_v1",
+  schedule_items: "schedule_items_import_staging_v1"
+});
 async function y(a, e, t, n, r = {}) {
-  let i = [a.prepare(`DELETE FROM ${e}`)];
-  if (r.resetSequence && i.push(a.prepare("DELETE FROM sqlite_sequence WHERE name = ?").bind(e)), await a.batch(i), n.length === 0) return;
-  let c = Math.max(1, Math.floor((F - 1) / t.length)), s = [];
-  for (let _ = 0; _ < n.length; _ += c) {
-    let b = n.slice(_, _ + c), d = b.map(() => `(${t.map(() => "?").join(", ")})`).join(", "), o = `INSERT INTO ${e} (${t.join(", ")}) VALUES ${d}`, h = b.flatMap((f) => t.map((g) => f[g] ?? ""));
-    s.push(a.prepare(o).bind(...h));
+  let i = ae[e];
+  if (!i) throw new Error(`不支援覆蓋資料表：${e}`);
+  let c = crypto.randomUUID();
+  try {
+    let s = [], _ = [], b = 0, d = /* @__PURE__ */ __name(() => {
+      if (_.length === 0) return;
+      let o = `INSERT INTO ${i} (import_id, ${t.join(", ")}) SELECT ?, ${t.map((h) => `json_extract(value, '$.${h}')`).join(", ")} FROM json_each(?)`;
+      s.push(a.prepare(o).bind(c, `[${_.join(",")}]`)), _ = [], b = 0;
+    }, "flushStagingChunk");
+    for (let o of n) {
+      let h = JSON.stringify(Object.fromEntries(t.map((g) => [g, o[g] ?? ""]))), f = new TextEncoder().encode(h).byteLength + 1;
+      if (f > F) throw new Error(`${e} 單筆資料超過匯入限制`);
+      b + f > F && d(), _.push(h), b += f;
+    }
+    d();
+    for (let o = 0; o < s.length; o += O) await a.batch(s.slice(o, o + O));
+    let o = await a.prepare(`SELECT COUNT(*) AS count FROM ${i} WHERE import_id = ?`).bind(c).all(), h = m(o.results?.[0]?.count);
+    if (h !== n.length) throw new Error(`${e} 暫存筆數不符：預期 ${n.length}，實際 ${h}`);
+    let f = [a.prepare(`DELETE FROM ${e}`)];
+    r.resetSequence && f.push(a.prepare("DELETE FROM sqlite_sequence WHERE name = ?").bind(e));
+    f.push(a.prepare(`INSERT INTO ${e} (${t.join(", ")}) SELECT ${t.join(", ")} FROM ${i} WHERE import_id = ?`).bind(c));
+    f.push(a.prepare(`DELETE FROM ${i} WHERE import_id = ?`).bind(c));
+    await a.batch(f);
+    let g = await a.prepare(`SELECT COUNT(*) AS count FROM ${e}`).all(), q = m(g.results?.[0]?.count);
+    if (q !== n.length) throw new Error(`${e} 覆蓋後筆數不符：預期 ${n.length}，實際 ${q}`);
+    return q;
+  } finally {
+    try {
+      await a.prepare(`DELETE FROM ${i} WHERE import_id = ?`).bind(c).run();
+    } catch (b) {
+      console.warn(JSON.stringify({ event: "import_staging_cleanup_failed", table: e, message: b instanceof Error ? b.message : String(b) }));
+    }
   }
-  for (let _ = 0; _ < s.length; _ += O) await a.batch(s.slice(_, _ + O));
 }
 __name(y, "y");
 p(y, "replaceTable");
