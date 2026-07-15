@@ -223,9 +223,9 @@
             background: #fff;
         }
         .machine-timeline-head {
-            display: flex;
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) auto;
             align-items: center;
-            justify-content: space-between;
             gap: 10px;
             padding: 12px 14px;
             background: #f1f6f3;
@@ -236,6 +236,32 @@
             min-width: 0;
             color: #294338;
             font-weight: bold;
+        }
+        .machine-line-tabs {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(44px, 72px));
+            justify-content: center;
+            gap: 6px;
+            min-width: 0;
+        }
+        .machine-line-tab {
+            width: 100% !important;
+            min-width: 0;
+            padding: 7px 9px;
+            border: 1px solid #b9c7c0;
+            background: #fff;
+            color: #53635b;
+            font-size: 12px;
+        }
+        .machine-line-tab:hover {
+            background: #edf7f1;
+            color: #24713e;
+        }
+        .machine-line-tab.active {
+            border-color: #28a745;
+            background: #28a745;
+            color: #fff;
+            box-shadow: 0 2px 5px rgba(40,167,69,0.2);
         }
         .machine-timeline-summary {
             color: #60706a;
@@ -733,6 +759,15 @@
         }
         #viewMACHINE_TIME .machine-timeline-head {
             padding: 10px;
+            gap: 7px;
+        }
+        #viewMACHINE_TIME .machine-line-tabs {
+            grid-template-columns: repeat(2, minmax(40px, 58px));
+            gap: 5px;
+        }
+        #viewMACHINE_TIME .machine-line-tab {
+            padding: 7px 5px;
+            font-size: 12px;
         }
         #viewMACHINE_TIME .machine-timeline-clear {
             width: auto !important;
@@ -1552,6 +1587,10 @@
     <div class="machine-timeline-panel" id="machineTimelinePanel" style="display:none;">
         <div class="machine-timeline-head">
             <div class="machine-timeline-title">時間記錄</div>
+            <div class="machine-line-tabs" id="machineLineTabs" role="group" aria-label="線別切換">
+                <button type="button" class="machine-line-tab active" data-machine-line="line1" onclick="switchMachineLine('line1')">1線</button>
+                <button type="button" class="machine-line-tab" data-machine-line="line2" onclick="switchMachineLine('line2')">2線</button>
+            </div>
             <button type="button" class="clear-btn machine-timeline-clear" onclick="clearMachineTimeline()">清除記錄</button>
         </div>
         <div class="machine-timeline-list" id="machineTimelineList"></div>
@@ -3085,11 +3124,32 @@
         changeoverMinutes: document.getElementById('machineChangeoverMinutes'),
         changeoverBtn: document.getElementById('machineChangeoverBtn'),
         timelinePanel: document.getElementById('machineTimelinePanel'),
+        lineTabs: document.getElementById('machineLineTabs'),
         timelineList: document.getElementById('machineTimelineList')
     };
 
-    let machineTimelineRecords = [];
+    const machineLineIds = ['line1', 'line2'];
+    let machineCurrentLineId = 'line1';
+    let machineLineStates = {
+        line1: createEmptyMachineLineState(),
+        line2: createEmptyMachineLineState()
+    };
+    let machineTimelineRecords = machineLineStates.line1.timelineRecords;
     let machineEditingRecordIndex = null;
+
+    function createEmptyMachineLineState(overrides = {}) {
+        return {
+            mode: 'byBoards',
+            doneCount: '',
+            startTime: '',
+            endTime: '',
+            workSecond: '',
+            targetCount: '',
+            changeoverMinutes: '',
+            timelineRecords: [],
+            ...overrides
+        };
+    }
 
     function machinePad(n) {
         return String(n).padStart(2, '0');
@@ -3276,10 +3336,94 @@
         };
     }
 
+    function captureCurrentMachineLineState() {
+        return createEmptyMachineLineState({
+            mode: getMachineMode(),
+            doneCount: machineEls.doneCount.value,
+            startTime: machineEls.startTime.value,
+            endTime: machineEls.endTime.value,
+            workSecond: machineEls.workSecond.value,
+            targetCount: machineEls.targetCount.value,
+            changeoverMinutes: machineEls.changeoverMinutes.value,
+            timelineRecords: machineTimelineRecords
+        });
+    }
+
+    function normalizeMachineTimelineRecords(records) {
+        return Array.isArray(records)
+            ? records.filter(record =>
+                record &&
+                ['production', 'changeover'].includes(record.type) &&
+                Number.isFinite(Number(record.startMinute)) &&
+                Number.isFinite(Number(record.endMinute)) &&
+                Number.isFinite(Number(record.durationMinutes))
+            ).map(record => ({
+                ...record,
+                startMinute: Number(record.startMinute),
+                endMinute: Number(record.endMinute),
+                durationMinutes: Number(record.durationMinutes)
+            }))
+            : [];
+    }
+
+    function normalizeMachineLineState(data = {}) {
+        return createEmptyMachineLineState({
+            mode: data.mode === 'byEnd' ? 'byEnd' : 'byBoards',
+            doneCount: cleanMachineDecimal(data.doneCount || ''),
+            startTime: data.startTime || '',
+            endTime: data.endTime || '',
+            workSecond: cleanMachineDecimal(data.workSecond || ''),
+            targetCount: cleanMachineDecimal(data.targetCount || data.boardCount || ''),
+            changeoverMinutes: cleanMachineDecimal(data.changeoverMinutes || ''),
+            timelineRecords: normalizeMachineTimelineRecords(data.timelineRecords)
+        });
+    }
+
+    function applyMachineLineState(state) {
+        const normalized = normalizeMachineLineState(state);
+        machineLineStates[machineCurrentLineId] = normalized;
+        machineTimelineRecords = normalized.timelineRecords;
+        machineEditingRecordIndex = null;
+
+        const modeRadio = document.querySelector(`input[name="machineCalcMode"][value="${normalized.mode}"]`);
+        if (modeRadio) modeRadio.checked = true;
+
+        machineEls.doneCount.value = normalized.doneCount;
+        machineEls.startTime.value = normalized.startTime || getCurrentMachineTimeValue();
+        machineEls.endTime.value = normalized.endTime;
+        machineEls.workSecond.value = normalized.workSecond;
+        machineEls.targetCount.value = normalized.targetCount;
+        machineEls.changeoverMinutes.value = normalized.changeoverMinutes;
+
+        if (machineEls.startTime.value) normalizeMachineTimeInput(machineEls.startTime);
+        if (machineEls.endTime.value) normalizeMachineTimeInput(machineEls.endTime);
+    }
+
+    function renderMachineLineTabs() {
+        machineEls.lineTabs.querySelectorAll('[data-machine-line]').forEach(button => {
+            const isActive = button.dataset.machineLine === machineCurrentLineId;
+            button.classList.toggle('active', isActive);
+            button.setAttribute('aria-pressed', String(isActive));
+        });
+    }
+
+    function switchMachineLine(lineId) {
+        if (!machineLineIds.includes(lineId)) return;
+
+        saveMachineTimeState();
+        machineCurrentLineId = lineId;
+        applyMachineLineState(machineLineStates[lineId] || createEmptyMachineLineState());
+        renderMachineLineTabs();
+        renderMachineTimeline();
+        calculateMachineTime();
+        setMachineNotice('', '');
+    }
+
     function renderMachineTimeline() {
         const hasRecords = machineTimelineRecords.length > 0;
-        machineEls.timelinePanel.style.display = hasRecords ? 'block' : 'none';
+        machineEls.timelinePanel.style.display = 'block';
         machineEls.timelineList.innerHTML = '';
+        renderMachineLineTabs();
 
         if (!hasRecords) {
             return;
@@ -3603,6 +3747,8 @@
             field.style.display = field.dataset.machineMode === mode ? 'flex' : 'none';
         });
         machineEls.recordActions.style.display = mode === 'byEnd' ? 'block' : 'none';
+        machineEls.timelinePanel.style.display = 'block';
+        renderMachineLineTabs();
         updateMachineEditUI();
 
         if (mode === 'byBoards') {
@@ -3617,15 +3763,11 @@
     }
 
     function saveMachineTimeState() {
+        machineLineStates[machineCurrentLineId] = captureCurrentMachineLineState();
         const data = {
-            mode: getMachineMode(),
-            doneCount: machineEls.doneCount.value,
-            startTime: machineEls.startTime.value,
-            endTime: machineEls.endTime.value,
-            workSecond: machineEls.workSecond.value,
-            targetCount: machineEls.targetCount.value,
-            changeoverMinutes: machineEls.changeoverMinutes.value,
-            timelineRecords: machineTimelineRecords
+            schemaVersion: 2,
+            activeLineId: machineCurrentLineId,
+            lines: machineLineStates
         };
         localStorage.setItem(storageKeys.machineTime, JSON.stringify(data));
     }
@@ -3636,37 +3778,21 @@
             if (!raw) return false;
 
             const data = JSON.parse(raw);
-            if (data.mode) {
-                const radio = document.querySelector(`input[name="machineCalcMode"][value="${data.mode}"]`);
-                if (radio) radio.checked = true;
+            if (data.schemaVersion !== 2 || !data.lines) {
+                localStorage.removeItem(storageKeys.machineTime);
+                return false;
             }
 
-            machineEls.doneCount.value = cleanMachineDecimal(data.doneCount || '');
-            machineEls.startTime.value = data.startTime || '';
-            machineEls.endTime.value = data.endTime || '';
-            machineEls.workSecond.value = cleanMachineDecimal(data.workSecond || '');
-            machineEls.targetCount.value = cleanMachineDecimal(data.targetCount || data.boardCount || '');
-            machineEls.changeoverMinutes.value = cleanMachineDecimal(data.changeoverMinutes || '');
-            machineTimelineRecords = Array.isArray(data.timelineRecords)
-                ? data.timelineRecords.filter(record =>
-                    record &&
-                    ['production', 'changeover'].includes(record.type) &&
-                    Number.isFinite(Number(record.startMinute)) &&
-                    Number.isFinite(Number(record.endMinute)) &&
-                    Number.isFinite(Number(record.durationMinutes))
-                ).map(record => ({
-                    ...record,
-                    startMinute: Number(record.startMinute),
-                    endMinute: Number(record.endMinute),
-                    durationMinutes: Number(record.durationMinutes)
-                }))
-                : [];
-
-            if (machineEls.startTime.value) normalizeMachineTimeInput(machineEls.startTime);
-            if (machineEls.endTime.value) normalizeMachineTimeInput(machineEls.endTime);
+            machineLineStates = {
+                line1: normalizeMachineLineState(data.lines.line1),
+                line2: normalizeMachineLineState(data.lines.line2)
+            };
+            machineCurrentLineId = machineLineIds.includes(data.activeLineId) ? data.activeLineId : 'line1';
+            applyMachineLineState(machineLineStates[machineCurrentLineId]);
 
             return true;
         } catch (e) {
+            localStorage.removeItem(storageKeys.machineTime);
             return false;
         }
     }
@@ -3737,20 +3863,16 @@
     }
 
     function clearMachineTime() {
-        localStorage.removeItem(storageKeys.machineTime);
-        document.querySelector('input[name="machineCalcMode"][value="byBoards"]').checked = true;
-        machineEls.doneCount.value = '';
-        machineEls.startTime.value = getCurrentMachineTimeValue();
-        machineEls.endTime.value = '';
-        machineEls.workSecond.value = '';
-        machineEls.targetCount.value = '';
-        machineEls.changeoverMinutes.value = '';
-        machineTimelineRecords = [];
-        clearMachineRecordEdit();
+        machineLineStates[machineCurrentLineId] = createEmptyMachineLineState({
+            mode: 'byBoards',
+            startTime: getCurrentMachineTimeValue()
+        });
+        applyMachineLineState(machineLineStates[machineCurrentLineId]);
         machineEls.resultA.textContent = '--';
         machineEls.resultB.textContent = '--';
         machineEls.resultC.textContent = '--';
         setMachineNotice('', '');
+        renderMachineTimeline();
         calculateMachineTime();
     }
 
