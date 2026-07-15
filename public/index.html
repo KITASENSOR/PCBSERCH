@@ -173,6 +173,156 @@
             padding: 10px 12px;
             line-height: 1.6;
         }
+        .machine-record-actions {
+            margin-top: 14px;
+            padding: 14px;
+            border: 1px solid #dbe6df;
+            border-radius: 10px;
+            background: #f8fbf9;
+        }
+        .machine-record-actions-title {
+            color: #34495e;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .machine-record-action-row {
+            display: grid;
+            grid-template-columns: minmax(190px, 1fr) minmax(240px, 1fr);
+            gap: 10px;
+        }
+        .machine-record-action-row > button {
+            width: 100%;
+        }
+        .machine-changeover-control {
+            display: grid;
+            grid-template-columns: minmax(80px, 120px) minmax(130px, 1fr);
+            gap: 8px;
+        }
+        .machine-changeover-control input {
+            width: 100%;
+            text-align: center;
+        }
+        .machine-changeover-btn {
+            background: #e67e22;
+        }
+        .machine-changeover-btn:hover {
+            background: #cf6d17;
+        }
+        .machine-record-note {
+            color: #6b7280;
+            font-size: 12px;
+            line-height: 1.5;
+            margin-top: 9px;
+        }
+        .machine-timeline-panel {
+            margin-top: 14px;
+            border: 1px solid #dfe5e2;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #fff;
+        }
+        .machine-timeline-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 12px 14px;
+            background: #f1f6f3;
+            border-bottom: 1px solid #dfe5e2;
+        }
+        .machine-timeline-title {
+            flex: 1 1 auto;
+            min-width: 0;
+            color: #294338;
+            font-weight: bold;
+        }
+        .machine-timeline-summary {
+            color: #60706a;
+            font-size: 12px;
+            margin-top: 3px;
+        }
+        .machine-timeline-clear {
+            flex: 0 0 auto;
+            width: auto !important;
+            padding: 7px 11px;
+            font-size: 12px;
+        }
+        .machine-timeline-list {
+            padding: 4px 14px;
+        }
+        .machine-timeline-item {
+            display: grid;
+            grid-template-columns: 38px minmax(0, 1fr) auto 30px;
+            gap: 10px;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #edf0ee;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.18s, box-shadow 0.18s;
+        }
+        .machine-timeline-item:hover,
+        .machine-timeline-item:focus-visible {
+            background: #f4f8f6;
+            box-shadow: 0 0 0 4px #f4f8f6;
+            outline: none;
+        }
+        .machine-timeline-item.is-editing {
+            background: #eaf7ef;
+            box-shadow: inset 4px 0 0 #28a745;
+        }
+        .machine-timeline-item:last-child {
+            border-bottom: none;
+        }
+        .machine-timeline-index {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: #e9f7ee;
+            color: #24713e;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        .machine-timeline-item.is-changeover .machine-timeline-index {
+            background: #fff0df;
+            color: #b85e08;
+        }
+        .machine-timeline-name {
+            color: #263a31;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        .machine-timeline-detail {
+            color: #68756f;
+            font-size: 12px;
+            line-height: 1.55;
+        }
+        .machine-timeline-time {
+            color: #244d3b;
+            font-weight: bold;
+            white-space: nowrap;
+            text-align: right;
+        }
+        .machine-timeline-delete {
+            grid-column: 4;
+            width: 30px;
+            min-width: 30px;
+            height: 30px;
+            padding: 0;
+            border-radius: 50%;
+            background: #eef1ef;
+            color: #66736d;
+            font-size: 16px;
+            line-height: 30px;
+        }
+        .machine-timeline-delete:hover {
+            background: #dc3545;
+            color: #fff;
+        }
 
         textarea, input[type="text"], select { padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 15px; box-sizing: border-box; }
         textarea { width: 100%; height: 80px; }
@@ -436,6 +586,20 @@
                 padding: 12px;
             }
             .machine-result-value { font-size: 20px; }
+            .machine-record-action-row {
+                grid-template-columns: 1fr;
+            }
+            .machine-timeline-item {
+                grid-template-columns: 34px minmax(0, 1fr) 30px;
+            }
+            .machine-timeline-time {
+                grid-column: 2;
+                text-align: left;
+            }
+            .machine-timeline-delete {
+                grid-column: 3;
+                grid-row: 1 / span 2;
+            }
         }
 
         /* === Mobile-only compact layout (desktop uses the wide base layout). === */
@@ -521,6 +685,48 @@
             min-width: 0;
             padding: 10px 8px;
             font-size: 14px;
+        }
+        #viewMACHINE_TIME .btn-group .machine-add-record-btn {
+            flex: 0 0 48px;
+            font-size: 22px;
+            line-height: 1;
+        }
+        #viewMACHINE_TIME .btn-group .machine-add-record-btn.is-editing {
+            flex-basis: 72px;
+            font-size: 14px;
+        }
+        #viewMACHINE_TIME .machine-record-actions {
+            margin-top: 8px;
+            padding: 10px;
+        }
+        #viewMACHINE_TIME .machine-record-action-row {
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+        #viewMACHINE_TIME .machine-changeover-control {
+            grid-template-columns: 92px minmax(0, 1fr);
+        }
+        #viewMACHINE_TIME .machine-record-action-row button {
+            width: 100%;
+            padding: 10px 8px;
+            font-size: 13px;
+        }
+        #viewMACHINE_TIME .machine-timeline-panel {
+            margin-top: 8px;
+        }
+        #viewMACHINE_TIME .machine-timeline-head {
+            padding: 10px;
+        }
+        #viewMACHINE_TIME .machine-timeline-clear {
+            width: auto !important;
+            min-width: 84px;
+        }
+        #viewMACHINE_TIME .machine-timeline-list {
+            padding: 2px 10px;
+        }
+        #viewMACHINE_TIME .machine-timeline-item {
+            gap: 7px;
+            padding: 10px 0;
         }
 
 
@@ -1309,13 +1515,30 @@
         </div>
     </div>
 
+    <div class="machine-record-actions" id="machineRecordActions" style="display:none;">
+        <div class="machine-record-actions-title">連續時間記錄</div>
+        <div class="machine-changeover-control">
+            <input id="machineChangeoverMinutes" type="text" inputmode="decimal" placeholder="換線分鐘" autocomplete="off" aria-label="換線時間（分鐘）">
+            <button type="button" id="machineChangeoverBtn" class="machine-changeover-btn" onclick="addMachineChangeoverRecord()">加入換線時間</button>
+        </div>
+    </div>
+
     <div class="btn-group">
+        <button type="button" id="machineAddRecordBtn" class="machine-add-record-btn" onclick="addMachineProductionRecord()" aria-label="記錄並加入下一組" title="記錄並加入下一組">＋</button>
         <button type="button" onclick="setMachineNow()">帶入現在時間</button>
         <button type="button" class="clear-btn" onclick="clearMachineTime()">清除</button>
     </div>
 
     <div class="machine-warning" id="machineWarningBox"></div>
     <div class="machine-error" id="machineErrorBox"></div>
+
+    <div class="machine-timeline-panel" id="machineTimelinePanel" style="display:none;">
+        <div class="machine-timeline-head">
+            <div class="machine-timeline-title">時間記錄</div>
+            <button type="button" class="clear-btn machine-timeline-clear" onclick="clearMachineTimeline()">清除記錄</button>
+        </div>
+        <div class="machine-timeline-list" id="machineTimelineList"></div>
+    </div>
 </div>
 
 
@@ -2839,8 +3062,17 @@
         warningBox: document.getElementById('machineWarningBox'),
         errorBox: document.getElementById('machineErrorBox'),
         tabByBoards: document.getElementById('machineTabByBoards'),
-        tabByEnd: document.getElementById('machineTabByEnd')
+        tabByEnd: document.getElementById('machineTabByEnd'),
+        recordActions: document.getElementById('machineRecordActions'),
+        addRecordBtn: document.getElementById('machineAddRecordBtn'),
+        changeoverMinutes: document.getElementById('machineChangeoverMinutes'),
+        changeoverBtn: document.getElementById('machineChangeoverBtn'),
+        timelinePanel: document.getElementById('machineTimelinePanel'),
+        timelineList: document.getElementById('machineTimelineList')
     };
+
+    let machineTimelineRecords = [];
+    let machineEditingRecordIndex = null;
 
     function machinePad(n) {
         return String(n).padStart(2, '0');
@@ -2976,6 +3208,295 @@
         return `${hours}時 ${minutes}分 ${seconds}秒`;
     }
 
+    function formatMachineTimelineTime(totalMinutes) {
+        const wholeMinutes = Math.floor(totalMinutes);
+        const dayOffset = Math.floor(wholeMinutes / (24 * 60));
+        const time = machineMinutesToTime(wholeMinutes);
+        return dayOffset > 0 ? `${time}（+${dayOffset}日）` : time;
+    }
+
+    function getMachineTimelineEndMinute() {
+        const lastRecord = machineTimelineRecords[machineTimelineRecords.length - 1];
+        return lastRecord ? Number(lastRecord.endMinute) : null;
+    }
+
+    function getMachineRecordStartMinute() {
+        const inputMinutes = machineTimeToMinutes(machineEls.startTime.value);
+        const editingRecord = machineTimelineRecords[machineEditingRecordIndex];
+        if (editingRecord && inputMinutes !== null) {
+            const editingDayOffset = Math.floor(editingRecord.startMinute / (24 * 60));
+            return editingDayOffset * 24 * 60 + inputMinutes;
+        }
+
+        const timelineEnd = getMachineTimelineEndMinute();
+        if (timelineEnd !== null) return timelineEnd;
+        return inputMinutes;
+    }
+
+    function getMachineProductionDraft() {
+        if (getMachineMode() !== 'byEnd') return null;
+
+        const startMinute = getMachineRecordStartMinute();
+        const workSeconds = getMachineWorkSeconds();
+        const doneCount = getNonNegativeMachineNumber(machineEls.doneCount);
+        const targetCount = getPositiveMachineNumber(machineEls.targetCount);
+
+        if (startMinute === null || workSeconds <= 0 || targetCount <= 0) return null;
+
+        const remainingCount = Math.max(0, targetCount - doneCount);
+        const neededSeconds = remainingCount * workSeconds;
+        const durationMinutes = Math.ceil(neededSeconds / 60);
+
+        return {
+            type: 'production',
+            startMinute,
+            endMinute: startMinute + durationMinutes,
+            durationMinutes,
+            doneCount,
+            targetCount,
+            remainingCount,
+            workSeconds
+        };
+    }
+
+    function renderMachineTimeline() {
+        const hasRecords = machineTimelineRecords.length > 0;
+        machineEls.timelinePanel.style.display = hasRecords ? 'block' : 'none';
+        machineEls.timelineList.innerHTML = '';
+
+        if (!hasRecords) {
+            return;
+        }
+
+        let productionNumber = 0;
+        machineTimelineRecords.forEach((record, index) => {
+            const isChangeover = record.type === 'changeover';
+            if (!isChangeover) {
+                productionNumber += 1;
+            }
+
+            const item = document.createElement('div');
+            item.className = `machine-timeline-item${isChangeover ? ' is-changeover' : ''}${index === machineEditingRecordIndex ? ' is-editing' : ''}`;
+            item.tabIndex = 0;
+            item.setAttribute('role', 'button');
+            item.setAttribute('aria-label', `帶入${isChangeover ? '換線時間' : `第 ${productionNumber} 組設定`}`);
+            item.addEventListener('click', () => loadMachineTimelineRecord(index));
+            item.addEventListener('keydown', event => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    loadMachineTimelineRecord(index);
+                }
+            });
+
+            const marker = document.createElement('div');
+            marker.className = 'machine-timeline-index';
+            marker.textContent = isChangeover ? '換' : String(productionNumber);
+
+            const body = document.createElement('div');
+            const name = document.createElement('div');
+            name.className = 'machine-timeline-name';
+            name.textContent = isChangeover ? '換線時間' : `第 ${productionNumber} 組設定`;
+
+            body.append(name);
+
+            const time = document.createElement('div');
+            time.className = 'machine-timeline-time';
+            time.textContent = `開始 ${formatMachineTimelineTime(record.startMinute)}　結束 ${formatMachineTimelineTime(record.endMinute)}`;
+
+            const deleteButton = document.createElement('button');
+            deleteButton.type = 'button';
+            deleteButton.className = 'machine-timeline-delete';
+            deleteButton.textContent = '×';
+            deleteButton.title = '刪除此筆';
+            deleteButton.setAttribute('aria-label', `刪除${name.textContent}`);
+            deleteButton.addEventListener('click', event => {
+                event.stopPropagation();
+                removeMachineTimelineRecord(index);
+            });
+
+            item.append(marker, body, time, deleteButton);
+            machineEls.timelineList.appendChild(item);
+        });
+
+    }
+
+    function loadMachineTimelineRecord(index) {
+        const record = machineTimelineRecords[index];
+        if (!record) return;
+
+        machineEditingRecordIndex = index;
+
+        const byEndRadio = document.querySelector('input[name="machineCalcMode"][value="byEnd"]');
+        if (byEndRadio) byEndRadio.checked = true;
+
+        machineEls.startTime.value = machineMinutesToTime(record.startMinute);
+        if (record.type === 'changeover') {
+            machineEls.doneCount.value = '';
+            machineEls.workSecond.value = '';
+            machineEls.targetCount.value = '';
+            machineEls.changeoverMinutes.value = formatMachineNumber(record.durationMinutes);
+        } else {
+            machineEls.doneCount.value = formatMachineNumber(record.doneCount);
+            machineEls.workSecond.value = formatMachineNumber(record.workSeconds);
+            machineEls.targetCount.value = formatMachineNumber(record.targetCount);
+            machineEls.changeoverMinutes.value = '';
+        }
+
+        calculateMachineTime();
+        renderMachineTimeline();
+        setMachineNotice('warning', record.type === 'changeover'
+            ? '修改後按「儲存修改」即可覆寫這筆換線時間。'
+            : '修改後按「儲存」即可覆寫這筆記錄。');
+    }
+
+    function reflowMachineTimelineFrom(startIndex) {
+        for (let i = Math.max(1, startIndex); i < machineTimelineRecords.length; i += 1) {
+            const previousEnd = machineTimelineRecords[i - 1].endMinute;
+            machineTimelineRecords[i].startMinute = previousEnd;
+            machineTimelineRecords[i].endMinute = previousEnd + machineTimelineRecords[i].durationMinutes;
+        }
+    }
+
+    function clearMachineRecordEdit() {
+        machineEditingRecordIndex = null;
+        updateMachineEditUI();
+    }
+
+    function updateMachineEditUI() {
+        const editingRecord = machineTimelineRecords[machineEditingRecordIndex];
+        const isByEnd = getMachineMode() === 'byEnd';
+        const isEditingProduction = editingRecord && editingRecord.type === 'production';
+        const isEditingChangeover = editingRecord && editingRecord.type === 'changeover';
+
+        machineEls.addRecordBtn.textContent = isEditingProduction ? '儲存' : '＋';
+        machineEls.addRecordBtn.title = isEditingProduction ? '儲存修改' : '記錄並加入下一組';
+        machineEls.addRecordBtn.setAttribute('aria-label', machineEls.addRecordBtn.title);
+        machineEls.addRecordBtn.classList.toggle('is-editing', Boolean(isEditingProduction));
+        machineEls.addRecordBtn.style.display = isByEnd && !isEditingChangeover ? '' : 'none';
+        machineEls.changeoverBtn.textContent = isEditingChangeover ? '儲存修改' : '加入換線時間';
+    }
+
+    function prepareNextMachineGroup(endMinute) {
+        machineEls.startTime.value = machineMinutesToTime(endMinute);
+        machineEls.doneCount.value = '0';
+        machineEls.targetCount.value = '';
+        calculateMachineTime();
+    }
+
+    function addMachineProductionRecord(options = {}) {
+        const draft = getMachineProductionDraft();
+        if (!draft) {
+            if (!options.silent) setMachineNotice('warning', '請先填妥目前時間、單件工時與目標數量，再加入記錄。');
+            return false;
+        }
+
+        const editingRecord = machineTimelineRecords[machineEditingRecordIndex];
+        if (editingRecord && editingRecord.type === 'production') {
+            const editingIndex = machineEditingRecordIndex;
+            machineTimelineRecords[editingIndex] = draft;
+            reflowMachineTimelineFrom(editingIndex + 1);
+            clearMachineRecordEdit();
+            renderMachineTimeline();
+            if (options.silent) {
+                prepareNextMachineGroup(draft.endMinute);
+            } else {
+                calculateMachineTime();
+            }
+            saveMachineTimeState();
+            if (!options.silent) setMachineNotice('warning', '記錄已更新，後續時間已重新計算。');
+            return true;
+        }
+
+        machineTimelineRecords.push(draft);
+        clearMachineRecordEdit();
+        renderMachineTimeline();
+        prepareNextMachineGroup(draft.endMinute);
+        saveMachineTimeState();
+        return true;
+    }
+
+    function addMachineChangeoverRecord() {
+        if (getMachineMode() !== 'byEnd') {
+            setMachineNotice('warning', '請切換到「目標數量算時間」再加入換線時間。');
+            return;
+        }
+
+        const requestedMinutes = getPositiveMachineNumber(machineEls.changeoverMinutes);
+        if (requestedMinutes <= 0) {
+            setMachineNotice('warning', '請輸入大於 0 的換線分鐘數。');
+            return;
+        }
+
+        const editingRecord = machineTimelineRecords[machineEditingRecordIndex];
+        if (editingRecord && editingRecord.type === 'changeover') {
+            const editingIndex = machineEditingRecordIndex;
+            const startMinute = getMachineRecordStartMinute();
+            if (startMinute === null) {
+                setMachineNotice('warning', '請先填入目前時間，再儲存換線時間。');
+                return;
+            }
+
+            const durationMinutes = Math.ceil(requestedMinutes);
+            machineTimelineRecords[editingIndex] = {
+                type: 'changeover',
+                startMinute,
+                endMinute: startMinute + durationMinutes,
+                durationMinutes
+            };
+            reflowMachineTimelineFrom(editingIndex + 1);
+            clearMachineRecordEdit();
+            renderMachineTimeline();
+            calculateMachineTime();
+            saveMachineTimeState();
+            setMachineNotice('warning', '換線記錄已更新，後續時間已重新計算。');
+            return;
+        }
+
+        const startMinute = getMachineRecordStartMinute();
+        if (startMinute === null) {
+            setMachineNotice('warning', '請先填入目前時間，再加入換線時間。');
+            return;
+        }
+
+        const durationMinutes = Math.ceil(requestedMinutes);
+        const record = {
+            type: 'changeover',
+            startMinute,
+            endMinute: startMinute + durationMinutes,
+            durationMinutes
+        };
+
+        machineTimelineRecords.push(record);
+        clearMachineRecordEdit();
+        machineEls.changeoverMinutes.value = '';
+        renderMachineTimeline();
+        prepareNextMachineGroup(record.endMinute);
+        saveMachineTimeState();
+        setMachineNotice('', '');
+    }
+
+    function removeMachineTimelineRecord(index) {
+        if (index < 0 || index >= machineTimelineRecords.length) return;
+
+        clearMachineRecordEdit();
+        machineTimelineRecords.splice(index, 1);
+        reflowMachineTimelineFrom(index);
+
+        const endMinute = getMachineTimelineEndMinute();
+        if (endMinute !== null) machineEls.startTime.value = machineMinutesToTime(endMinute);
+        renderMachineTimeline();
+        calculateMachineTime();
+        saveMachineTimeState();
+    }
+
+    function clearMachineTimeline() {
+        machineTimelineRecords = [];
+        clearMachineRecordEdit();
+        renderMachineTimeline();
+        saveMachineTimeState();
+        setMachineNotice('', '');
+    }
+
     function setMachineNotice(type, message) {
         machineEls.warningBox.style.display = 'none';
         machineEls.errorBox.style.display = 'none';
@@ -2998,6 +3519,8 @@
         document.querySelectorAll('.machine-scenario-field').forEach(field => {
             field.style.display = field.dataset.machineMode === mode ? 'flex' : 'none';
         });
+        machineEls.recordActions.style.display = mode === 'byEnd' ? 'block' : 'none';
+        updateMachineEditUI();
 
         if (mode === 'byBoards') {
             machineEls.resultLabelA.textContent = '還能打數量';
@@ -3017,7 +3540,9 @@
             startTime: machineEls.startTime.value,
             endTime: machineEls.endTime.value,
             workSecond: machineEls.workSecond.value,
-            targetCount: machineEls.targetCount.value
+            targetCount: machineEls.targetCount.value,
+            changeoverMinutes: machineEls.changeoverMinutes.value,
+            timelineRecords: machineTimelineRecords
         };
         localStorage.setItem(storageKeys.machineTime, JSON.stringify(data));
     }
@@ -3038,6 +3563,21 @@
             machineEls.endTime.value = data.endTime || '';
             machineEls.workSecond.value = cleanMachineDecimal(data.workSecond || '');
             machineEls.targetCount.value = cleanMachineDecimal(data.targetCount || data.boardCount || '');
+            machineEls.changeoverMinutes.value = cleanMachineDecimal(data.changeoverMinutes || '');
+            machineTimelineRecords = Array.isArray(data.timelineRecords)
+                ? data.timelineRecords.filter(record =>
+                    record &&
+                    ['production', 'changeover'].includes(record.type) &&
+                    Number.isFinite(Number(record.startMinute)) &&
+                    Number.isFinite(Number(record.endMinute)) &&
+                    Number.isFinite(Number(record.durationMinutes))
+                ).map(record => ({
+                    ...record,
+                    startMinute: Number(record.startMinute),
+                    endMinute: Number(record.endMinute),
+                    durationMinutes: Number(record.durationMinutes)
+                }))
+                : [];
 
             if (machineEls.startTime.value) normalizeMachineTimeInput(machineEls.startTime);
             if (machineEls.endTime.value) normalizeMachineTimeInput(machineEls.endTime);
@@ -3121,6 +3661,9 @@
         machineEls.endTime.value = '';
         machineEls.workSecond.value = '';
         machineEls.targetCount.value = '';
+        machineEls.changeoverMinutes.value = '';
+        machineTimelineRecords = [];
+        clearMachineRecordEdit();
         machineEls.resultA.textContent = '--';
         machineEls.resultB.textContent = '--';
         machineEls.resultC.textContent = '--';
@@ -3184,12 +3727,14 @@
 
         [machineEls.startTime, machineEls.endTime].forEach(bindMachineTimeInput);
         [machineEls.doneCount, machineEls.workSecond, machineEls.targetCount].forEach(bindMachineDecimalInput);
+        bindMachineDecimalInput(machineEls.changeoverMinutes, false);
 
         document.querySelectorAll('input[name="machineCalcMode"]').forEach(el => {
             el.addEventListener('change', calculateMachineTime);
             el.addEventListener('click', calculateMachineTime);
         });
 
+        renderMachineTimeline();
         calculateMachineTime();
     }
 
