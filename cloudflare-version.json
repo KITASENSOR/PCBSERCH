@@ -12,14 +12,14 @@
     "assets_index_downloaded_from":  "https://smt-pcb-search.s110513202.workers.dev/",
     "d1_database_downloaded":  false,
     "latest_deployment":  {
-        "version_id":  "0353e4bf-f070-4d35-9051-ca7c29ad3f27",
-        "deployed_on_utc":  "2026-07-15T06:45:29.5741588Z",
-        "git_commit":  "bc227f2968bfd5c1ea4edb6b4b623b098b31bf90",
-        "github_actions_run_id":  29395130878,
-        "github_actions_run_url":  "https://github.com/KITASENSOR/PCBSERCH/actions/runs/29395130878",
+        "version_id":  "c68a2ea3-764c-4068-bb33-52adee56e87c",
+        "deployed_on_utc":  "2026-07-15T06:54:26.9655238Z",
+        "git_commit":  "ea5888048bd64749d97338dda28ae158cc9a56b0",
+        "github_actions_run_id":  29395585639,
+        "github_actions_run_url":  "https://github.com/KITASENSOR/PCBSERCH/actions/runs/29395585639",
         "production_url":  "https://smt-pcb-search.s110513202.workers.dev/",
         "verified_http_status":  200,
-        "verified_on_utc":  "2026-07-15T06:46:37.4876652Z"
+        "verified_on_utc":  "2026-07-15T06:55:54.5476853Z"
     },
     "note":  "Historical download metadata is retained above. The latest deployment metadata records the GitHub Actions release verified on 2026-07-15. D1 data was not downloaded or changed."
 }
