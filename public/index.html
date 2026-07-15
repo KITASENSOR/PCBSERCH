@@ -1509,13 +1509,13 @@
     <script>renderHeader('機台時間試算', 'MACHINE_TIME');</script>
 
     <div class="machine-mode-tabs">
-        <label class="machine-mode-tab active" id="machineTabByBoards">
-            <input type="radio" name="machineCalcMode" value="byBoards" checked>
+        <label class="machine-mode-tab" id="machineTabByBoards">
+            <input type="radio" name="machineCalcMode" value="byBoards">
             剩餘時間算數量
         </label>
 
-        <label class="machine-mode-tab" id="machineTabByEnd">
-            <input type="radio" name="machineCalcMode" value="byEnd">
+        <label class="machine-mode-tab active" id="machineTabByEnd">
+            <input type="radio" name="machineCalcMode" value="byEnd" checked>
             目標數量算時間
         </label>
     </div>
@@ -3139,7 +3139,7 @@
 
     function createEmptyMachineLineState(overrides = {}) {
         return {
-            mode: 'byBoards',
+            mode: 'byEnd',
             doneCount: '',
             startTime: '',
             endTime: '',
@@ -3368,7 +3368,7 @@
 
     function normalizeMachineLineState(data = {}) {
         return createEmptyMachineLineState({
-            mode: data.mode === 'byEnd' ? 'byEnd' : 'byBoards',
+            mode: 'byEnd',
             doneCount: cleanMachineDecimal(data.doneCount || ''),
             startTime: data.startTime || '',
             endTime: data.endTime || '',
@@ -3421,7 +3421,7 @@
 
     function renderMachineTimeline() {
         const hasRecords = machineTimelineRecords.length > 0;
-        machineEls.timelinePanel.style.display = 'block';
+        machineEls.timelinePanel.style.display = getMachineMode() === 'byEnd' ? 'block' : 'none';
         machineEls.timelineList.innerHTML = '';
         renderMachineLineTabs();
 
@@ -3747,7 +3747,7 @@
             field.style.display = field.dataset.machineMode === mode ? 'flex' : 'none';
         });
         machineEls.recordActions.style.display = mode === 'byEnd' ? 'block' : 'none';
-        machineEls.timelinePanel.style.display = 'block';
+        machineEls.timelinePanel.style.display = mode === 'byEnd' ? 'block' : 'none';
         renderMachineLineTabs();
         updateMachineEditUI();
 
@@ -3864,7 +3864,7 @@
 
     function clearMachineTime() {
         machineLineStates[machineCurrentLineId] = createEmptyMachineLineState({
-            mode: 'byBoards',
+            mode: 'byEnd',
             startTime: getCurrentMachineTimeValue()
         });
         applyMachineLineState(machineLineStates[machineCurrentLineId]);
