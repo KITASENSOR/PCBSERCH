@@ -296,6 +296,23 @@
             font-weight: bold;
             margin-bottom: 4px;
         }
+        .machine-timeline-name.is-editable {
+            cursor: text;
+            display: inline-block;
+            border-bottom: 1px dashed #92a69c;
+        }
+        .machine-timeline-name-input {
+            width: 100%;
+            min-width: 0;
+            padding: 6px 8px;
+            border: 1px solid #28a745;
+            border-radius: 5px;
+            color: #263a31;
+            background: #fff;
+            font-size: 15px;
+            font-weight: bold;
+            box-sizing: border-box;
+        }
         .machine-timeline-detail {
             color: #68756f;
             font-size: 12px;
@@ -3279,7 +3296,9 @@
             item.className = `machine-timeline-item${isChangeover ? ' is-changeover' : ''}${index === machineEditingRecordIndex ? ' is-editing' : ''}`;
             item.tabIndex = 0;
             item.setAttribute('role', 'button');
-            item.setAttribute('aria-label', `帶入${isChangeover ? '換線時間' : `第 ${productionNumber} 組設定`}`);
+            const defaultName = `第 ${productionNumber} 組設定`;
+            const displayName = isChangeover ? '換線時間' : (record.groupName || defaultName);
+            item.setAttribute('aria-label', `帶入${displayName}`);
             item.addEventListener('click', () => loadMachineTimelineRecord(index));
             item.addEventListener('keydown', event => {
                 if (event.key === 'Enter' || event.key === ' ') {
@@ -3295,7 +3314,12 @@
             const body = document.createElement('div');
             const name = document.createElement('div');
             name.className = 'machine-timeline-name';
-            name.textContent = isChangeover ? '換線時間' : `第 ${productionNumber} 組設定`;
+            name.textContent = displayName;
+            if (!isChangeover) {
+                name.classList.add('is-editable');
+                name.title = '修改組別名稱';
+                name.addEventListener('click', event => beginMachineGroupNameEdit(index, name, event));
+            }
 
             body.append(name);
 
@@ -3318,6 +3342,62 @@
             machineEls.timelineList.appendChild(item);
         });
 
+    }
+
+    function getMachineDefaultGroupName(recordIndex) {
+        let productionNumber = 0;
+        for (let i = 0; i <= recordIndex; i += 1) {
+            if (machineTimelineRecords[i] && machineTimelineRecords[i].type === 'production') {
+                productionNumber += 1;
+            }
+        }
+        return `第 ${productionNumber} 組設定`;
+    }
+
+    function beginMachineGroupNameEdit(index, nameElement, event) {
+        event.stopPropagation();
+        const record = machineTimelineRecords[index];
+        if (!record || record.type !== 'production') return;
+
+        const originalName = record.groupName || getMachineDefaultGroupName(index);
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'machine-timeline-name-input';
+        input.value = originalName;
+        input.maxLength = 30;
+        input.setAttribute('aria-label', '組別名稱');
+        nameElement.replaceChildren(input);
+        input.focus();
+        input.select();
+
+        let finished = false;
+        const finish = shouldSave => {
+            if (finished) return;
+            finished = true;
+            if (shouldSave) {
+                const nextName = input.value.trim();
+                if (nextName && nextName !== getMachineDefaultGroupName(index)) {
+                    record.groupName = nextName;
+                } else {
+                    delete record.groupName;
+                }
+                saveMachineTimeState();
+            }
+            renderMachineTimeline();
+        };
+
+        input.addEventListener('click', inputEvent => inputEvent.stopPropagation());
+        input.addEventListener('keydown', inputEvent => {
+            inputEvent.stopPropagation();
+            if (inputEvent.key === 'Enter') {
+                inputEvent.preventDefault();
+                finish(true);
+            } else if (inputEvent.key === 'Escape') {
+                inputEvent.preventDefault();
+                finish(false);
+            }
+        });
+        input.addEventListener('blur', () => finish(true));
     }
 
     function loadMachineTimelineRecord(index) {
@@ -3393,7 +3473,10 @@
         const editingRecord = machineTimelineRecords[machineEditingRecordIndex];
         if (editingRecord && editingRecord.type === 'production') {
             const editingIndex = machineEditingRecordIndex;
-            machineTimelineRecords[editingIndex] = draft;
+            machineTimelineRecords[editingIndex] = {
+                ...draft,
+                ...(editingRecord.groupName ? { groupName: editingRecord.groupName } : {})
+            };
             reflowMachineTimelineFrom(editingIndex + 1);
             clearMachineRecordEdit();
             renderMachineTimeline();
