@@ -1012,7 +1012,7 @@
         }
         #viewPICKING .picking-top-actions {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(5, minmax(0, 1fr));
             gap: 6px;
         }
         #viewPICKING .picking-top-actions button {
@@ -1608,7 +1608,8 @@
         <div class="btn-group picking-top-actions">
             <button type="button" onclick="loadScheduleFromDatabase()">&#35712;&#25490;&#31243;</button>
             <button type="button" id="btnPickingWarehouse" class="warehouse-btn" onclick="showScheduledWarehouseMaterials()">&#20489;&#31649;</button>
-            <button type="button" class="filter-btn" onclick="pastePickingToBOM()">&#26597; BOM</button>
+            <button type="button" class="filter-btn" onclick="pastePickingToBOM()">&#26597;BOM</button>
+            <button type="button" class="switch-discharge-btn" onclick="pastePickingToDischarge()">&#19979;&#26009;</button>
             <button type="button" class="clear-btn" onclick="clearPickingSelection()">&#28165;&#38500;</button>
         </div>
         <div id="pickingStatus" class="status-box"></div>
@@ -3100,6 +3101,21 @@
         }
         localStorage.setItem(storageKeys.bomInput, input.value);
         toggleView('BOM');
+    }
+
+    function pastePickingToDischarge() {
+        const selected = [...selectedPickingItems.values()];
+        if (selected.length === 0) { setStatusBox('pickingStatus', '\u8acb\u5148\u52a0\u5165\u8981\u8cbc\u5230\u4e0b\u6599\u9801\u9762\u7684\u578b\u865f', 'warn'); return; }
+        const input = document.getElementById('inputDischarge');
+        const nextText = [...new Set(selected.map(item => item.part_no))].join('\n');
+        if (input.value.trim()) {
+            const shouldClear = confirm('\u4e0b\u6599\u9801\u9762\u5df2\u6709\u8f38\u5165\u5167\u5bb9\uff0c\u662f\u5426\u6e05\u7a7a\u5f8c\u8cbc\u4e0a\uff1f\u6309\u53d6\u6d88\u6703\u9644\u52a0\u5728\u539f\u5167\u5bb9\u5f8c\u9762\u3002');
+            input.value = shouldClear ? nextText : `${input.value.trim()}\n${nextText}`;
+        } else {
+            input.value = nextText;
+        }
+        localStorage.setItem(storageKeys.dischargeInput, input.value);
+        toggleView('DISCHARGE');
     }
 
     renderScheduleGroups();
