@@ -1337,8 +1337,14 @@
             gap: 10px;
             margin-bottom: 4px;
         }
-        .schedule-panel-head h3 { margin: 0; }
-        .schedule-collapse-btn {
+        .schedule-panel-head h3 { margin: 0; flex: 1 1 auto; }
+        .schedule-panel-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 6px;
+        }
+        .schedule-icon-btn {
             width: 34px;
             height: 34px;
             padding: 0;
@@ -1349,7 +1355,25 @@
             font-size: 18px;
             line-height: 1;
         }
-        .schedule-collapse-btn:hover { background: #dde6ef; }
+        .schedule-icon-btn:hover { background: #dde6ef; }
+        .schedule-icon-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            vertical-align: middle;
+        }
+        .schedule-selection-action {
+            width: auto;
+            height: 34px;
+            padding: 0 11px;
+            border-radius: 7px;
+            font-size: 13px;
+            white-space: nowrap;
+        }
         .schedule-filter-tabs {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1430,30 +1454,6 @@
         #viewPICKING .schedule-table tr.schedule-row { cursor: default; }
         #viewPICKING .schedule-table tr.schedule-row:hover td { background: #f0f7ff !important; }
         #viewPICKING .schedule-table tr.schedule-row.is-checked td { background: #eafaf1 !important; }
-        #viewPICKING .schedule-table tr.schedule-row.is-delete-selected td { background: #fff1f2 !important; }
-        .schedule-delete-toolbar {
-            display: none;
-            grid-template-columns: minmax(0, 1fr) auto auto;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 8px;
-            padding: 8px;
-            border: 1px solid #fecdd3;
-            border-radius: 8px;
-            background: #fff5f6;
-        }
-        .schedule-delete-toolbar.show { display: grid; }
-        .schedule-delete-toolbar span {
-            min-width: 0;
-            color: #9f1239;
-            font-weight: bold;
-            font-size: 13px;
-        }
-        .schedule-delete-toolbar button {
-            width: auto;
-            padding: 8px 12px;
-            font-size: 13px;
-        }
         .report-frame-wrap {
             border: 1px solid #dde5e8;
             border-radius: 8px;
@@ -1665,10 +1665,10 @@
 
     <div class="work-panel">
         <div class="btn-group picking-top-actions">
-            <button type="button" onclick="loadScheduleFromDatabase()">&#35712;&#25490;&#31243;</button>
             <button type="button" id="btnPickingWarehouse" class="warehouse-btn" onclick="showScheduledWarehouseMaterials()">&#20489;&#31649;</button>
             <button type="button" class="filter-btn" onclick="pastePickingToBOM()">&#26597;BOM</button>
             <button type="button" class="switch-discharge-btn" onclick="pastePickingToDischarge()">&#19979;&#26009;</button>
+            <button type="button" onclick="pastePickingToCompare()">比對</button>
             <button type="button" class="clear-btn" onclick="clearPickingSelection()">&#28165;&#38500;</button>
         </div>
         <div id="pickingStatus" class="status-box"></div>
@@ -1677,7 +1677,12 @@
     <div class="work-panel">
         <div class="schedule-panel-head">
             <h3>&#25490;&#31243;&#21015;&#34920;</h3>
-            <button type="button" id="scheduleCollapseBtn" class="schedule-collapse-btn" onclick="toggleScheduleListCollapsed()" title="收闔排程列表" aria-label="收闔排程列表">▲</button>
+            <div class="schedule-panel-actions">
+                <button type="button" id="scheduleCalculateBtn" class="schedule-selection-action" onclick="calculatePickingMaterials()" hidden>計算</button>
+                <button type="button" id="scheduleCompleteBtn" class="schedule-selection-action filter-btn" onclick="completeSelectedScheduleItems()" hidden>完工</button>
+                <button type="button" id="scheduleRefreshBtn" class="schedule-icon-btn" onclick="loadScheduleFromDatabase()" title="重新整理排程" aria-label="重新整理排程"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5"></path><path d="M4 18v-5h5"></path><path d="M6.1 9a7 7 0 0 1 11.5-2.6L20 9"></path><path d="M4 15l2.4 2.6A7 7 0 0 0 17.9 15"></path></svg></button>
+                <button type="button" id="scheduleCollapseBtn" class="schedule-icon-btn" onclick="toggleScheduleListCollapsed()" title="收闔排程列表" aria-label="收闔排程列表">▲</button>
+            </div>
         </div>
         <div id="scheduleFilterTabs" class="schedule-filter-tabs" role="group" aria-label="排程篩選">
             <button type="button" id="scheduleFilterAll" onclick="setScheduleFilter('all')">全部</button>
@@ -2474,10 +2479,6 @@
     const statusToastTimers = {};
     let activePickingNoteInput = null;
     let activePickingNotePart = '';
-    let scheduleDeleteMode = false;
-    let scheduleDeleteSelection = new Set();
-    let scheduleLongPressTimer = null;
-    let scheduleLongPressTriggered = false;
 
     function setStatusBox(id, message, kind = 'ok') {
         const box = document.getElementById(id);
@@ -2787,8 +2788,6 @@
             pickingComboKey = '';
             pickingNotes = {};
             warehouseView = false;
-            scheduleDeleteMode = false;
-            scheduleDeleteSelection.clear();
             renderScheduleGroups();
             document.getElementById('pickingResultArea').innerHTML = '';
             setStatusBox('pickingStatus', `\u6392\u7a0b\u8b80\u53d6\u5b8c\u6210\uff1a${data.count || 0} \u7b46\u5de5\u55AE，完工 ${data.completed_count || 0} \u7b46`, 'ok');
@@ -2932,6 +2931,14 @@
         if (list) list.style.display = scheduleListCollapsed ? 'none' : '';
     }
 
+    function renderScheduleSelectionActions() {
+        const hasSelection = selectedPickingItems.size > 0;
+        const calculateButton = document.getElementById('scheduleCalculateBtn');
+        const completeButton = document.getElementById('scheduleCompleteBtn');
+        if (calculateButton) calculateButton.hidden = !hasSelection;
+        if (completeButton) completeButton.hidden = !hasSelection;
+    }
+
     function toggleScheduleListCollapsed() {
         scheduleListCollapsed = !scheduleListCollapsed;
         renderScheduleCollapseState();
@@ -2960,6 +2967,7 @@
         if (!list) return;
         renderScheduleFilterTabs();
         renderScheduleCollapseState();
+        renderScheduleSelectionActions();
         if (scheduleGroups.length === 0 && completedScheduleGroups.length === 0) {
             list.innerHTML = '<div class="hint">\u5c1a\u672a\u4e0a\u50b3\u6392\u7a0b\u3002</div>';
             return;
@@ -2969,24 +2977,19 @@
             list.innerHTML = '<div class="hint">此篩選沒有排程。</div>';
             return;
         }
-        const toolbarClass = scheduleDeleteMode && scheduleFilterMode !== 'done' ? 'schedule-delete-toolbar show' : 'schedule-delete-toolbar';
-        const toolbarText = scheduleDeleteMode ? `已選 ${scheduleDeleteSelection.size} 筆排程` : '';
-        const toolbar = scheduleFilterMode === 'done' ? '' : `<div class="${toolbarClass}"><span>${toolbarText || '長按型號可多選完工排程'}</span><button type="button" class="clear-btn" onclick="cancelScheduleDeleteMode()">取消</button><button type="button" class="filter-btn" onclick="deleteSelectedScheduleItems()">完工</button></div>`;
         let rows = '';
         groups.forEach(group => {
             (group.items || []).forEach(item => {
                 const key = encodeURIComponent(item.wo_id);
                 const isCompleted = !!item.completed || scheduleFilterMode === 'done';
                 const checked = !isCompleted && selectedPickingItems.has(item.wo_id);
-                const deleteSelected = scheduleDeleteSelection.has(item.wo_id);
                 const model = pickingModelDisplay(item.part_no);
                 const qty = formatClientNumber(item.plan_qty);
-                const rowEvents = isCompleted ? '' : ` onmousedown="startScheduleLongPress('${key}', event)" onmouseup="clearScheduleLongPress()" onmouseleave="clearScheduleLongPress()" ontouchstart="startScheduleLongPress('${key}', event)" ontouchend="clearScheduleLongPress()" ontouchcancel="clearScheduleLongPress()" oncontextmenu="event.preventDefault()"`;
-                const checkCell = isCompleted ? '<td class="schedule-check">完</td>' : `<td class="schedule-check" onclick="toggleScheduleRow('${key}')"><input type="checkbox" tabindex="-1"${(scheduleDeleteMode ? deleteSelected : checked) ? ' checked' : ''}></td>`;
-                rows += `<tr class="schedule-row${checked ? ' is-checked' : ''}${deleteSelected ? ' is-delete-selected' : ''}"${rowEvents}><td>${escapeHtml(formatScheduleDate(group.date))}</td><td class="schedule-model">${escapeHtml(model)}</td><td class="result-number">${qty}</td>${checkCell}</tr>`;
+                const checkCell = isCompleted ? '<td class="schedule-check">完</td>' : `<td class="schedule-check" onclick="toggleScheduleRow('${key}')"><input type="checkbox" tabindex="-1"${checked ? ' checked' : ''}></td>`;
+                rows += `<tr class="schedule-row${checked ? ' is-checked' : ''}"><td>${escapeHtml(formatScheduleDate(group.date))}</td><td class="schedule-model">${escapeHtml(model)}</td><td class="result-number">${qty}</td>${checkCell}</tr>`;
             });
         });
-        list.innerHTML = `${toolbar}<table class="schedule-table"><thead><tr><th>\u4e0a\u7dda\u65e5</th><th>\u578b\u865f</th><th>\u6578\u91cf</th><th>\u2713</th></tr></thead><tbody>${rows}</tbody></table>`;
+        list.innerHTML = `<table class="schedule-table"><thead><tr><th>\u4e0a\u7dda\u65e5</th><th>\u578b\u865f</th><th>\u6578\u91cf</th><th>\u2713</th></tr></thead><tbody>${rows}</tbody></table>`;
     }
 
     function findScheduleItem(woId) {
@@ -2998,60 +3001,22 @@
     }
 
     function toggleScheduleRow(encodedWoId) {
-        if (scheduleLongPressTriggered) {
-            scheduleLongPressTriggered = false;
-            return;
-        }
         const woId = decodeURIComponent(encodedWoId);
-        if (scheduleDeleteMode) {
-            toggleScheduleDeleteSelection(woId);
-            return;
-        }
         const item = findScheduleItem(woId);
         if (!item) return;
         if (selectedPickingItems.has(woId)) selectedPickingItems.delete(woId);
         else selectedPickingItems.set(woId, item);
+        pickingAllItems = [];
+        pickingComboKey = '';
+        pickingNotes = {};
         warehouseView = false;
-        renderScheduleGroups();
-        calculatePickingMaterials();
-    }
-
-    function startScheduleLongPress(encodedWoId, event) {
-        clearScheduleLongPress();
-        const woId = decodeURIComponent(encodedWoId);
-        scheduleLongPressTriggered = false;
-        scheduleLongPressTimer = setTimeout(() => {
-            scheduleLongPressTriggered = true;
-            scheduleDeleteMode = true;
-            scheduleDeleteSelection.add(woId);
-            renderScheduleGroups();
-            setStatusBox('pickingStatus', '已進入排程完工模式，可多選後標記完工。', 'warn');
-        }, 800);
-    }
-
-    function clearScheduleLongPress() {
-        if (scheduleLongPressTimer) {
-            clearTimeout(scheduleLongPressTimer);
-            scheduleLongPressTimer = null;
-        }
-    }
-
-    function toggleScheduleDeleteSelection(woId) {
-        if (scheduleDeleteSelection.has(woId)) scheduleDeleteSelection.delete(woId);
-        else scheduleDeleteSelection.add(woId);
-        if (scheduleDeleteSelection.size === 0) scheduleDeleteMode = false;
-        renderScheduleGroups();
-    }
-
-    function cancelScheduleDeleteMode() {
-        scheduleDeleteMode = false;
-        scheduleDeleteSelection.clear();
+        document.getElementById('pickingResultArea').innerHTML = '';
         clearStatusBox('pickingStatus');
         renderScheduleGroups();
     }
 
-    async function deleteSelectedScheduleItems() {
-        const woIds = [...scheduleDeleteSelection];
+    async function completeSelectedScheduleItems() {
+        const woIds = [...selectedPickingItems.keys()];
         if (woIds.length === 0) {
             setStatusBox('pickingStatus', '請先選擇要完工的排程。', 'warn');
             return;
@@ -3079,8 +3044,6 @@
         pickingComboKey = '';
         pickingNotes = {};
         warehouseView = false;
-        scheduleDeleteMode = false;
-        scheduleDeleteSelection.clear();
         document.getElementById('pickingResultArea').innerHTML = '';
         renderScheduleGroups();
     }
@@ -3288,6 +3251,21 @@
         }
         localStorage.setItem(storageKeys.dischargeInput, input.value);
         toggleView('DISCHARGE');
+    }
+
+    function pastePickingToCompare() {
+        const selected = [...selectedPickingItems.values()];
+        if (selected.length === 0) { setStatusBox('pickingStatus', '請先加入要貼到比對頁 B 區塊的型號', 'warn'); return; }
+        const input = document.getElementById('inputCompareB');
+        const nextText = [...new Set(selected.map(item => item.part_no))].join('\n');
+        if (input.value.trim()) {
+            const shouldClear = confirm('比對頁 B 區塊已有輸入內容，是否清空後貼上？按取消會附加在原內容後面。');
+            input.value = shouldClear ? nextText : `${input.value.trim()}\n${nextText}`;
+        } else {
+            input.value = nextText;
+        }
+        localStorage.setItem(storageKeys.compareBInput, input.value);
+        toggleView('COMPARE');
     }
 
     renderScheduleGroups();
