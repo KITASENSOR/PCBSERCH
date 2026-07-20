@@ -461,70 +461,6 @@
             margin-top: 12px;
         }
         .compare-action-row button { width: 100%; }
-        .compare-summary {
-            margin-top: 16px;
-            padding: 12px;
-            border: 1px solid #d8e0e5;
-            border-radius: 8px;
-            background: #fff;
-            color: #34495e;
-            line-height: 1.7;
-        }
-        .compare-summary.is-error {
-            border-color: #f5b7b1;
-            background: #fff5f5;
-            color: #a93226;
-        }
-        .compare-summary-title { font-weight: bold; margin-bottom: 4px; }
-        .compare-model-tag {
-            display: inline-block;
-            margin: 3px 4px 3px 0;
-            padding: 3px 7px;
-            border: 1px solid #b8c7d1;
-            border-radius: 4px;
-            background: #edf3f7;
-            color: #2c3e50;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        .compare-result-list { margin-top: 12px; }
-        .compare-category {
-            margin-top: 10px;
-            border: 1px solid #e0e5e8;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        .compare-category-title {
-            padding: 8px 12px;
-            background: #f1f5f3;
-            color: #24823c;
-            font-weight: bold;
-        }
-        .compare-part-row {
-            display: grid;
-            grid-template-columns: minmax(150px, 0.35fr) minmax(0, 1fr);
-            gap: 10px;
-            align-items: start;
-            padding: 10px 12px;
-            border-top: 1px solid #edf0f2;
-        }
-        .compare-part-number { font-weight: bold; color: #263238; }
-        .compare-fixed-label {
-            display: inline-block;
-            margin-left: 6px;
-            padding: 1px 5px;
-            border-radius: 3px;
-            background: #8e44ad;
-            color: #fff;
-            font-size: 11px;
-            vertical-align: 1px;
-        }
-        .compare-owner-label {
-            display: block;
-            margin-bottom: 3px;
-            color: #68757d;
-            font-size: 12px;
-        }
         
         .fixed-item,
         .child-item.fixed-item,
@@ -689,7 +625,6 @@
             .compare-input-block textarea { height: 82px; }
             .compare-action-row { gap: 6px; }
             .compare-action-row button { padding: 10px 6px; font-size: 13px; }
-            .compare-part-row { grid-template-columns: 1fr; gap: 5px; }
 
             .bom-sticky-header .match-info { max-height: 28vh; line-height: 2.2; }
 
@@ -1586,9 +1521,9 @@
 
     <div class="compare-input-grid">
         <div class="compare-input-block">
-            <label for="inputCompareA">A 區塊型號（單一型號）</label>
-            <textarea id="inputCompareA" placeholder="例如 PC-0426-04A-SO"></textarea>
-            <div class="hint">請輸入一個完整型號。</div>
+            <label for="inputCompareA">A 區塊型號</label>
+            <textarea id="inputCompareA" placeholder="例如 42604A"></textarea>
+            <div class="hint">使用查BOM合併規則，相同板號的顏色尾碼會視為單一型號。</div>
         </div>
         <div class="compare-input-block">
             <label for="inputCompareB">B 區塊型號（可多個或輸入系列）</label>
@@ -1602,8 +1537,8 @@
         <button class="clear-btn" type="button" onclick="clearMaterialComparison()">清除</button>
     </div>
 
-    <div id="compareStatus" class="compare-summary">資料載入中...</div>
-    <div id="compareResultArea" class="compare-result-list"></div>
+    <div id="compareStatus" class="match-info" style="display:none;"></div>
+    <div id="compareResultArea"></div>
 </div>
 
 <div class="container" id="viewDISCHARGE" style="display: none;">
@@ -1894,12 +1829,11 @@
             document.getElementById('btnSearch').disabled = false;
             document.getElementById('btnCompare').disabled = false;
             document.getElementById('btnDischarge').disabled = false;
-            document.getElementById('compareStatus').innerText = `資料載入完成。BOM ${bomCount} 筆，可開始比對。`;
+            setCompareStatus('');
             return true;
         } catch (error) {
             document.getElementById('matchStatus').innerText = `載入失敗:${error.message || '請稍後再試'}`;
-            document.getElementById('compareStatus').innerText = `載入失敗：${error.message || '請稍後再試'}`;
-            document.getElementById('compareStatus').classList.add('is-error');
+            setCompareStatus(`載入失敗：${error.message || '請稍後再試'}`, true);
             return false;
         }
     }
@@ -1960,18 +1894,18 @@
         return new Set(String(rawData[model] || '').split(',').map(part => part.trim()).filter(Boolean));
     }
 
-    function compareMaterials(aModel, bModels) {
+    function compareMaterials(aParts, bModels) {
         const bPartSets = new Map(bModels.map(model => [model, materialSetForModel(model)]));
-        return [...materialSetForModel(aModel)].sort(naturalSort).map(part => ({
-            part,
-            owners: bModels.filter(model => bPartSets.get(model).has(part))
-        })).filter(item => item.owners.length > 0);
+        return [...aParts].sort(naturalSort).filter(part =>
+            bModels.some(model => bPartSets.get(model).has(part))
+        );
     }
 
-    function setCompareStatus(html, isError = false) {
+    function setCompareStatus(message, isError = false) {
         const status = document.getElementById('compareStatus');
-        status.classList.toggle('is-error', isError);
-        status.innerHTML = html;
+        status.style.display = message ? 'block' : 'none';
+        status.style.color = isError ? '#a93226' : '#555';
+        status.innerText = message;
     }
 
     function clearMaterialComparison() {
@@ -1980,7 +1914,7 @@
         localStorage.removeItem(storageKeys.compareAInput);
         localStorage.removeItem(storageKeys.compareBInput);
         document.getElementById('compareResultArea').innerHTML = '';
-        setCompareStatus('請在 A、B 區塊輸入型號後開始比對。');
+        setCompareStatus('');
     }
 
     function runMaterialComparison() {
@@ -1997,12 +1931,12 @@
             return;
         }
 
-        const aMatches = findMatchedModels(inputA);
+        const aGroups = findMatchedGroups(inputA);
         const bMatches = findMatchedModels(inputB);
 
-        if (aMatches.keywords.length !== 1 || aMatches.models.length !== 1) {
-            const detail = aMatches.models.length > 0 ? `目前找到 ${aMatches.models.length} 個型號` : '找不到符合型號';
-            setCompareStatus(`A 區塊必須對應一個完整型號，${detail}。`, true);
+        if (aGroups.length !== 1) {
+            const detail = aGroups.length > 0 ? `目前找到 ${aGroups.length} 組` : '找不到符合型號';
+            setCompareStatus(`A 區塊必須對應一個查BOM合併型號，${detail}。`, true);
             return;
         }
         if (bMatches.models.length === 0) {
@@ -2010,37 +1944,31 @@
             return;
         }
 
-        const aModel = aMatches.models[0];
-        const sharedParts = compareMaterials(aModel, bMatches.models);
-
-        const aTag = `<span class="compare-model-tag">${escapeHtml(aModel)}</span>`;
-        const bTags = bMatches.models.map(model => `<span class="compare-model-tag">${escapeHtml(model)}</span>`).join('');
-        const unmatchedText = bMatches.unmatchedKeywords.length > 0
-            ? `<div>未找到：${bMatches.unmatchedKeywords.map(value => escapeHtml(value)).join('、')}</div>`
-            : '';
-
-        setCompareStatus(`<div class="compare-summary-title">找到 ${sharedParts.length} 種共用料</div><div>A 區塊：${aTag}</div><div>B 區塊（${bMatches.models.length} 個型號）：${bTags}</div>${unmatchedText}`);
+        const sharedParts = compareMaterials(aGroups[0].contentSet, bMatches.models);
+        setCompareStatus(`找到 ${sharedParts.length} 種共用料`);
 
         if (sharedParts.length === 0) {
-            resultArea.innerHTML = '<div class="compare-summary">A 型號與 B 區塊型號沒有共用料。</div>';
             return;
         }
 
-        const categoryMap = {};
-        sharedParts.forEach(item => {
-            const category = item.part.includes('-') ? item.part.split('-')[0] : '其他';
-            if (!categoryMap[category]) categoryMap[category] = [];
-            categoryMap[category].push(item);
+        const masterMap = {};
+        sharedParts.forEach(fullStr => {
+            const [prefix, ...rest] = fullStr.split('-');
+            const code = formatCode(rest.join('-'));
+            if (!masterMap[prefix]) masterMap[prefix] = {};
+            masterMap[prefix][code] = fullStr;
         });
 
-        resultArea.innerHTML = Object.keys(categoryMap).sort(naturalSort).map(category => {
-            const rows = categoryMap[category].map(item => {
-                const fixedLabel = fixedFeederParts.has(item.part) ? '<span class="compare-fixed-label">固定料</span>' : '';
-                const ownerTags = item.owners.map(model => `<span class="compare-model-tag">${escapeHtml(model)}</span>`).join('');
-                return `<div class="compare-part-row"><div class="compare-part-number">${escapeHtml(item.part)}${fixedLabel}</div><div><span class="compare-owner-label">共用的 B 區塊型號</span>${ownerTags}</div></div>`;
-            }).join('');
-            return `<section class="compare-category"><div class="compare-category-title">${escapeHtml(category)}</div>${rows}</section>`;
-        }).join('');
+        let html = '<table><thead><tr><th style="width: 1%">類別</th><th>子件明細</th></tr></thead><tbody>';
+        Object.keys(masterMap).sort().forEach(prefix => {
+            const children = Object.keys(masterMap[prefix]).sort(naturalSort).map(code => {
+                const fullStr = masterMap[prefix][code];
+                const fixedClass = fixedFeederParts.has(fullStr) ? ' fixed-item' : '';
+                return `<span class="child-item common-part${fixedClass}" onclick="this.classList.toggle('dimmed')">${escapeHtml(code)}</span>`;
+            });
+            html += `<tr><td class="prefix-td">${escapeHtml(prefix)}</td><td>${children.join('')}</td></tr>`;
+        });
+        resultArea.innerHTML = html + '</tbody></table>';
     }
 
     function formatCode(codeStr) {
