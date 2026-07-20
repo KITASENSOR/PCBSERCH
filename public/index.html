@@ -16,7 +16,7 @@
             margin-bottom: 12px;
         }
         h2 { color: #333; border-left: 5px solid #28a745; padding-left: 15px; margin: 0; min-width: 0; }
-        .header-buttons { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; width: 100%; margin-bottom: 20px; }
+        .header-buttons { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; width: 100%; margin-bottom: 20px; }
         .header-buttons .switch-btn { width: 100%; min-width: 0; box-sizing: border-box; }
         .switch-btn { background: #17a2b8; padding: 8px 15px; font-size: 14px; border-radius: 5px; color: white; border: none; cursor: pointer; }
         .switch-btn:hover { background: #138496; }
@@ -434,6 +434,97 @@
             padding: 10px 6px;
             font-size: 13px;
         }
+
+        .compare-input-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 12px;
+        }
+        .compare-input-block {
+            border: 1px solid #d8e0e5;
+            border-radius: 8px;
+            padding: 12px;
+            background: #f8fafb;
+            min-width: 0;
+        }
+        .compare-input-block label {
+            display: block;
+            margin-bottom: 7px;
+            color: #34495e;
+            font-weight: bold;
+        }
+        .compare-input-block textarea { height: 104px; }
+        .compare-action-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .compare-action-row button { width: 100%; }
+        .compare-summary {
+            margin-top: 16px;
+            padding: 12px;
+            border: 1px solid #d8e0e5;
+            border-radius: 8px;
+            background: #fff;
+            color: #34495e;
+            line-height: 1.7;
+        }
+        .compare-summary.is-error {
+            border-color: #f5b7b1;
+            background: #fff5f5;
+            color: #a93226;
+        }
+        .compare-summary-title { font-weight: bold; margin-bottom: 4px; }
+        .compare-model-tag {
+            display: inline-block;
+            margin: 3px 4px 3px 0;
+            padding: 3px 7px;
+            border: 1px solid #b8c7d1;
+            border-radius: 4px;
+            background: #edf3f7;
+            color: #2c3e50;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .compare-result-list { margin-top: 12px; }
+        .compare-category {
+            margin-top: 10px;
+            border: 1px solid #e0e5e8;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .compare-category-title {
+            padding: 8px 12px;
+            background: #f1f5f3;
+            color: #24823c;
+            font-weight: bold;
+        }
+        .compare-part-row {
+            display: grid;
+            grid-template-columns: minmax(150px, 0.35fr) minmax(0, 1fr);
+            gap: 10px;
+            align-items: start;
+            padding: 10px 12px;
+            border-top: 1px solid #edf0f2;
+        }
+        .compare-part-number { font-weight: bold; color: #263238; }
+        .compare-fixed-label {
+            display: inline-block;
+            margin-left: 6px;
+            padding: 1px 5px;
+            border-radius: 3px;
+            background: #8e44ad;
+            color: #fff;
+            font-size: 11px;
+            vertical-align: 1px;
+        }
+        .compare-owner-label {
+            display: block;
+            margin-bottom: 3px;
+            color: #68757d;
+            font-size: 12px;
+        }
         
         .fixed-item,
         .child-item.fixed-item,
@@ -571,7 +662,7 @@
             .header-row { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }
             .header-row h2 { margin-bottom: 5px; }
             .header-icon-btn { width: 42px; height: 42px; font-size: 21px; }
-            .header-buttons { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; width: 100%; }
+            .header-buttons { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; width: 100%; }
             .header-buttons .switch-btn { width: 100%; margin-bottom: 0 !important; padding: 10px; }
             .query-entry-row { grid-template-columns: minmax(0, 1fr) 74px; gap: 6px; }
             .query-entry-actions { gap: 6px; }
@@ -592,6 +683,13 @@
             .prefix-td { border-bottom: 1px dashed #e0e0e0; padding-bottom: 8px; margin-bottom: 5px; }
 
             .child-item { font-size: 13px; padding: 4px 6px; } 
+
+            .compare-input-grid { grid-template-columns: 1fr; gap: 8px; }
+            .compare-input-block { padding: 10px; }
+            .compare-input-block textarea { height: 82px; }
+            .compare-action-row { gap: 6px; }
+            .compare-action-row button { padding: 10px 6px; font-size: 13px; }
+            .compare-part-row { grid-template-columns: 1fr; gap: 5px; }
 
             .bom-sticky-header .match-info { max-height: 28vh; line-height: 2.2; }
 
@@ -663,7 +761,7 @@
         }
         #viewMACHINE_TIME .header-buttons {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(5, minmax(0, 1fr));
             gap: 6px;
             width: 100%;
         }
@@ -802,7 +900,7 @@
         #viewPICKING .header-buttons,
         #viewMAINTENANCE .header-buttons {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(5, minmax(0, 1fr));
             gap: 6px;
             width: 100%;
         }
@@ -900,7 +998,7 @@
         }
         #viewBOM .header-buttons {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(5, minmax(0, 1fr));
             gap: 6px;
             width: 100%;
         }
@@ -1107,7 +1205,7 @@
             .header-row { flex-wrap: nowrap; }
             .header-buttons {
                 display: grid;
-                grid-template-columns: repeat(4, minmax(0, 1fr));
+                grid-template-columns: repeat(5, minmax(0, 1fr));
                 gap: 8px;
                 width: 100%;
                 min-width: 0;
@@ -1453,6 +1551,7 @@
             <div class="header-buttons">
                 <button class="switch-btn${viewId === 'BOM' ? ' active' : ''}" type="button" onclick="toggleView('BOM')">查BOM</button>
                 <button class="switch-btn switch-discharge-btn${viewId === 'DISCHARGE' ? ' active' : ''}" type="button" onclick="toggleView('DISCHARGE')">下料</button>
+                <button class="switch-btn${viewId === 'COMPARE' ? ' active' : ''}" type="button" onclick="toggleView('COMPARE')">比對</button>
                 <button class="switch-btn picking-btn${viewId === 'PICKING' ? ' active' : ''}" type="button" onclick="toggleView('PICKING')">取料</button>
                 <button class="switch-btn report-btn${viewId === 'REPORT' ? ' active' : ''}" type="button" onclick="toggleView('REPORT')">回報</button>
             </div>
@@ -1480,6 +1579,31 @@
         <div id="itemCount" class="count-info"></div>
     </div>
     <div id="resultArea"></div>
+</div>
+
+<div class="container" id="viewCOMPARE" style="display: none;">
+    <script>renderHeader('共用料比對', 'COMPARE');</script>
+
+    <div class="compare-input-grid">
+        <div class="compare-input-block">
+            <label for="inputCompareA">A 區塊型號（單一型號）</label>
+            <textarea id="inputCompareA" placeholder="例如 PC-0426-04A-SO"></textarea>
+            <div class="hint">請輸入一個完整型號。</div>
+        </div>
+        <div class="compare-input-block">
+            <label for="inputCompareB">B 區塊型號（可多個或輸入系列）</label>
+            <textarea id="inputCompareB" placeholder="例如 PC-0536-03-01&#10;PC-0536-04-01&#10;PC-0536-05-01"></textarea>
+            <div class="hint">多個型號可用換行、空白或逗號分隔；也可輸入 536 查找系列。</div>
+        </div>
+    </div>
+
+    <div class="compare-action-row">
+        <button id="btnCompare" type="button" onclick="runMaterialComparison()" disabled>開始比對</button>
+        <button class="clear-btn" type="button" onclick="clearMaterialComparison()">清除</button>
+    </div>
+
+    <div id="compareStatus" class="compare-summary">資料載入中...</div>
+    <div id="compareResultArea" class="compare-result-list"></div>
 </div>
 
 <div class="container" id="viewDISCHARGE" style="display: none;">
@@ -1685,6 +1809,8 @@
 <script>
     const storageKeys = {
         bomInput: "pcb_bom_query_input",
+        compareAInput: "pcb_material_compare_a_input_V1",
+        compareBInput: "pcb_material_compare_b_input_V1",
         dischargeInput: "pcb_discharge_query_input",
         machineTime: "pcb_machine_time_calculator"
     };
@@ -1717,11 +1843,14 @@
 
     function initInputStorage() {
         saveInputToStorage('inputSearch', storageKeys.bomInput);
+        saveInputToStorage('inputCompareA', storageKeys.compareAInput);
+        saveInputToStorage('inputCompareB', storageKeys.compareBInput);
         saveInputToStorage('inputDischarge', storageKeys.dischargeInput);
     }
 
     function toggleView(viewType) {
         document.getElementById('viewBOM').style.display = (viewType === 'BOM') ? 'block' : 'none';
+        document.getElementById('viewCOMPARE').style.display = (viewType === 'COMPARE') ? 'block' : 'none';
         document.getElementById('viewDISCHARGE').style.display = (viewType === 'DISCHARGE') ? 'block' : 'none';
         document.getElementById('viewMACHINE_TIME').style.display = (viewType === 'MACHINE_TIME') ? 'block' : 'none';
         document.getElementById('viewPICKING').style.display = (viewType === 'PICKING') ? 'block' : 'none';
@@ -1763,10 +1892,14 @@
             const fixedCount = data.counts?.fixed ?? fixedFeederParts.size;
             document.getElementById('matchStatus').innerText = `資料載入完成。BOM ${bomCount} 筆，固定料 ${fixedCount} 筆。`;
             document.getElementById('btnSearch').disabled = false;
+            document.getElementById('btnCompare').disabled = false;
             document.getElementById('btnDischarge').disabled = false;
+            document.getElementById('compareStatus').innerText = `資料載入完成。BOM ${bomCount} 筆，可開始比對。`;
             return true;
         } catch (error) {
             document.getElementById('matchStatus').innerText = `載入失敗:${error.message || '請稍後再試'}`;
+            document.getElementById('compareStatus').innerText = `載入失敗：${error.message || '請稍後再試'}`;
+            document.getElementById('compareStatus').classList.add('is-error');
             return false;
         }
     }
@@ -1797,6 +1930,117 @@
         if (normalizedID === cleanQuery) return "EXACT";
         if (normalizedID.startsWith(cleanQuery) || normalizedID.includes(cleanQuery)) return "FUZZY";
         return null;
+    }
+
+    function findMatchedModels(input) {
+        const keywords = String(input || '').split(/[\s,]+/).map(value => value.trim()).filter(Boolean);
+        const matchedModels = [];
+        const unmatchedKeywords = [];
+
+        keywords.forEach(keyword => {
+            const matches = Object.keys(rawData).map(key => ({
+                key,
+                matchType: checkSmartMatch(key, keyword)
+            })).filter(item => item.matchType !== null);
+            const exactMatches = matches.filter(item => item.matchType === 'EXACT');
+            const selectedMatches = exactMatches.length > 0 ? exactMatches : matches;
+
+            if (selectedMatches.length === 0) unmatchedKeywords.push(keyword);
+            selectedMatches.forEach(item => matchedModels.push(item.key));
+        });
+
+        return {
+            keywords,
+            models: [...new Set(matchedModels)].sort(naturalSort),
+            unmatchedKeywords
+        };
+    }
+
+    function materialSetForModel(model) {
+        return new Set(String(rawData[model] || '').split(',').map(part => part.trim()).filter(Boolean));
+    }
+
+    function compareMaterials(aModel, bModels) {
+        const bPartSets = new Map(bModels.map(model => [model, materialSetForModel(model)]));
+        return [...materialSetForModel(aModel)].sort(naturalSort).map(part => ({
+            part,
+            owners: bModels.filter(model => bPartSets.get(model).has(part))
+        })).filter(item => item.owners.length > 0);
+    }
+
+    function setCompareStatus(html, isError = false) {
+        const status = document.getElementById('compareStatus');
+        status.classList.toggle('is-error', isError);
+        status.innerHTML = html;
+    }
+
+    function clearMaterialComparison() {
+        document.getElementById('inputCompareA').value = '';
+        document.getElementById('inputCompareB').value = '';
+        localStorage.removeItem(storageKeys.compareAInput);
+        localStorage.removeItem(storageKeys.compareBInput);
+        document.getElementById('compareResultArea').innerHTML = '';
+        setCompareStatus('請在 A、B 區塊輸入型號後開始比對。');
+    }
+
+    function runMaterialComparison() {
+        const inputA = document.getElementById('inputCompareA').value.trim();
+        const inputB = document.getElementById('inputCompareB').value.trim();
+        localStorage.setItem(storageKeys.compareAInput, document.getElementById('inputCompareA').value);
+        localStorage.setItem(storageKeys.compareBInput, document.getElementById('inputCompareB').value);
+
+        const resultArea = document.getElementById('compareResultArea');
+        resultArea.innerHTML = '';
+
+        if (!inputA || !inputB) {
+            setCompareStatus('A、B 區塊都必須輸入型號。', true);
+            return;
+        }
+
+        const aMatches = findMatchedModels(inputA);
+        const bMatches = findMatchedModels(inputB);
+
+        if (aMatches.keywords.length !== 1 || aMatches.models.length !== 1) {
+            const detail = aMatches.models.length > 0 ? `目前找到 ${aMatches.models.length} 個型號` : '找不到符合型號';
+            setCompareStatus(`A 區塊必須對應一個完整型號，${detail}。`, true);
+            return;
+        }
+        if (bMatches.models.length === 0) {
+            setCompareStatus('B 區塊找不到符合型號。', true);
+            return;
+        }
+
+        const aModel = aMatches.models[0];
+        const sharedParts = compareMaterials(aModel, bMatches.models);
+
+        const aTag = `<span class="compare-model-tag">${escapeHtml(aModel)}</span>`;
+        const bTags = bMatches.models.map(model => `<span class="compare-model-tag">${escapeHtml(model)}</span>`).join('');
+        const unmatchedText = bMatches.unmatchedKeywords.length > 0
+            ? `<div>未找到：${bMatches.unmatchedKeywords.map(value => escapeHtml(value)).join('、')}</div>`
+            : '';
+
+        setCompareStatus(`<div class="compare-summary-title">找到 ${sharedParts.length} 種共用料</div><div>A 區塊：${aTag}</div><div>B 區塊（${bMatches.models.length} 個型號）：${bTags}</div>${unmatchedText}`);
+
+        if (sharedParts.length === 0) {
+            resultArea.innerHTML = '<div class="compare-summary">A 型號與 B 區塊型號沒有共用料。</div>';
+            return;
+        }
+
+        const categoryMap = {};
+        sharedParts.forEach(item => {
+            const category = item.part.includes('-') ? item.part.split('-')[0] : '其他';
+            if (!categoryMap[category]) categoryMap[category] = [];
+            categoryMap[category].push(item);
+        });
+
+        resultArea.innerHTML = Object.keys(categoryMap).sort(naturalSort).map(category => {
+            const rows = categoryMap[category].map(item => {
+                const fixedLabel = fixedFeederParts.has(item.part) ? '<span class="compare-fixed-label">固定料</span>' : '';
+                const ownerTags = item.owners.map(model => `<span class="compare-model-tag">${escapeHtml(model)}</span>`).join('');
+                return `<div class="compare-part-row"><div class="compare-part-number">${escapeHtml(item.part)}${fixedLabel}</div><div><span class="compare-owner-label">共用的 B 區塊型號</span>${ownerTags}</div></div>`;
+            }).join('');
+            return `<section class="compare-category"><div class="compare-category-title">${escapeHtml(category)}</div>${rows}</section>`;
+        }).join('');
     }
 
     function formatCode(codeStr) {
