@@ -3,6 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        const isIOSSafari = (/iPhone|iPad|iPod/.test(navigator.userAgent) ||
+            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) &&
+            /Safari/.test(navigator.userAgent) &&
+            !/CriOS|FxiOS|EdgiOS|OPiOS/.test(navigator.userAgent);
+        if (isIOSSafari) {
+            document.querySelector('meta[name="viewport"]').content =
+                'width=device-width, initial-scale=1.0, maximum-scale=1.0';
+        }
+    </script>
     <title>PCB用料查詢</title>
     <style>
         body { font-family: "Segoe UI", "Microsoft JhengHei", sans-serif; margin: 25px; background: #f4f7f9; }
