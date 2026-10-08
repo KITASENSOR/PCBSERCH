@@ -465,6 +465,15 @@
             font-weight: bold;
         }
         .compare-input-block textarea { height: 104px; }
+        .compare-model-choice { margin-top: 10px; }
+        .compare-model-choice select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #bdcbd5;
+            border-radius: 6px;
+            background: #fff;
+            font-size: 14px;
+        }
         .compare-action-row {
             display: grid;
             grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -1533,8 +1542,13 @@
     <div class="compare-input-grid">
         <div class="compare-input-block">
             <label for="inputCompareA">A 區塊型號</label>
-            <textarea id="inputCompareA" placeholder="例如 42604A"></textarea>
+            <textarea id="inputCompareA" placeholder="例如 42604A" oninput="resetCompareASelection()"></textarea>
             <div class="hint">使用查BOM合併規則，相同板號的顏色尾碼會視為單一型號。</div>
+            <div id="compareAChoice" class="compare-model-choice" hidden>
+                <label for="selectCompareA">選擇 A 區塊要比對的型號</label>
+                <select id="selectCompareA" onchange="runMaterialComparison()"></select>
+                <div class="hint">搜尋到多組型號時，選取一組即可繼續比對。</div>
+            </div>
         </div>
         <div class="compare-input-block">
             <label for="inputCompareB">B 區塊型號（可多個或輸入系列）</label>
@@ -1924,7 +1938,17 @@
         status.innerText = message;
     }
 
+    function resetCompareASelection() {
+        const select = document.getElementById('selectCompareA');
+        select.innerHTML = '';
+        delete select.dataset.query;
+        document.getElementById('compareAChoice').hidden = true;
+        document.getElementById('compareResultArea').innerHTML = '';
+        setCompareStatus('');
+    }
+
     function clearMaterialComparison() {
+        resetCompareASelection();
         document.getElementById('inputCompareA').value = '';
         document.getElementById('inputCompareB').value = '';
         localStorage.removeItem(storageKeys.compareAInput);
@@ -1950,18 +1974,38 @@
         const aGroups = findMatchedGroups(inputA);
         const bMatches = findMatchedModels(inputB);
 
-        if (aGroups.length !== 1) {
-            const detail = aGroups.length > 0 ? `目前找到 ${aGroups.length} 組` : '找不到符合型號';
-            setCompareStatus(`A 區塊必須對應一個查BOM合併型號，${detail}。`, true);
+        const selectA = document.getElementById('selectCompareA');
+        const previousSelection = selectA.dataset.query === inputA ? selectA.value : '';
+        resetCompareASelection();
+        if (aGroups.length === 0) {
+            setCompareStatus('A 區塊找不到符合型號。', true);
             return;
+        }
+
+        let selectedGroup = aGroups[0];
+        if (aGroups.length > 1) {
+            document.getElementById('compareAChoice').hidden = false;
+            selectA.dataset.query = inputA;
+            selectA.innerHTML = '<option value="">請選擇要比對的型號</option>' + aGroups.map(group => {
+                const label = group.members.length > 1
+                    ? `${group.displayName}（${group.members.join('、')}）`
+                    : group.displayName;
+                return `<option value="${escapeHtml(group.id)}">${escapeHtml(label)}</option>`;
+            }).join('');
+            selectedGroup = aGroups.find(group => group.id === previousSelection);
+            if (!selectedGroup) {
+                setCompareStatus(`A 區塊找到 ${aGroups.length} 組型號，請從 A 區塊的選單選取一組，選取後會自動比對。`);
+                return;
+            }
+            selectA.value = selectedGroup.id;
         }
         if (bMatches.models.length === 0) {
             setCompareStatus('B 區塊找不到符合型號。', true);
             return;
         }
 
-        const sharedParts = compareMaterials(aGroups[0].contentSet, bMatches.models);
-        setCompareStatus(`找到 ${sharedParts.length} 種共用料`);
+        const sharedParts = compareMaterials(selectedGroup.contentSet, bMatches.models);
+        setCompareStatus(`A 區塊：${selectedGroup.displayName}，找到 ${sharedParts.length} 種共用料`);
 
         if (sharedParts.length === 0) {
             return;
