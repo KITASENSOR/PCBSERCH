@@ -1871,6 +1871,40 @@
     initInputStorage();
     fetchCSV();
 
+    function pasteReportPartToBOM(partNo) {
+        if (typeof partNo !== 'string' || !partNo.trim()) return;
+        const input = document.getElementById('inputSearch');
+        const nextText = partNo.trim();
+        if (input.value.trim()) {
+            const shouldClear = confirm('BOM 查詢已有輸入內容，是否清空後貼上？按取消會附加在原內容後面。');
+            input.value = shouldClear ? nextText : `${input.value.trim()}\n${nextText}`;
+        } else {
+            input.value = nextText;
+        }
+        try {
+            localStorage.setItem(storageKeys.bomInput, input.value);
+        } catch (error) {
+            // 瀏覽器無法保存時，仍可在目前頁面查詢。
+        }
+        toggleView('BOM');
+    }
+
+    window.addEventListener('message', (event) => {
+        const reportFrame = document.querySelector('#viewREPORT iframe');
+        if (event.origin !== 'https://wip-progress-page.kitasensorpd.workers.dev' ||
+            !reportFrame || event.source !== reportFrame.contentWindow ||
+            event.data?.type !== 'wip-open-bom-V1') return;
+        pasteReportPartToBOM(event.data.partNo);
+    });
+
+    const reportBOMUrl = new URL(window.location.href);
+    const reportBOMPart = reportBOMUrl.searchParams.get('bomPart');
+    if (reportBOMPart) {
+        pasteReportPartToBOM(reportBOMPart);
+        reportBOMUrl.searchParams.delete('bomPart');
+        window.history.replaceState(window.history.state, '', reportBOMUrl.href);
+    }
+
     function clearBOMSearch() {
         document.getElementById('inputSearch').value = '';
         localStorage.removeItem(storageKeys.bomInput);
@@ -3281,16 +3315,7 @@
     function pastePickingToBOM() {
         const selected = [...selectedPickingItems.values()];
         if (selected.length === 0) { setStatusBox('pickingStatus', '\u8acb\u5148\u52a0\u5165\u8981\u8cbc\u5230 BOM \u67e5\u8a62\u7684\u578b\u865f', 'warn'); return; }
-        const input = document.getElementById('inputSearch');
-        const nextText = [...new Set(selected.map(item => item.part_no))].join('\n');
-        if (input.value.trim()) {
-            const shouldClear = confirm('BOM \u67e5\u8a62\u5df2\u6709\u8f38\u5165\u5167\u5bb9\uff0c\u662f\u5426\u6e05\u7a7a\u5f8c\u8cbc\u4e0a\uff1f\u6309\u53d6\u6d88\u6703\u9644\u52a0\u5728\u539f\u5167\u5bb9\u5f8c\u9762\u3002');
-            input.value = shouldClear ? nextText : `${input.value.trim()}\n${nextText}`;
-        } else {
-            input.value = nextText;
-        }
-        localStorage.setItem(storageKeys.bomInput, input.value);
-        toggleView('BOM');
+        pasteReportPartToBOM([...new Set(selected.map(item => item.part_no))].join('\n'));
     }
 
     function pastePickingToDischarge() {
