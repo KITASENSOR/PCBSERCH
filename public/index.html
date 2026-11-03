@@ -1571,12 +1571,9 @@
     <div class="compare-input-grid">
         <div class="compare-input-block">
             <label for="inputCompareA">A 區塊型號</label>
-            <textarea id="inputCompareA" placeholder="例如 42604A" oninput="resetCompareASelection()"></textarea>
+            <textarea id="inputCompareA" placeholder="可輸入多個型號，以換行、空白或逗號分隔" oninput="resetCompareASelection()"></textarea>
             <div class="hint">使用查BOM合併規則，相同板號的顏色尾碼會視為單一型號。</div>
-            <div id="compareAChoice" class="compare-model-choice" hidden>
-                <label for="selectCompareA">選擇 A 區塊要比對的型號</label>
-                <select id="selectCompareA" onchange="runMaterialComparison()"></select>
-                <div class="hint">搜尋到多組型號時，選取一組即可繼續比對。</div>
+
             </div>
         </div>
         <div class="compare-input-block">
@@ -2029,6 +2026,19 @@
         }
     }
 
+    function pasteReportToCompare(partNo, target) {
+        if (typeof partNo !== 'string' || !partNo.trim() || !['A', 'B'].includes(target)) return;
+        const input = document.getElementById('inputCompare' + target);
+        const nextText = partNo.trim();
+        if (input.value.trim()) {
+            const clear = confirm('比對 ' + target + ' 區塊已有內容，是否清空後貼上？按取消會附加在原內容後面。');
+            input.value = clear ? nextText : input.value.trim() + '\n' + nextText;
+        } else input.value = nextText;
+        localStorage.setItem(target === 'A' ? storageKeys.compareAInput : storageKeys.compareBInput, input.value);
+        resetCompareASelection();
+        toggleView('COMPARE');
+    }
+
     function pasteReportPartToBOM(partNo) {
         if (typeof partNo !== 'string' || !partNo.trim()) return;
         const input = document.getElementById('inputSearch');
@@ -2051,14 +2061,18 @@
         const reportFrame = document.querySelector('#viewREPORT iframe');
         if (event.origin !== 'https://wip-progress-page.kitasensorpd.workers.dev' ||
             !reportFrame || event.source !== reportFrame.contentWindow ||
-            event.data?.type !== 'wip-open-bom-V1') return;
-        pasteReportPartToBOM(event.data.partNo);
+            !['wip-open-bom-V1', 'wip-open-compare-V1'].includes(event.data?.type)) return;
+        if (event.data.type === 'wip-open-compare-V1') pasteReportToCompare(event.data.partNo, event.data.target);
+        else pasteReportPartToBOM(event.data.partNo);
     });
 
     const reportBOMUrl = new URL(window.location.href);
     const reportBOMPart = reportBOMUrl.searchParams.get('bomPart');
     if (reportBOMPart) {
-        pasteReportPartToBOM(reportBOMPart);
+        const target = reportBOMUrl.searchParams.get('compareTarget');
+        if (['A', 'B'].includes(target)) pasteReportToCompare(reportBOMPart, target);
+        else pasteReportPartToBOM(reportBOMPart);
+        reportBOMUrl.searchParams.delete('compareTarget');
         reportBOMUrl.searchParams.delete('bomPart');
         window.history.replaceState(window.history.state, '', reportBOMUrl.href);
     }
@@ -2131,10 +2145,6 @@
     }
 
     function resetCompareASelection() {
-        const select = document.getElementById('selectCompareA');
-        select.innerHTML = '';
-        delete select.dataset.query;
-        document.getElementById('compareAChoice').hidden = true;
         document.getElementById('compareResultArea').innerHTML = '';
         setCompareStatus('');
     }
@@ -2163,41 +2173,22 @@
             return;
         }
 
-        const aGroups = findMatchedGroups(inputA);
+        const aMatches = findMatchedModels(inputA);
         const bMatches = findMatchedModels(inputB);
 
-        const selectA = document.getElementById('selectCompareA');
-        const previousSelection = selectA.dataset.query === inputA ? selectA.value : '';
         resetCompareASelection();
-        if (aGroups.length === 0) {
+        if (aMatches.models.length === 0) {
             setCompareStatus('A 區塊找不到符合型號。', true);
             return;
         }
-
-        let selectedGroup = aGroups[0];
-        if (aGroups.length > 1) {
-            document.getElementById('compareAChoice').hidden = false;
-            selectA.dataset.query = inputA;
-            selectA.innerHTML = '<option value="">請選擇要比對的型號</option>' + aGroups.map(group => {
-                const label = group.members.length > 1
-                    ? `${group.displayName}（${group.members.join('、')}）`
-                    : group.displayName;
-                return `<option value="${escapeHtml(group.id)}">${escapeHtml(label)}</option>`;
-            }).join('');
-            selectedGroup = aGroups.find(group => group.id === previousSelection);
-            if (!selectedGroup) {
-                setCompareStatus(`A 區塊找到 ${aGroups.length} 組型號，請從 A 區塊的選單選取一組，選取後會自動比對。`);
-                return;
-            }
-            selectA.value = selectedGroup.id;
-        }
+        const aParts = new Set(aMatches.models.flatMap(model => [...materialSetForModel(model)]));
         if (bMatches.models.length === 0) {
             setCompareStatus('B 區塊找不到符合型號。', true);
             return;
         }
 
-        const sharedParts = compareMaterials(selectedGroup.contentSet, bMatches.models);
-        setCompareStatus(`A 區塊：${selectedGroup.displayName}，找到 ${sharedParts.length} 種共用料`);
+        const sharedParts = compareMaterials(aParts, bMatches.models);
+        setCompareStatus(`找到 ${sharedParts.length} 種共用料`);
 
         if (sharedParts.length === 0) {
             return;
