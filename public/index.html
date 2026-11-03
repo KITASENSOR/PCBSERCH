@@ -1491,7 +1491,8 @@
 
         .header-buttons { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; }
         .header-buttons .switch-btn { padding-left: 3px !important; padding-right: 3px !important; }
-        #inputReverse { font-size: 16px; }
+        #viewREVERSE .child-item { background: transparent; color: #333; font: inherit; width: auto; box-shadow: none; }
+        #viewREVERSE .child-item[aria-pressed="true"] { outline: 2px solid #555; }
         #reverseResults table { width: 100%; border-collapse: collapse; }
         #reverseResults th, #reverseResults td { padding: 10px; border-bottom: 1px solid #dde5e8; text-align: left; }
     </style>
@@ -1522,12 +1523,10 @@
 
 <div class="container" id="viewREVERSE" style="display: none;">
     <script>renderHeader('反查', 'REVERSE');</script>
-    <form class="query-entry-row" onsubmit="event.preventDefault(); runReverseQuery();">
-        <input id="inputReverse" aria-label="子件料號" placeholder="輸入完整子件料號" required>
-        <button id="btnReverse" type="submit">搜尋</button>
-    </form>
+    <button id="btnReverse" type="button" onclick="loadReverseMaterials()">重新整理</button>
     <div id="reverseStatus" role="status" aria-live="polite"></div>
-    <div id="reverseResults"></div>
+    <div id="reverseResults" aria-live="polite"></div>
+    <div id="reverseMaterials"></div>
 </div>
 
 <div class="container" id="viewBOM">
@@ -1831,6 +1830,7 @@
 
     function toggleView(viewType) {
         document.getElementById('viewREVERSE').style.display = (viewType === 'REVERSE') ? 'block' : 'none';
+        if (viewType === 'REVERSE') loadReverseMaterials();
         document.getElementById('viewBOM').style.display = (viewType === 'BOM') ? 'block' : 'none';
         document.getElementById('viewCOMPARE').style.display = (viewType === 'COMPARE') ? 'block' : 'none';
         document.getElementById('viewDISCHARGE').style.display = (viewType === 'DISCHARGE') ? 'block' : 'none';
@@ -1917,42 +1917,84 @@
         else pending.resolve(event.data.rows);
     });
 
-    function findReverseParents(childPart, rows) {
-        const query = childPart.trim().toUpperCase();
-        if (!query) return [];
-        const parents = Object.entries(rawData).filter(([, children]) =>
-            String(children).split(',').some(part => part.trim().toUpperCase() === query)
-        ).map(([parent]) => parent);
-        return rows.filter(row => typeof row.part_no === 'string' &&
-            parents.some(parent => checkSmartMatch(parent, row.part_no) === 'EXACT'));
-    }
-
     function reverseDate(value) {
         const text = String(value || '').trim();
         const match = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
         return match ? Number(match[2]) + '/' + Number(match[3]) : text || '—';
     }
 
-    async function runReverseQuery() {
-        const input = document.getElementById('inputReverse').value.trim();
+    let reverseMaterialItems = [];
+
+    function buildReverseMaterials(rows, bom, fixedParts) {
+        const fixed = new Set(Array.from(fixedParts, part => String(part).trim().toUpperCase()));
+        const items = new Map();
+        for (const row of rows) {
+            if (typeof row.part_no !== 'string') continue;
+            const rowItems = new Set();
+            for (const [parent, children] of Object.entries(bom)) {
+                if (checkSmartMatch(parent, row.part_no) !== 'EXACT') continue;
+                for (const part of String(children).split(',')) {
+                    const fullPart = part.trim();
+                    if (!fullPart || fixed.has(fullPart.toUpperCase())) continue;
+                    const [prefix, ...rest] = fullPart.split('-');
+                    const code = rest.length ? formatCode(rest.join('-')) : fullPart;
+                    const key = JSON.stringify([prefix.toUpperCase(), code.toUpperCase()]);
+                    if (!items.has(key)) items.set(key, { prefix, code, parts: new Set(), rows: [] });
+                    const item = items.get(key);
+                    item.parts.add(fullPart);
+                    if (!rowItems.has(key)) item.rows.push(row);
+                    rowItems.add(key);
+                }
+            }
+        }
+        return Array.from(items.values()).sort((a, b) =>
+            a.prefix.localeCompare(b.prefix) || naturalSort(a.code, b.code));
+    }
+
+    function showReverseParents(index) {
+        const item = reverseMaterialItems[index];
+        if (!item) return;
+        const result = document.getElementById('reverseResults');
+        result.innerHTML = '<h3>' + escapeHtml(Array.from(item.parts).join('、')) + '</h3>' +
+            '<table><thead><tr><th scope="col">母件</th><th scope="col">上線日</th></tr></thead><tbody>' +
+            item.rows.map(row => '<tr><td>' + escapeHtml(row.part_no) + '</td><td>' +
+                escapeHtml(reverseDate(row.start_date)) + '</td></tr>').join('') + '</tbody></table>';
+        document.querySelectorAll('#reverseMaterials button').forEach((button, i) => {
+            button.setAttribute('aria-pressed', String(i === index));
+        });
+        result.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+
+    function renderReverseMaterials() {
+        const groups = new Map();
+        reverseMaterialItems.forEach((item, index) => {
+            if (!groups.has(item.prefix)) groups.set(item.prefix, []);
+            groups.get(item.prefix).push('<button type="button" class="child-item" aria-pressed="false" title="' +
+                escapeHtml(Array.from(item.parts).join('、')) + '" onclick="showReverseParents(' + index + ')">' +
+                escapeHtml(item.code) + '</button>');
+        });
+        document.getElementById('reverseMaterials').innerHTML = reverseMaterialItems.length ?
+            '<table><thead><tr><th style="width: 1%">類別</th><th>子件明細</th></tr></thead><tbody>' +
+            Array.from(groups, ([prefix, buttons]) => '<tr><td class="prefix-td">' + escapeHtml(prefix) +
+                '</td><td>' + buttons.join('') + '</td></tr>').join('') + '</tbody></table>' : '';
+    }
+
+    async function loadReverseMaterials() {
         const status = document.getElementById('reverseStatus');
         const result = document.getElementById('reverseResults');
         const button = document.getElementById('btnReverse');
         if (button.disabled) return;
         result.replaceChildren();
-        if (!input) { status.textContent = '請輸入完整子件料號。'; return; }
+        document.getElementById('reverseMaterials').replaceChildren();
+        reverseMaterialItems = [];
         button.disabled = true;
-        status.textContent = '查詢中…';
+        status.textContent = '載入中…';
         try {
             const [bomLoaded, rows] = await Promise.all([fetchCSV(), requestReportSchedule()]);
             if (!bomLoaded) throw new Error('BOM 載入失敗，請稍後再試。');
-            const matches = findReverseParents(input, rows);
-            status.textContent = matches.length ? '' : '在製排程中沒有使用此子件的母件。';
-            if (matches.length) {
-                result.innerHTML = '<table><thead><tr><th scope="col">母件</th><th scope="col">上線日</th></tr></thead><tbody>' +
-                    matches.map(row => '<tr><td>' + escapeHtml(row.part_no) + '</td><td>' +
-                        escapeHtml(reverseDate(row.start_date)) + '</td></tr>').join('') + '</tbody></table>';
-            }
+            reverseMaterialItems = buildReverseMaterials(rows, rawData, fixedFeederParts);
+            status.textContent = reverseMaterialItems.length ? '' : '在製排程沒有可顯示的非固定料。';
+            renderReverseMaterials();
         } catch (error) {
             status.textContent = error.message || '查詢失敗，請稍後再試。';
         } finally {
