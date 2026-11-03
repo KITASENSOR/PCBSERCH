@@ -1064,6 +1064,7 @@
             min-width: 0;
         }
         #viewPICKING .picking-top-actions {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
             display: grid;
             grid-template-columns: repeat(5, minmax(0, 1fr));
             gap: 6px;
@@ -1715,9 +1716,6 @@
     <div class="work-panel">
         <div class="btn-group picking-top-actions">
             <button type="button" id="btnPickingWarehouse" class="warehouse-btn" onclick="showScheduledWarehouseMaterials()">&#20489;&#31649;</button>
-            <button type="button" class="filter-btn" onclick="pastePickingToBOM()">&#26597;BOM</button>
-            <button type="button" class="switch-discharge-btn" onclick="pastePickingToDischarge()">&#19979;&#26009;</button>
-            <button type="button" onclick="pastePickingToCompare()">比對</button>
             <button type="button" class="clear-btn" onclick="clearPickingSelection()">&#28165;&#38500;</button>
         </div>
         <div id="pickingStatus" class="status-box"></div>
@@ -1728,16 +1726,9 @@
             <h3>&#25490;&#31243;&#21015;&#34920;</h3>
             <div class="schedule-panel-actions">
                 <button type="button" id="scheduleCalculateBtn" class="schedule-selection-action" onclick="calculatePickingMaterials()" hidden>計算</button>
-                <button type="button" id="scheduleCompleteBtn" class="schedule-selection-action filter-btn" onclick="completeSelectedScheduleItems()" hidden>完工</button>
                 <button type="button" id="scheduleRefreshBtn" class="schedule-icon-btn" onclick="loadScheduleFromDatabase()" title="重新整理排程" aria-label="重新整理排程"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5"></path><path d="M4 18v-5h5"></path><path d="M6.1 9a7 7 0 0 1 11.5-2.6L20 9"></path><path d="M4 15l2.4 2.6A7 7 0 0 0 17.9 15"></path></svg></button>
                 <button type="button" id="scheduleCollapseBtn" class="schedule-icon-btn" onclick="toggleScheduleListCollapsed()" title="收闔排程列表" aria-label="收闔排程列表">▲</button>
             </div>
-        </div>
-        <div id="scheduleFilterTabs" class="schedule-filter-tabs" role="group" aria-label="排程篩選">
-            <button type="button" id="scheduleFilterAll" onclick="setScheduleFilter('all')">全部</button>
-            <button type="button" id="scheduleFilterScheduled" class="active" onclick="setScheduleFilter('scheduled')">已排</button>
-            <button type="button" id="scheduleFilterUnscheduled" onclick="setScheduleFilter('unscheduled')">未排</button>
-            <button type="button" id="scheduleFilterDone" onclick="setScheduleFilter('done')">完工</button>
         </div>
         <div id="pickingScheduleList" class="schedule-list"></div>
     </div>
@@ -2709,7 +2700,7 @@
     let warehouseView = false;
     let pickingComboKey = '';
     let pickingNotes = {};
-    let scheduleFilterMode = 'scheduled';
+    let scheduleFilterMode = 'all';
     let scheduleListCollapsed = false;
     const pickingNoteSaveTimers = {};
     const statusToastTimers = {};
@@ -3011,24 +3002,49 @@
         }
     }
 
+    let pickingScheduleLoadSeq = 0;
+
+    function reportRowsToPickingGroups(rows) {
+        const groups = [];
+        for (const row of rows) {
+            if (typeof row.work_order !== 'string' || !row.work_order.trim() ||
+                !Object.prototype.hasOwnProperty.call(row, 'punch_ok') ||
+                !Number.isFinite(Number(row.total_qty))) {
+                throw new Error('回報排程欄位不完整，請重新整理整個頁面後再試。');
+            }
+            const done = row.punch_ok === true || row.punch_ok === 1 ||
+                ['OK', 'Y', '1'].includes(String(row.punch_ok).trim().toUpperCase()) ||
+                String(row.punch_ok).trim().toUpperCase().startsWith('OK-');
+            if (done) continue;
+            const date = String(row.start_date || '');
+            const item = { wo_id: row.work_order, part_no: row.part_no,
+                plan_qty: Number(row.total_qty), start_date: date };
+            let group = groups[groups.length - 1];
+            if (!group || group.date !== date) {
+                group = { date, items: [] };
+                groups.push(group);
+            }
+            group.items.push(item);
+        }
+        return groups;
+    }
+
     async function loadScheduleFromDatabase() {
-        clearStatusBox('pickingStatus');
+        const seq = ++pickingScheduleLoadSeq;
+        ++pickingCalcSeq;
+        scheduleGroups = [];
+        completedScheduleGroups = [];
+        clearPickingSelection();
+        setStatusBox('pickingStatus', '回報排程讀取中…', 'warn');
         try {
-            const response = await fetch(`/api/schedule?t=${Date.now()}`);
-            const data = await response.json();
-            if (!response.ok || data.error) throw new Error(data.error || '\u6392\u7a0b\u8b80\u53d6\u5931\u6557');
-            scheduleGroups = data.groups || [];
-            completedScheduleGroups = data.completed_groups || [];
-            selectedPickingItems.clear();
-            pickingAllItems = [];
-            pickingComboKey = '';
-            pickingNotes = {};
-            warehouseView = false;
+            const rows = await requestReportSchedule();
+            if (seq !== pickingScheduleLoadSeq) return;
+            scheduleGroups = reportRowsToPickingGroups(rows);
             renderScheduleGroups();
-            document.getElementById('pickingResultArea').innerHTML = '';
-            setStatusBox('pickingStatus', `\u6392\u7a0b\u8b80\u53d6\u5b8c\u6210\uff1a${data.count || 0} \u7b46\u5de5\u55AE，完工 ${data.completed_count || 0} \u7b46`, 'ok');
+            setStatusBox('pickingStatus', `回報排程讀取完成：${countScheduleItems(scheduleGroups)} 筆未打件工單`, 'ok');
         } catch (error) {
-            setStatusBox('pickingStatus', error.message || '\u6392\u7a0b\u8b80\u53d6\u5931\u6557', 'error');
+            if (seq !== pickingScheduleLoadSeq) return;
+            setStatusBox('pickingStatus', error.message || '回報排程讀取失敗', 'error');
             renderScheduleGroups();
         }
     }
@@ -3138,9 +3154,6 @@
     }
 
     function visibleScheduleGroups() {
-        if (scheduleFilterMode === 'scheduled') return scheduleGroups.filter(isScheduledGroup);
-        if (scheduleFilterMode === 'unscheduled') return scheduleGroups.filter(group => !isScheduledGroup(group));
-        if (scheduleFilterMode === 'done') return doneScheduleGroups();
         return scheduleGroups;
     }
 
@@ -3205,7 +3218,7 @@
         renderScheduleCollapseState();
         renderScheduleSelectionActions();
         if (scheduleGroups.length === 0 && completedScheduleGroups.length === 0) {
-            list.innerHTML = '<div class="hint">\u5c1a\u672a\u4e0a\u50b3\u6392\u7a0b\u3002</div>';
+            list.innerHTML = '<div class="hint">目前沒有未打件的回報排程。</div>';
             return;
         }
         const groups = visibleScheduleGroups();
@@ -3249,29 +3262,6 @@
         document.getElementById('pickingResultArea').innerHTML = '';
         clearStatusBox('pickingStatus');
         renderScheduleGroups();
-    }
-
-    async function completeSelectedScheduleItems() {
-        const woIds = [...selectedPickingItems.keys()];
-        if (woIds.length === 0) {
-            setStatusBox('pickingStatus', '請先選擇要完工的排程。', 'warn');
-            return;
-        }
-        if (!confirm(`即將將 ${woIds.length} 筆排程標記為完工，並移到完工列表。確定完工？`)) return;
-        try {
-            setStatusBox('pickingStatus', '排程完工中，請稍候...', 'warn');
-            const response = await fetch('/api/schedule/complete', {
-                method: 'POST',
-                headers: { 'content-type': 'application/json; charset=utf-8' },
-                body: JSON.stringify({ wo_ids: woIds })
-            });
-            const data = await response.json();
-            if (!response.ok || data.error) throw new Error(data.error || '完工失敗');
-            await loadScheduleFromDatabase();
-            setStatusBox('pickingStatus', `完工完成：排程 ${data.completed_schedule || 0} 筆`, 'ok');
-        } catch (error) {
-            setStatusBox('pickingStatus', error.message || '完工失敗', 'error');
-        }
     }
 
     function clearPickingSelection() {
@@ -3445,14 +3435,13 @@
 
     function getScheduledItems() {
         return scheduleGroups
-            .filter(isScheduledGroup)
             .flatMap(group => group.items || []);
     }
 
     function showScheduledWarehouseMaterials() {
         const items = getScheduledItems();
         if (items.length === 0) {
-            setStatusBox('pickingStatus', '目前沒有已排程的工單。', 'warn');
+            setStatusBox('pickingStatus', '目前沒有未打件的回報排程。', 'warn');
             return;
         }
         warehouseView = true;
