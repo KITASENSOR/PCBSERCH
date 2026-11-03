@@ -1495,6 +1495,7 @@
         #viewREVERSE .child-item[aria-pressed="true"] { outline: 2px solid #555; }
         #reverseResults table { width: 100%; border-collapse: collapse; }
         #reverseResults th, #reverseResults td { padding: 10px; border-bottom: 1px solid #dde5e8; text-align: left; }
+        #reverseResults th:first-child, #reverseResults td:first-child { width: 1%; white-space: nowrap; }
         #reverseDialog { width: min(560px, calc(100% - 32px)); max-height: 80vh; max-height: 80dvh; padding: 0; border: 0; border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,.25); }
         #reverseDialog[open] { display: flex; flex-direction: column; }
         #reverseDialog::backdrop { background: rgba(0,0,0,.45); }
@@ -1969,9 +1970,9 @@
         if (!item) return;
         const result = document.getElementById('reverseResults');
         document.getElementById('reverseDialogTitle').textContent = Array.from(item.parts).join('、');
-        result.innerHTML = '<table><thead><tr><th scope="col">母件</th><th scope="col">上線日</th></tr></thead><tbody>' +
-            item.rows.map(row => '<tr><td>' + escapeHtml(row.part_no) + '</td><td>' +
-                escapeHtml(reverseDate(row.start_date)) + '</td></tr>').join('') + '</tbody></table>';
+        result.innerHTML = '<table><thead><tr><th scope="col">上線日</th><th scope="col">型號</th></tr></thead><tbody>' +
+            item.rows.map(row => '<tr><td>' + escapeHtml(reverseDate(row.start_date)) + '</td><td>' +
+                escapeHtml(row.part_no) + '</td></tr>').join('') + '</tbody></table>';
         document.querySelectorAll('#reverseMaterials button').forEach((button, i) => {
             button.setAttribute('aria-pressed', String(i === index));
         });
