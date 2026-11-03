@@ -1593,15 +1593,8 @@
 
 <div class="container" id="viewDISCHARGE" style="display: none;">
     <script>renderHeader('下料', 'DISCHARGE');</script>
-    <p>輸入要進行下料分析的母件編號，可多個:</p>
-    <div class="query-entry-row">
-        <textarea id="inputDischarge" placeholder="例如輸入 PC-0427-4X 或 42242"></textarea>
-        <div class="query-entry-actions">
-            <button id="btnDischarge" onclick="runDischargeQuery()" disabled>搜尋</button>
-            <button class="clear-btn" onclick="clearDischarge()">清除</button>
-        </div>
-    </div>
-    <div class="hint">* 點擊「進行中」母件可標記為「已完成」/ 點擊「已完成」母件可移回 / 右側 × 可移除</div>
+    <button id="btnDischargeReload" type="button" onclick="loadDischargeSchedule()">重新整理</button>
+    <div id="dischargeLoadStatus" role="status" aria-live="polite"></div>
 
     <div class="btn-group discharge-action-row">
         <button class="filter-btn fixed-btn filter-state-neutral" id="btnDischargeFixedFilter" onclick="toggleDischargeFixedFilter()" style="display:none;">固定料</button>
@@ -1825,7 +1818,7 @@
         saveInputToStorage('inputSearch', storageKeys.bomInput);
         saveInputToStorage('inputCompareA', storageKeys.compareAInput);
         saveInputToStorage('inputCompareB', storageKeys.compareBInput);
-        saveInputToStorage('inputDischarge', storageKeys.dischargeInput);
+
     }
 
     function toggleView(viewType) {
@@ -1842,6 +1835,7 @@
         if (viewType === 'MACHINE_TIME') {
             calculateMachineTime();
         }
+        if (viewType === 'DISCHARGE') loadDischargeSchedule();
         if (viewType === 'PICKING') {
             loadScheduleFromDatabase();
         }
@@ -1875,7 +1869,7 @@
             document.getElementById('matchStatus').innerText = `資料載入完成。BOM ${bomCount} 筆，固定料 ${fixedCount} 筆。`;
             document.getElementById('btnSearch').disabled = false;
             document.getElementById('btnCompare').disabled = false;
-            document.getElementById('btnDischarge').disabled = false;
+
             setCompareStatus('');
             return true;
         } catch (error) {
@@ -2429,64 +2423,49 @@
         if (target) renderView([target]);
     }
 
-    function clearDischarge() {
-        document.getElementById('inputDischarge').value = '';
-        localStorage.removeItem(storageKeys.dischargeInput);
+    function reportPunchCompleted(value) {
+        const text = String(value ?? '').trim().toUpperCase();
+        return value === true || value === 1 || ['OK', 'Y', '1'].includes(text) || text.startsWith('OK-');
+    }
 
+    function buildDischargeSchedule(rows, bom) {
+        const missing = [];
+        const groups = rows.map((row, index) => {
+            if (!Object.prototype.hasOwnProperty.call(row, 'punch_ok') || !row.work_order || !row.part_no)
+                throw new Error('回報排程欄位不完整，請重新整理整個頁面後再試。');
+            const models = Object.keys(bom).filter(model => checkSmartMatch(model, row.part_no) === 'EXACT');
+            if (!models.length || models.some(model => !String(bom[model] || '').trim())) missing.push(row.part_no);
+            const parts = new Set(models.flatMap(model => String(bom[model] || '').split(',').map(part => part.trim()).filter(Boolean)));
+            return { id: row.work_order, displayName: row.part_no, start_date: row.start_date,
+                content: [...parts].join(','), color: palette[index % palette.length], completed: reportPunchCompleted(row.punch_ok) };
+        });
+        if (missing.length) throw new Error('以下回報型號缺少 BOM，暫停下料判斷：' + [...new Set(missing)].join('、'));
+        return groups;
+    }
+
+    async function loadDischargeSchedule() {
+        const button = document.getElementById('btnDischargeReload');
+        if (button.disabled) return;
+        button.disabled = true;
+        const status = document.getElementById('dischargeLoadStatus');
         dischargeGroups = [];
         dischargeFixedFilterMode = 0;
         dischargeDimmedParts.clear();
         updateDischargeUI();
-    }
-
-    function runDischargeQuery() {
-        const input = document.getElementById('inputDischarge').value.trim();
-        localStorage.setItem(storageKeys.dischargeInput, document.getElementById('inputDischarge').value);
-
-        if (!input) return;
-        
-        const rawGroups = findMatchedGroups(input);
-        
-        if (rawGroups.length === 0) {
-            const stickyHeader = document.getElementById('dischargeStickyHeader');
-            const statusDiv = document.getElementById('dischargeStatus');
-            stickyHeader.style.display = 'block';
-
-            if (dischargeGroups.length === 0) {
-                statusDiv.innerHTML = '<span style="color:#e74c3c;">查無此核心編號。</span>';
-            } else {
-                statusDiv.innerHTML = '<span style="color:#e74c3c;">新查詢無比對結果，維持原清單。</span>';
-                setTimeout(() => updateDischargeUI(), 1500);
-            }
-            return;
+        status.textContent = '回報排程讀取中…';
+        try {
+            const [loaded, rows] = await Promise.all([fetchCSV(), requestReportSchedule()]);
+            if (!loaded) throw new Error('BOM 載入失敗，請稍後再試。');
+            dischargeGroups = buildDischargeSchedule(rows, rawData);
+            updateDischargeUI();
+            status.textContent = rows.length ? '' : '回報在製清單目前沒有工單。';
+        } catch (error) {
+            dischargeGroups = [];
+            updateDischargeUI();
+            status.textContent = error.message || '回報排程讀取失敗。';
+        } finally {
+            button.disabled = false;
         }
-
-        const existingIds = new Set(dischargeGroups.map(g => g.id));
-        rawGroups.forEach(g => {
-            if (!existingIds.has(g.id)) {
-                dischargeGroups.push({
-                    ...g,
-                    content: Array.from(g.contentSet).join(','),
-                    color: palette[dischargeGroups.length % palette.length],
-                    completed: false
-                });
-            }
-        });
-
-        updateDischargeUI();
-    }
-
-    function toggleGroupComplete(groupId, event) {
-        if (event) event.stopPropagation();
-        const g = dischargeGroups.find(g => g.id === groupId);
-        if (g) g.completed = !g.completed;
-        updateDischargeUI();
-    }
-
-    function removeDischargeGroup(groupId, event) {
-        event.stopPropagation();
-        dischargeGroups = dischargeGroups.filter(g => g.id !== groupId);
-        updateDischargeUI();
     }
 
     function toggleDischargeFixedFilter() {
@@ -2540,13 +2519,13 @@
         let statusHtml = '<div class="discharge-list-container">';
 
         statusHtml += `<div class="discharge-list-col discharge-list-col-active">
-            <div class="discharge-list-col-title">🚀 進行中 (${activeGroups.length})</div>`;
+            <div class="discharge-list-col-title">未完成 (${activeGroups.length})</div>`;
 
         if (activeGroups.length === 0) {
-            statusHtml += '<div class="discharge-list-col-empty">— 無進行中母件 —</div>';
+            statusHtml += '<div class="discharge-list-col-empty">— 無未完成母件 —</div>';
         } else {
             activeGroups.forEach(g => {
-                statusHtml += `<span class="discharge-mini-tag tag-active" style="background-color: ${g.color};" title="點擊移到已完成" onclick="toggleGroupComplete('${g.id}', event)">${g.displayName}<span class="move-icon">→</span><span class="del-btn" title="移除" onclick="removeDischargeGroup('${g.id}', event)">×</span></span>`;
+                statusHtml += `<span class="discharge-mini-tag tag-active" style="background-color: ${g.color};" title="${escapeHtml(g.id)} / ${escapeHtml(formatScheduleDate(g.start_date))}">${escapeHtml(g.displayName)}</span>`;
             });
         }
 
@@ -2559,7 +2538,7 @@
             statusHtml += '<div class="discharge-list-col-empty">— 無已完成母件 —</div>';
         } else {
             doneGroups.forEach(g => {
-                statusHtml += `<span class="discharge-mini-tag tag-done" style="background-color: ${g.color};" title="點擊移回進行中" onclick="toggleGroupComplete('${g.id}', event)"><span class="move-icon">←</span>${g.displayName}<span class="del-btn" title="移除" onclick="removeDischargeGroup('${g.id}', event)">×</span></span>`;
+                statusHtml += `<span class="discharge-mini-tag tag-done" style="background-color: ${g.color};" title="${escapeHtml(g.id)} / ${escapeHtml(formatScheduleDate(g.start_date))}">${escapeHtml(g.displayName)}</span>`;
             });
         }
 
@@ -2569,7 +2548,7 @@
 
         if (doneGroups.length === 0) {
             countDiv.innerHTML = '';
-            resultArea.innerHTML = '<div style="text-align:center; padding:30px 15px; color:#888; background:#f8f9fa; border-radius:8px; margin-top:15px; font-size:15px; line-height:1.8;">💡 請點擊上方「<b style="color:#2c3e50;">🚀 進行中</b>」區的母件標籤，將已生產完成的母件移到「<b style="color:#27ae60;">✅ 已完成</b>」區<br>系統會自動分析出可下料的物料</div>';
+            resultArea.innerHTML = '<div class="hint">回報排程尚無已勾選打件的工單，目前沒有可下料物料。</div>';
             return;
         }
 
@@ -3452,21 +3431,6 @@
         const selected = [...selectedPickingItems.values()];
         if (selected.length === 0) { setStatusBox('pickingStatus', '\u8acb\u5148\u52a0\u5165\u8981\u8cbc\u5230 BOM \u67e5\u8a62\u7684\u578b\u865f', 'warn'); return; }
         pasteReportPartToBOM([...new Set(selected.map(item => item.part_no))].join('\n'));
-    }
-
-    function pastePickingToDischarge() {
-        const selected = [...selectedPickingItems.values()];
-        if (selected.length === 0) { setStatusBox('pickingStatus', '\u8acb\u5148\u52a0\u5165\u8981\u8cbc\u5230\u4e0b\u6599\u9801\u9762\u7684\u578b\u865f', 'warn'); return; }
-        const input = document.getElementById('inputDischarge');
-        const nextText = [...new Set(selected.map(item => item.part_no))].join('\n');
-        if (input.value.trim()) {
-            const shouldClear = confirm('\u4e0b\u6599\u9801\u9762\u5df2\u6709\u8f38\u5165\u5167\u5bb9\uff0c\u662f\u5426\u6e05\u7a7a\u5f8c\u8cbc\u4e0a\uff1f\u6309\u53d6\u6d88\u6703\u9644\u52a0\u5728\u539f\u5167\u5bb9\u5f8c\u9762\u3002');
-            input.value = shouldClear ? nextText : `${input.value.trim()}\n${nextText}`;
-        } else {
-            input.value = nextText;
-        }
-        localStorage.setItem(storageKeys.dischargeInput, input.value);
-        toggleView('DISCHARGE');
     }
 
     function pastePickingToCompare() {
