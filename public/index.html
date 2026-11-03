@@ -1489,6 +1489,11 @@
             background: #fff;
         }
 
+        .header-buttons { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; }
+        .header-buttons .switch-btn { padding-left: 3px !important; padding-right: 3px !important; }
+        #inputReverse { font-size: 16px; }
+        #reverseResults table { width: 100%; border-collapse: collapse; }
+        #reverseResults th, #reverseResults td { padding: 10px; border-bottom: 1px solid #dde5e8; text-align: left; }
     </style>
 </head>
 <body>
@@ -1505,6 +1510,7 @@
             </div>
             <div class="header-buttons">
                 <button class="switch-btn${viewId === 'BOM' ? ' active' : ''}" type="button" onclick="toggleView('BOM')">查BOM</button>
+                <button class="switch-btn${viewId === 'REVERSE' ? ' active' : ''}" type="button" onclick="toggleView('REVERSE')">反查</button>
                 <button class="switch-btn switch-discharge-btn${viewId === 'DISCHARGE' ? ' active' : ''}" type="button" onclick="toggleView('DISCHARGE')">下料</button>
                 <button class="switch-btn${viewId === 'COMPARE' ? ' active' : ''}" type="button" onclick="toggleView('COMPARE')">比對</button>
                 <button class="switch-btn picking-btn${viewId === 'PICKING' ? ' active' : ''}" type="button" onclick="toggleView('PICKING')">取料</button>
@@ -1513,6 +1519,16 @@
         `);
     }
 </script>
+
+<div class="container" id="viewREVERSE" style="display: none;">
+    <script>renderHeader('反查', 'REVERSE');</script>
+    <form class="query-entry-row" onsubmit="event.preventDefault(); runReverseQuery();">
+        <input id="inputReverse" aria-label="子件料號" placeholder="輸入完整子件料號" required>
+        <button id="btnReverse" type="submit">搜尋</button>
+    </form>
+    <div id="reverseStatus" role="status" aria-live="polite"></div>
+    <div id="reverseResults"></div>
+</div>
 
 <div class="container" id="viewBOM">
     <script>renderHeader('查BOM', 'BOM');</script>
@@ -1814,6 +1830,7 @@
     }
 
     function toggleView(viewType) {
+        document.getElementById('viewREVERSE').style.display = (viewType === 'REVERSE') ? 'block' : 'none';
         document.getElementById('viewBOM').style.display = (viewType === 'BOM') ? 'block' : 'none';
         document.getElementById('viewCOMPARE').style.display = (viewType === 'COMPARE') ? 'block' : 'none';
         document.getElementById('viewDISCHARGE').style.display = (viewType === 'DISCHARGE') ? 'block' : 'none';
@@ -1870,6 +1887,78 @@
 
     initInputStorage();
     fetchCSV();
+
+    const reverseRequests = new Map();
+    const reportOrigin = 'https://wip-progress-page.kitasensorpd.workers.dev';
+
+    function requestReportSchedule() {
+        return new Promise((resolve, reject) => {
+            const frame = document.querySelector('#viewREPORT iframe');
+            const requestId = crypto.randomUUID();
+            const timer = setTimeout(() => {
+                reverseRequests.delete(requestId);
+                reject(new Error('回報排程讀取逾時，請重新整理頁面後再試。'));
+            }, 15000);
+            reverseRequests.set(requestId, { resolve, reject, timer });
+            frame.contentWindow.postMessage({ type: 'wip-schedule-request-V1', requestId }, reportOrigin);
+        });
+    }
+
+    window.addEventListener('message', (event) => {
+        const frame = document.querySelector('#viewREPORT iframe');
+        if (event.origin !== reportOrigin || event.source !== frame?.contentWindow ||
+            event.data?.type !== 'wip-schedule-response-V1') return;
+        const pending = reverseRequests.get(event.data.requestId);
+        if (!pending) return;
+        clearTimeout(pending.timer);
+        reverseRequests.delete(event.data.requestId);
+        if (event.data.error) pending.reject(new Error(event.data.error));
+        else if (!Array.isArray(event.data.rows)) pending.reject(new Error('回報排程資料格式錯誤。'));
+        else pending.resolve(event.data.rows);
+    });
+
+    function findReverseParents(childPart, rows) {
+        const query = childPart.trim().toUpperCase();
+        if (!query) return [];
+        const parents = Object.entries(rawData).filter(([, children]) =>
+            String(children).split(',').some(part => part.trim().toUpperCase() === query)
+        ).map(([parent]) => parent);
+        return rows.filter(row => typeof row.part_no === 'string' &&
+            parents.some(parent => checkSmartMatch(parent, row.part_no) === 'EXACT'));
+    }
+
+    function reverseDate(value) {
+        const text = String(value || '').trim();
+        const match = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        return match ? Number(match[2]) + '/' + Number(match[3]) : text || '—';
+    }
+
+    async function runReverseQuery() {
+        const input = document.getElementById('inputReverse').value.trim();
+        const status = document.getElementById('reverseStatus');
+        const result = document.getElementById('reverseResults');
+        const button = document.getElementById('btnReverse');
+        if (button.disabled) return;
+        result.replaceChildren();
+        if (!input) { status.textContent = '請輸入完整子件料號。'; return; }
+        button.disabled = true;
+        status.textContent = '查詢中…';
+        try {
+            const [bomLoaded, rows] = await Promise.all([fetchCSV(), requestReportSchedule()]);
+            if (!bomLoaded) throw new Error('BOM 載入失敗，請稍後再試。');
+            const matches = findReverseParents(input, rows);
+            status.textContent = matches.length ? '' : '在製排程中沒有使用此子件的母件。';
+            if (matches.length) {
+                result.innerHTML = '<table><thead><tr><th scope="col">母件</th><th scope="col">上線日</th></tr></thead><tbody>' +
+                    matches.map(row => '<tr><td>' + escapeHtml(row.part_no) + '</td><td>' +
+                        escapeHtml(reverseDate(row.start_date)) + '</td></tr>').join('') + '</tbody></table>';
+            }
+        } catch (error) {
+            status.textContent = error.message || '查詢失敗，請稍後再試。';
+        } finally {
+            button.disabled = false;
+        }
+    }
 
     function pasteReportPartToBOM(partNo) {
         if (typeof partNo !== 'string' || !partNo.trim()) return;
