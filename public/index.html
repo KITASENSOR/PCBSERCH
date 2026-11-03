@@ -2433,7 +2433,8 @@
         const groups = rows.map((row, index) => {
             if (!Object.prototype.hasOwnProperty.call(row, 'punch_ok') || !row.work_order || !row.part_no)
                 throw new Error('回報排程欄位不完整，請重新整理整個頁面後再試。');
-            const models = Object.keys(bom).filter(model => checkSmartMatch(model, row.part_no) === 'EXACT');
+            const lookupModel = String(row.part_no).trim().replace(/-K$/i, '');
+            const models = Object.keys(bom).filter(model => checkSmartMatch(model, lookupModel) === 'EXACT');
             if (!models.length || models.some(model => !String(bom[model] || '').trim())) missing.push(row.part_no);
             const parts = new Set(models.flatMap(model => String(bom[model] || '').split(',').map(part => part.trim()).filter(Boolean)));
             return { id: row.work_order, displayName: row.part_no, start_date: row.start_date,
