@@ -1495,6 +1495,13 @@
         #viewREVERSE .child-item[aria-pressed="true"] { outline: 2px solid #555; }
         #reverseResults table { width: 100%; border-collapse: collapse; }
         #reverseResults th, #reverseResults td { padding: 10px; border-bottom: 1px solid #dde5e8; text-align: left; }
+        #reverseDialog { width: min(560px, calc(100% - 32px)); max-height: 80vh; max-height: 80dvh; padding: 0; border: 0; border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,.25); }
+        #reverseDialog[open] { display: flex; flex-direction: column; }
+        #reverseDialog::backdrop { background: rgba(0,0,0,.45); }
+        .reverse-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px; border-bottom: 1px solid #dde5e8; }
+        #reverseDialogTitle { margin: 0; font-size: 18px; overflow-wrap: anywhere; }
+        #reverseDialogClose { flex-shrink: 0; width: auto; }
+        #reverseResults { overflow: auto; padding: 0 16px 16px; }
     </style>
 </head>
 <body>
@@ -1525,7 +1532,13 @@
     <script>renderHeader('反查', 'REVERSE');</script>
     <button id="btnReverse" type="button" onclick="loadReverseMaterials()">重新整理</button>
     <div id="reverseStatus" role="status" aria-live="polite"></div>
-    <div id="reverseResults" aria-live="polite"></div>
+    <dialog id="reverseDialog" aria-labelledby="reverseDialogTitle" onclose="resetReverseSelection()">
+        <div class="reverse-dialog-header">
+            <h3 id="reverseDialogTitle"></h3>
+            <button id="reverseDialogClose" type="button" onclick="closeReverseDialog()" autofocus>關閉</button>
+        </div>
+        <div id="reverseResults"></div>
+    </dialog>
     <div id="reverseMaterials"></div>
 </div>
 
@@ -1955,14 +1968,26 @@
         const item = reverseMaterialItems[index];
         if (!item) return;
         const result = document.getElementById('reverseResults');
-        result.innerHTML = '<h3>' + escapeHtml(Array.from(item.parts).join('、')) + '</h3>' +
-            '<table><thead><tr><th scope="col">母件</th><th scope="col">上線日</th></tr></thead><tbody>' +
+        document.getElementById('reverseDialogTitle').textContent = Array.from(item.parts).join('、');
+        result.innerHTML = '<table><thead><tr><th scope="col">母件</th><th scope="col">上線日</th></tr></thead><tbody>' +
             item.rows.map(row => '<tr><td>' + escapeHtml(row.part_no) + '</td><td>' +
                 escapeHtml(reverseDate(row.start_date)) + '</td></tr>').join('') + '</tbody></table>';
         document.querySelectorAll('#reverseMaterials button').forEach((button, i) => {
             button.setAttribute('aria-pressed', String(i === index));
         });
-        result.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        const dialog = document.getElementById('reverseDialog');
+        if (!dialog.open) dialog.showModal();
+        result.scrollTop = 0;
+    }
+
+    function closeReverseDialog() {
+        document.getElementById('reverseDialog').close();
+    }
+
+    function resetReverseSelection() {
+        document.querySelectorAll('#reverseMaterials button').forEach(button => {
+            button.setAttribute('aria-pressed', 'false');
+        });
     }
 
     function renderReverseMaterials() {
@@ -1984,6 +2009,7 @@
         const result = document.getElementById('reverseResults');
         const button = document.getElementById('btnReverse');
         if (button.disabled) return;
+        closeReverseDialog();
         result.replaceChildren();
         document.getElementById('reverseMaterials').replaceChildren();
         reverseMaterialItems = [];
