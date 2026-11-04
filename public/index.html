@@ -1823,7 +1823,7 @@
 
     function toggleView(viewType) {
         document.getElementById('viewREVERSE').style.display = (viewType === 'REVERSE') ? 'block' : 'none';
-        if (viewType === 'REVERSE') loadReverseMaterials();
+        if (viewType === 'REVERSE' && !reverseInitialized) loadReverseMaterials();
         document.getElementById('viewBOM').style.display = (viewType === 'BOM') ? 'block' : 'none';
         document.getElementById('viewCOMPARE').style.display = (viewType === 'COMPARE') ? 'block' : 'none';
         document.getElementById('viewDISCHARGE').style.display = (viewType === 'DISCHARGE') ? 'block' : 'none';
@@ -1835,7 +1835,7 @@
         if (viewType === 'MACHINE_TIME') {
             calculateMachineTime();
         }
-        if (viewType === 'DISCHARGE') loadDischargeSchedule();
+        if (viewType === 'DISCHARGE' && !dischargeInitialized) loadDischargeSchedule();
         if (viewType === 'PICKING' && !pickingScheduleInitialized) {
             loadScheduleFromDatabase();
         }
@@ -1985,7 +1985,10 @@
                 '</td><td>' + buttons.join('') + '</td></tr>').join('') + '</tbody></table>' : '';
     }
 
+    let reverseInitialized = false;
+
     async function loadReverseMaterials() {
+        reverseInitialized = true;
         const status = document.getElementById('reverseStatus');
         const result = document.getElementById('reverseResults');
         const button = document.getElementById('btnReverse');
@@ -2444,7 +2447,10 @@
         return groups;
     }
 
+    let dischargeInitialized = false;
+
     async function loadDischargeSchedule() {
+        dischargeInitialized = true;
         const button = document.getElementById('btnDischargeReload');
         if (button.disabled) return;
         button.disabled = true;
