@@ -1923,6 +1923,7 @@
         const fixed = new Set(Array.from(fixedParts, part => String(part).trim().toUpperCase()));
         const items = new Map();
         for (const row of rows) {
+            if (reportPunchCompleted(row.punch_ok)) continue;
             if (typeof row.part_no !== 'string') continue;
             const rowItems = new Set();
             for (const [parent, children] of Object.entries(bom)) {
