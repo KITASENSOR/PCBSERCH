@@ -1836,7 +1836,7 @@
             calculateMachineTime();
         }
         if (viewType === 'DISCHARGE') loadDischargeSchedule();
-        if (viewType === 'PICKING') {
+        if (viewType === 'PICKING' && !pickingScheduleInitialized) {
             loadScheduleFromDatabase();
         }
     }
@@ -2935,10 +2935,6 @@
                 const loaded = await fetchCSV();
                 if (!loaded) throw new Error('D1 已覆蓋，但 BOM／固定料畫面重新載入失敗');
             }
-            if (tables.schedule_items) await loadScheduleFromDatabase();
-            if ((tables.usage_items || tables.packaging) && selectedPickingItems.size > 0) {
-                await calculatePickingMaterials();
-            }
             setStatusBox('maintenanceStatus', `\u4e0a\u50b3\u5b8c\u6210\uff1a${summary}`, 'ok');
         } catch (error) {
             setStatusBox('maintenanceStatus', error.message || '\u5931\u6557', 'error');
@@ -2983,6 +2979,7 @@
     }
 
     let pickingScheduleLoadSeq = 0;
+    let pickingScheduleInitialized = false;
 
     function reportRowsToPickingGroups(rows) {
         const groups = [];
@@ -3010,6 +3007,7 @@
     }
 
     async function loadScheduleFromDatabase() {
+        pickingScheduleInitialized = true;
         const seq = ++pickingScheduleLoadSeq;
         ++pickingCalcSeq;
         scheduleGroups = [];
