@@ -2448,12 +2448,14 @@
                 throw new Error('回報排程欄位不完整，請重新整理整個頁面後再試。');
             const lookupModel = String(row.part_no).trim().replace(/-K$/i, '');
             const models = Object.keys(bom).filter(model => checkSmartMatch(model, lookupModel) === 'EXACT');
-            if (!models.length || models.some(model => !String(bom[model] || '').trim())) missing.push(row.part_no);
+            if (!models.length || models.some(model => !String(bom[model] || '').split(',').some(part => part.trim()))) {
+                missing.push(String(row.part_no).trim());
+                return null;
+            }
             const parts = new Set(models.flatMap(model => String(bom[model] || '').split(',').map(part => part.trim()).filter(Boolean)));
             return { id: row.work_order, displayName: row.part_no, start_date: row.start_date,
                 content: [...parts].join(','), color: palette[index % palette.length], completed: reportPunchCompleted(row.punch_ok), excluded: false, forceDischarge: false };
-        });
-        if (missing.length) throw new Error('以下回報型號缺少 BOM，暫停下料判斷：' + [...new Set(missing)].join('、'));
+        }).filter(Boolean);
         const models = new Map();
         groups.forEach(group => {
             const key = String(group.displayName).trim().toUpperCase();
@@ -2467,7 +2469,7 @@
                 models.set(key, { ...group, displayName: String(group.displayName).trim(), orders: [order] });
             }
         });
-        return [...models.values()];
+        return { groups: [...models.values()], missing: [...new Set(missing)] };
     }
 
     let dischargeInitialized = false;
@@ -2486,9 +2488,12 @@
         try {
             const [loaded, rows] = await Promise.all([fetchCSV(), requestReportSchedule()]);
             if (!loaded) throw new Error('BOM 載入失敗，請稍後再試。');
-            dischargeGroups = buildDischargeSchedule(rows, rawData);
+            const schedule = buildDischargeSchedule(rows, rawData);
+            dischargeGroups = schedule.groups;
             updateDischargeUI();
-            status.textContent = rows.length ? '' : '回報在製清單目前沒有工單。';
+            status.textContent = schedule.missing.length
+                ? '以下型號缺少 BOM，已略過：' + schedule.missing.join('、')
+                : (rows.length ? '' : '回報在製清單目前沒有工單。');
         } catch (error) {
             dischargeGroups = [];
             updateDischargeUI();
