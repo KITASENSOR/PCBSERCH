@@ -2451,7 +2451,7 @@
             if (!models.length || models.some(model => !String(bom[model] || '').trim())) missing.push(row.part_no);
             const parts = new Set(models.flatMap(model => String(bom[model] || '').split(',').map(part => part.trim()).filter(Boolean)));
             return { id: row.work_order, displayName: row.part_no, start_date: row.start_date,
-                content: [...parts].join(','), color: palette[index % palette.length], completed: reportPunchCompleted(row.punch_ok), excluded: false };
+                content: [...parts].join(','), color: palette[index % palette.length], completed: reportPunchCompleted(row.punch_ok), excluded: false, forceDischarge: false };
         });
         if (missing.length) throw new Error('以下回報型號缺少 BOM，暫停下料判斷：' + [...new Set(missing)].join('、'));
         const models = new Map();
@@ -2501,17 +2501,21 @@
     function toggleDischargeGroup(index) {
         const group = dischargeGroups[index];
         if (!group) return;
-        group.excluded = !group.excluded;
+        if (group.completed) group.excluded = !group.excluded;
+        else group.forceDischarge = !group.forceDischarge;
         updateDischargeUI();
         document.querySelector(`[data-discharge-index="${index}"]`)?.focus({ preventScroll: true });
     }
 
     function renderDischargeGroup(group) {
         const index = dischargeGroups.indexOf(group);
-        const state = group.excluded ? '已排除比較，點選恢復' : '參與比較，點選排除';
+        const toggled = group.completed ? group.excluded : group.forceDischarge;
+        const state = group.completed
+            ? (group.excluded ? '已排除比較，點選恢復' : '參與比較，點選排除')
+            : (group.forceDischarge ? '手動視為可下料，點選恢復未完成' : '未完成，點選視為可下料');
         const orders = group.orders.map(order => `${order.id} / ${formatScheduleDate(order.start_date)}`).join('\n');
         const title = `${orders}\n${state}`;
-        return `<button type="button" class="discharge-mini-tag ${group.completed ? 'tag-done' : 'tag-active'}${group.excluded ? ' excluded' : ''}" style="background-color: ${group.color};" title="${escapeHtml(title)}" aria-pressed="${Boolean(group.excluded)}" data-discharge-index="${index}" onclick="toggleDischargeGroup(${index})">${escapeHtml(group.displayName)}</button>`;
+        return `<button type="button" class="discharge-mini-tag ${group.completed ? 'tag-done' : 'tag-active'}${toggled ? ' excluded' : ''}" style="background-color: ${group.color};" title="${escapeHtml(title)}" aria-pressed="${Boolean(toggled)}" data-discharge-index="${index}" onclick="toggleDischargeGroup(${index})">${escapeHtml(group.displayName)}</button>`;
     }
 
     function toggleDischargeFixedFilter() {
@@ -2590,12 +2594,13 @@
 
         statusHtml += '</div>';
         statusHtml += '</div>';
-        statusDiv.innerHTML = '<div class="hint">點選型號可反灰並排除比較，再次點選恢復。</div>' + statusHtml;
+        statusDiv.innerHTML = '<div class="hint">點選未完成型號可反灰並視為可下料；點選已完成型號則排除比較。再次點選恢復。</div>' + statusHtml;
 
-        const comparedGroups = dischargeGroups.filter(g => !g.excluded);
+        const comparedGroups = dischargeGroups.filter(g => !g.excluded)
+            .map(g => ({ ...g, completed: g.completed || g.forceDischarge }));
         if (!comparedGroups.some(g => g.completed)) {
             countDiv.innerHTML = '';
-            resultArea.innerHTML = '<div class="hint">目前參與比較的工單沒有已完成母件，沒有可下料物料。</div>';
+            resultArea.innerHTML = '<div class="hint">目前沒有已完成或手動視為可下料的型號。</div>';
             return;
         }
 
@@ -2640,7 +2645,7 @@
                 const fixedClass = isFixed ? " fixed-item" : "";
                 const partKey = `${pre}-${c}`;
                 const dimmedClass = dischargeDimmedParts.has(partKey) ? " dimmed" : "";
-                const tooltipText = "可下料原因 - 使用此料的所有母件皆已完成:\n" + owners.map(o => `${o.displayName} ✓`).join('\n');
+                const tooltipText = "可下料原因 - 使用此料的所有母件皆已完成或手動視為可下料:\n" + owners.map(o => `${o.displayName}（${o.forceDischarge ? '手動視為可下料' : '已完成'}）`).join('\n');
 
                 return `<span class="child-item discharge-color-out${fixedClass}${dimmedClass}" title="${tooltipText}" onclick='toggleDischargePartDimmed(${JSON.stringify(partKey)}, this)'>${c}</span>`;
             }).filter(h => h !== '');
@@ -2656,7 +2661,7 @@
 
         if (dischargeCount === 0) {
             countDiv.innerHTML = '';
-            resultArea.innerHTML = '<div style="text-align:center; padding:30px 15px; color:#888; background:#fff5f5; border:1px dashed #f5b7b1; border-radius:8px; margin-top:15px; font-size:15px; line-height:1.8;">⚠ 目前無符合條件的可下料物料<br><span style="font-size:13px; color:#aaa;">已完成母件的所有用料，仍被進行中的母件繼續使用，或固定料篩選後沒有資料</span></div>';
+            resultArea.innerHTML = '<div style="text-align:center; padding:30px 15px; color:#888; background:#fff5f5; border:1px dashed #f5b7b1; border-radius:8px; margin-top:15px; font-size:15px; line-height:1.8;">⚠ 目前無符合條件的可下料物料<br><span style="font-size:13px; color:#aaa;">可下料型號的用料仍被其他未完成型號使用，或固定料篩選後沒有資料</span></div>';
         } else {
             resultArea.innerHTML = html + `</tbody></table>`;
             countDiv.innerHTML = `🔴 <span style="color:#e74c3c; font-weight:bold;">可下料數量:${dischargeCount}</span><span style="color:#8e44ad; font-weight:bold;"> ${filterText}</span>`;
