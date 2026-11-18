@@ -37,8 +37,18 @@ async function L(a, e, t) {
 __name(L, "L");
 p(L, "handleApi");
 async function A(a) {
-  let [e, t] = await Promise.all([a.prepare("SELECT parent_number, child_parts FROM bom ORDER BY parent_number").all(), a.prepare("SELECT part_number FROM fixed_parts ORDER BY part_number").all()]), n = (e.results || []).map((i) => ({ parent_number: i.parent_number, child_parts: i.child_parts })), r = (t.results || []).map((i) => i.part_number);
-  return { updated_at: (/* @__PURE__ */ new Date()).toISOString(), counts: { bom: n.length, fixed: r.length }, bom: n, fixed: r };
+  const [formal, temporary, fixed] = await Promise.all([
+    a.prepare("SELECT parent_number, child_parts FROM bom ORDER BY parent_number").all(),
+    a.prepare("SELECT parent_number, child_parts FROM temporary_bom ORDER BY parent_number").all(),
+    a.prepare("SELECT part_number FROM fixed_parts ORDER BY part_number").all()
+  ]);
+  const merged = new Map();
+  for (const row of [...(formal.results || []), ...(temporary.results || [])]) {
+    merged.set(row.parent_number, { parent_number: row.parent_number, child_parts: row.child_parts });
+  }
+  const bom = [...merged.values()].sort((left, right) => left.parent_number.localeCompare(right.parent_number));
+  const parts = (fixed.results || []).map(row => row.part_number);
+  return { updated_at: new Date().toISOString(), counts: { bom: bom.length, formal_bom: formal.results?.length || 0, temporary_bom: temporary.results?.length || 0, fixed: parts.length }, bom, fixed: parts };
 }
 __name(A, "A");
 p(A, "getBomPayload");
@@ -148,12 +158,19 @@ __name(re, "re");
 p(re, "savePickingNote");
 async function N(a) {
   let [e, t, n, r, i] = await Promise.all([a.prepare("SELECT parent_number, child_parts FROM bom ORDER BY parent_number").all(), a.prepare("SELECT part_number FROM fixed_parts ORDER BY part_number").all(), a.prepare("SELECT parent_number, child_part_number, batch_quantity, item_name FROM usage_items ORDER BY parent_number, child_part_number").all(), a.prepare("SELECT product_number, specification, package_1 FROM packaging ORDER BY product_number").all(), a.prepare("SELECT wo_id, part_no, side, plan_qty, real_qty, start_date, end_date, panel_size FROM schedule_items ORDER BY rowid").all()]), c = { bom: e.results || [], fixed_parts: t.results || [], usage_items: n.results || [], packaging: r.results || [], schedule_items: i.results || [] };
+  const temporary = await a.prepare("SELECT parent_number, child_parts FROM temporary_bom ORDER BY parent_number").all();
+  c.temporary_bom = temporary.results || [];
   return { exported_at: (/* @__PURE__ */ new Date()).toISOString(), counts: Object.fromEntries(Object.entries(c).map(([s, _]) => [s, _.length])), tables: c };
 }
 __name(N, "N");
 p(N, "exportDatabase");
 async function x(a, e) {
   let t = e?.tables || {}, n = {};
+  if (Object.prototype.hasOwnProperty.call(t, "temporary_bom") &&
+      (!Array.isArray(t.temporary_bom) || t.temporary_bom.length === 0 ||
+       t.temporary_bom.some(row => !u(row?.parent_number) || !u(row?.child_parts) || !u(row.child_parts).split(",").some(part => u(part))))) {
+    return { error: "臨時 BOM 必須包含有效的母件編號與子件編號，未覆蓋任何資料" };
+  }
   if (Array.isArray(t.packaging)) {
     let r = W(t.packaging);
     n.packaging = await y(a, "packaging", ["product_number", "specification", "package_1"], r);
@@ -169,6 +186,9 @@ async function x(a, e) {
   if (Array.isArray(t.bom)) {
     let r = P(t.bom);
     n.bom = await y(a, "bom", ["parent_number", "child_parts"], r);
+  }
+  if (Array.isArray(t.temporary_bom)) {
+    n.temporary_bom = await y(a, "temporary_bom", ["parent_number", "child_parts"], P(t.temporary_bom));
   }
   if (Array.isArray(t.schedule_items)) {
     let r = G(t.schedule_items);
@@ -195,6 +215,7 @@ var F = 1500000;
 var O = 50;
 var ae = Object.freeze({
   bom: "bom_import_staging_v1",
+  temporary_bom: "temporary_bom_import_staging_v1",
   fixed_parts: "fixed_parts_import_staging_v1",
   usage_items: "usage_items_import_staging_v1",
   packaging: "packaging_import_staging_v1",

@@ -34,7 +34,9 @@ GitHub Pages 已停用，根目錄也不保留網址導向頁；正式入口只�
 
 若 Cloudflare 環境變數有設定 `ADMIN_TOKEN`，管理端 API 需要帶入 token 驗證。
 
-`查BOM` 與 `下料` 透過 `/api/bom` 讀取 D1 的 BOM、固定料；`取料` 透過 `/api/materials/calculate` 使用 D1 的用量與包裝資料計算。Excel 上傳至 `/api/admin/import` 完成後，前端會重新讀取相關 D1 API。
+`查BOM`、`比對` 與 `下料` 透過 `/api/bom` 讀取 D1 的正式 BOM、臨時 BOM 與固定料；相同母件編號優先使用臨時 BOM。`取料` 透過 `/api/materials/calculate` 使用 D1 的用量與包裝資料計算。Excel 上傳至 `/api/admin/import` 完成後，前端會重新讀取相關 D1 API。
+
+`POST /api/admin/import` 的 `tables.temporary_bom` 可獨立覆蓋臨時 BOM，欄位為 `parent_number`、`child_parts`；未提供的資料表不異動。`GET /api/admin/export` 將正式資料保留於 `tables.bom`、臨時資料另放 `tables.temporary_bom`。
 
 ## 作業流程
 
@@ -406,3 +408,15 @@ GitHub Pages 已停用，根目錄也不保留網址導向頁；正式入口只�
     - 全部型號缺少 BOM 時清空比較結果並保留提示；重新整理依新資料更新或清除提示。
     - 保留 K 尾碼忽略、合併工單、手動視為可下料及共用料判斷；回報欄位不完整與讀取失敗仍顯示錯誤。
     - 已通過 11 段腳本語法、提示位置與去重、部分及全部缺 BOM、空 BOM、其餘型號比較、手動下料與重新整理檢查，未產生暫存檔。
+
+
+2026-11-18新增獨立臨時BOM覆蓋匯入-V1
+
+    - 資料維護在 BOM 下方新增「臨時 BOM」Excel 上傳欄位，沿用上傳按鈕，可單獨上傳或與其他資料一起上傳。
+    - Excel 欄位與正式 BOM 相同，為「母件編號／子件編號」；可使用「臨時 BOM」、「臨時BOM」、「BOM」工作表，未找到指定名稱時讀取第一張工作表。
+    - 新增獨立 `temporary_bom` 與 `temporary_bom_import_staging_v1` 資料表；每次只覆蓋上一份臨時 BOM，正式 BOM 上傳也不會清除臨時資料。
+    - 相同母件編號以整筆臨時 BOM 為準，適用查BOM、比對、下料；下一份臨時資料未包含該母件時，會重新使用仍保留的正式 BOM。
+    - 臨時 BOM 沿用先暫存、核對筆數、交易交換的匯入流程；空資料、缺少母件或子件時阻擋上傳，不先清空既有資料。
+    - 匯出 Excel 新增獨立「臨時 BOM」工作表；正式 BOM 工作表仍只匯出正式資料，匯出檔名加上 `_V1`。
+    - 部署前必須透過 Wrangler 套用 `migrations/0004_temporary_bom_V1.sql`；GitHub Actions 僅發布 Worker 與前端。
+    - 已通過 17 項前端上傳與匯出、36 項 Worker／SQLite 交易、11 項共用資料載入與比對／下料回歸檢查，以及 11 段前端腳本語法與 Worker 打包檢查；檢查用暫存目錄與打包產物於完成後刪除。

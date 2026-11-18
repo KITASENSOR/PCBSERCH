@@ -1776,6 +1776,7 @@
         <h3>&#19978;&#20659;&#36039;&#26009;&#65288;&#21487;&#19968;&#27425;&#36984;&#22810;&#24373;&#65292;&#19968;&#37749;&#19978;&#20659;&#65289;</h3>
         <div class="maintenance-upload-grid">
             <label class="maintenance-upload-row"><span>BOM</span><input id="maintenanceFile_bom" type="file" accept=".xlsx"></label>
+            <label class="maintenance-upload-row"><span>臨時 BOM</span><input id="maintenanceFile_temporary_bom" type="file" accept=".xlsx"></label>
             <label class="maintenance-upload-row"><span>&#22266;&#23450;&#26009;</span><input id="maintenanceFile_fixed_parts" type="file" accept=".xlsx"></label>
             <label class="maintenance-upload-row"><span>&#29992;&#37327;</span><input id="maintenanceFile_usage_items" type="file" accept=".xlsx"></label>
             <label class="maintenance-upload-row"><span>&#21253;&#35037;</span><input id="maintenanceFile_packaging" type="file" accept=".xlsx"></label>
@@ -1785,6 +1786,7 @@
             <button type="button" onclick="importAllMaintenanceSheets()">&#19978;&#20659;</button>
             <button type="button" class="filter-btn" onclick="exportMaintenanceExcel()">&#21295;&#20986; Excel</button>
         </div>
+        <div class="hint">臨時 BOM 每次上傳會覆蓋上一份臨時資料；相同母件編號優先採用臨時 BOM，正式 BOM 分開保存。</div>
     </div>
 </div>
 
@@ -1875,7 +1877,8 @@
 
             const bomCount = data.counts?.bom ?? Object.keys(rawData).length;
             const fixedCount = data.counts?.fixed ?? fixedFeederParts.size;
-            document.getElementById('matchStatus').innerText = `資料載入完成。BOM ${bomCount} 筆，固定料 ${fixedCount} 筆。`;
+            const temporaryBomCount = data.counts?.temporary_bom ?? 0;
+            document.getElementById('matchStatus').innerText = `資料載入完成。BOM ${bomCount} 筆（臨時 ${temporaryBomCount} 筆），固定料 ${fixedCount} 筆。`;
             document.getElementById('btnSearch').disabled = false;
             document.getElementById('btnCompare').disabled = false;
 
@@ -2684,6 +2687,16 @@
                 child_parts: ['\u5b50\u4ef6\u7de8\u865f', 'child_parts']
             }
         },
+        temporary_bom: {
+            label: '臨時 BOM',
+            sheetNames: ['臨時 BOM', '臨時BOM', 'BOM'],
+            useFirstSheetFallback: true,
+            fields: ['parent_number', 'child_parts'],
+            aliases: {
+                parent_number: ['母件編號', 'parent_number'],
+                child_parts: ['子件編號', 'child_parts']
+            }
+        },
         fixed_parts: {
             label: '\u56fa\u5b9a\u6599',
             sheetNames: ['\u56fa\u5b9a\u6599'],
@@ -2933,7 +2946,7 @@
     }
 
     function getConfiguredSheetRows(workbook, config) {
-        let sheetName = workbook.SheetNames.find(name => config.sheetNames.some(target => name.trim().toLowerCase() === target.toLowerCase()));
+        let sheetName = config.sheetNames.map(target => workbook.SheetNames.find(name => name.trim().toLowerCase() === target.toLowerCase())).find(Boolean);
         if (!sheetName && config.useFirstSheetFallback) sheetName = workbook.SheetNames[0];
         if (!sheetName) throw new Error(`\u627e\u4e0d\u5230 ${config.label} \u5de5\u4f5c\u8868`);
         return workbook.Sheets[sheetName] || [];
@@ -2962,6 +2975,11 @@
                 const mappedRows = mapRowsForTable(workbook, tableName);
                 const rows = tableName === 'schedule_items' ? mergeScheduleRowsForImport(mappedRows) : mappedRows;
                 if (rows.length === 0) throw new Error(`${config.label} \u6c92\u6709\u53ef\u532f\u5165\u7684\u8cc7\u6599`);
+                if (tableName === 'temporary_bom' && rows.some(row =>
+                    !String(row.parent_number || '').trim() ||
+                    !String(row.child_parts || '').split(',').some(part => part.trim()))) {
+                    throw new Error('臨時 BOM 每筆都必須填寫母件編號與子件編號，請確認欄位標題及內容');
+                }
                 tables[tableName] = rows;
                 labels.push(`${config.label} ${rows.length} \u7b46`);
             }
@@ -2970,6 +2988,7 @@
             const scheduleLabel = labels.find(label => label.startsWith(maintenanceSheetConfigs.schedule_items.label));
             const confirmLines = [];
             if (overwriteLabels.length) confirmLines.push(`即將覆蓋：\n${overwriteLabels.join('\n')}`);
+            if (tables.temporary_bom) confirmLines.push('臨時 BOM 只覆蓋上一份臨時資料，相同母件編號優先採用臨時 BOM。');
             if (scheduleLabel) confirmLines.push(`排程將覆蓋現有資料，匯入前會先將相同工單數量加總：\n${scheduleLabel}`);
             if (!confirm(`${confirmLines.join('\n\n')}\n\n確定上傳？`)) return;
             setStatusBox('maintenanceStatus', '\u4e0a\u50b3\u4e2d\uff0c\u8acb\u7a0d\u5019...', 'warn');
@@ -2987,7 +3006,7 @@
                 }
                 return `${label} ${v}`;
             }).join('\u3001');
-            if (tables.bom || tables.fixed_parts) {
+            if (tables.bom || tables.temporary_bom || tables.fixed_parts) {
                 const loaded = await fetchCSV();
                 if (!loaded) throw new Error('D1 已覆蓋，但 BOM／固定料畫面重新載入失敗');
             }
@@ -3021,8 +3040,9 @@
             const response = await fetch('/api/admin/export', { headers: getAdminHeaders(false) });
             const data = await response.json();
             if (!response.ok || data.error) throw new Error(data.error || '\u5931\u6557');
-            downloadExcelXml(`D1\u8cc7\u6599\u5eab_${new Date().toISOString().slice(0, 10)}.xls`, [
+            downloadExcelXml(`D1\u8cc7\u6599\u5eab_${new Date().toISOString().slice(0, 10)}_V1.xls`, [
                 { name: 'BOM', rows: [['\u6bcd\u4ef6\u7de8\u865f', '\u5b50\u4ef6\u7de8\u865f'], ...(data.tables?.bom || []).map(row => [row.parent_number, row.child_parts])] },
+                { name: '臨時 BOM', rows: [['母件編號', '子件編號'], ...(data.tables?.temporary_bom || []).map(row => [row.parent_number, row.child_parts])] },
                 { name: '\u56fa\u5b9a\u6599', rows: [['\u56fa\u5b9a\u6599'], ...(data.tables?.fixed_parts || []).map(row => [row.part_number])] },
                 { name: '\u7528\u91cf', rows: [['\u6bcd\u4ef6\u7de8\u865f', '\u5b50\u4ef6\u7de8\u865f', '\u6279\u91cf\u7528\u91cf', '\u54c1\u540d'], ...(data.tables?.usage_items || []).map(row => [row.parent_number, row.child_part_number, row.batch_quantity, row.item_name])] },
                 { name: '\u5305\u88dd', rows: [['\u7522\u54c1\u7de8\u865f', '\u54c1\u540d\u898f\u683c', '\u5305\u88dd1'], ...(data.tables?.packaging || []).map(row => [row.product_number, row.specification, row.package_1])] },
