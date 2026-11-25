@@ -31,12 +31,15 @@ GitHub Pages 已停用，根目錄也不保留網址導向頁；正式入口只�
 - `POST /api/materials/calculate`
 - `GET /api/admin/export`
 - `POST /api/admin/import`
+- `POST /api/admin/temporary-bom/clear`
 
 若 Cloudflare 環境變數有設定 `ADMIN_TOKEN`，管理端 API 需要帶入 token 驗證。
 
 `查BOM`、`比對` 與 `下料` 透過 `/api/bom` 讀取 D1 的正式 BOM、臨時 BOM 與固定料；相同母件編號優先使用臨時 BOM。`取料` 透過 `/api/materials/calculate` 使用 D1 的用量與包裝資料計算。Excel 上傳至 `/api/admin/import` 完成後，前端會重新讀取相關 D1 API。
 
 `POST /api/admin/import` 的 `tables.temporary_bom` 可獨立覆蓋臨時 BOM，欄位為 `parent_number`、`child_parts`；未提供的資料表不異動。`GET /api/admin/export` 將正式資料保留於 `tables.bom`、臨時資料另放 `tables.temporary_bom`。
+
+`POST /api/admin/temporary-bom/clear` 清除 `temporary_bom` 全部資料，回傳 `deleted_temporary_bom` 筆數。
 
 ## 作業流程
 
@@ -431,3 +434,9 @@ GitHub Pages 已停用，根目錄也不保留網址導向頁；正式入口只�
     - 已通過移轉成功及缺少來源資料時回復的 SQLite 檢查；正式移轉後，正式 BOM 1,013 筆、臨時 BOM 8 筆，合併查詢仍為 1,021 筆。
     - 已比對移轉前後 SHA-256：正式 BOM 剩餘資料、臨時八筆與預期完全一致；固定料、用量、包裝、排程及合併查詢內容未變動。
     - 一次性移轉 SQL 與資料庫檢查用表已刪除，不將正式資料、授權資料或暫存產物提交至 GitHub。
+
+2026-11-25新增清除臨時BOM按鈕-V1
+
+    - 「設定」的資料維護新增「清除臨時 BOM」。確認後清除臨時 BOM 全部資料、顯示刪除筆數並重新載入 BOM。具有正式資料的母件會恢復使用正式 BOM，僅存在於臨時 BOM 的母件則無法查詢。
+    - 清除沿用管理權限。上傳與清除執行期間會暫停這兩個按鈕，避免在同一頁同時操作。可再次上傳臨時 BOM。
+    - 已通過 14 項本機前端與 SQLite 檢查，涵蓋取消操作、管理權限、重複清除、查詢回到正式 BOM 及匯出結果，並完成 Worker 模擬打包。本次變更可提交前端、Worker 與 README，沿用現有 D1 資料表。

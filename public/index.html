@@ -1221,8 +1221,8 @@
         .model-main { min-width: 0; font-weight: bold; color: #1f2937; overflow-wrap: anywhere; }
         .model-meta { color: #667085; font-size: 13px; white-space: nowrap; }
         .small-btn { padding: 7px 10px; font-size: 13px; white-space: nowrap; }
-        .danger-btn { background: #dc3545; }
-        .danger-btn:hover { background: #bd2130; }
+        .danger-btn:enabled { background: #dc3545; }
+        .danger-btn:enabled:hover { background: #bd2130; }
         .table-wrap { width: 100%; overflow-x: auto; margin-top: 12px; }
         .result-number { text-align: right; white-space: nowrap; }
         @media screen and (max-width: 600px) {
@@ -1783,8 +1783,9 @@
             <label class="maintenance-upload-row"><span>&#25490;&#31243;</span><input id="maintenanceFile_schedule_items" type="file" accept=".xlsx"></label>
         </div>
         <div class="btn-group">
-            <button type="button" onclick="importAllMaintenanceSheets()">&#19978;&#20659;</button>
+            <button id="btnImportMaintenance" type="button" onclick="importAllMaintenanceSheets()">&#19978;&#20659;</button>
             <button type="button" class="filter-btn" onclick="exportMaintenanceExcel()">&#21295;&#20986; Excel</button>
+            <button id="btnClearTemporaryBom" type="button" class="danger-btn" onclick="clearTemporaryBom()">清除臨時 BOM</button>
         </div>
         <div class="hint">臨時 BOM 每次上傳會覆蓋上一份臨時資料；相同母件編號優先採用臨時 BOM，正式 BOM 分開保存。</div>
     </div>
@@ -2963,6 +2964,11 @@
     }
 
     async function importAllMaintenanceSheets() {
+        const uploadButton = document.getElementById('btnImportMaintenance');
+        const clearButton = document.getElementById('btnClearTemporaryBom');
+        if (uploadButton.disabled) return;
+        uploadButton.disabled = true;
+        clearButton.disabled = true;
         clearStatusBox('maintenanceStatus');
         try {
             const tables = {};
@@ -3013,6 +3019,34 @@
             setStatusBox('maintenanceStatus', `\u4e0a\u50b3\u5b8c\u6210\uff1a${summary}`, 'ok');
         } catch (error) {
             setStatusBox('maintenanceStatus', error.message || '\u5931\u6557', 'error');
+        } finally {
+            uploadButton.disabled = false;
+            clearButton.disabled = false;
+        }
+    }
+
+    async function clearTemporaryBom() {
+        const clearButton = document.getElementById('btnClearTemporaryBom');
+        const uploadButton = document.getElementById('btnImportMaintenance');
+        if (clearButton.disabled || !confirm('確定要刪除全部臨時 BOM？有正式資料的母件會改用正式 BOM，僅存在於臨時 BOM 的母件將無法查詢。')) return;
+
+        clearButton.disabled = true;
+        uploadButton.disabled = true;
+        try {
+            setStatusBox('maintenanceStatus', '正在清除臨時 BOM，請稍候。', 'warn');
+            const response = await fetch('/api/admin/temporary-bom/clear', {
+                method: 'POST',
+                headers: getAdminHeaders()
+            });
+            const data = await response.json();
+            if (!response.ok || data.error) throw new Error(data.error || '清除臨時 BOM 失敗');
+            if (!await fetchCSV()) throw new Error('臨時 BOM 已清除，但查詢資料重新載入失敗，請重新整理頁面。');
+            setStatusBox('maintenanceStatus', `已清除 ${data.deleted_temporary_bom} 筆臨時 BOM。`, 'ok');
+        } catch (error) {
+            setStatusBox('maintenanceStatus', error.message || '清除臨時 BOM 失敗', 'error');
+        } finally {
+            clearButton.disabled = false;
+            uploadButton.disabled = false;
         }
     }
 

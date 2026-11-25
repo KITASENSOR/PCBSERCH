@@ -29,6 +29,12 @@ async function L(a, e, t) {
       let n = M(a, e, t);
       return n || l(await x(e.DB, await a.json()));
     }
+    if (a.method === "POST" && t.pathname === "/api/admin/temporary-bom/clear") {
+      const authError = M(a, e, t);
+      if (authError) return authError;
+      const result = await e.DB.prepare("DELETE FROM temporary_bom").run();
+      return l({ deleted_temporary_bom: result.meta.changes });
+    }
     return a.method === "POST" && t.pathname === "/api/materials/calculate" ? l(await z(e.DB, await a.json())) : t.pathname.startsWith("/api/") ? l({ error: "\u4E0D\u652F\u63F4\u7684 API \u65B9\u6CD5" }, 405, { allow: "GET, POST" }) : l({ error: "\u627E\u4E0D\u5230 API" }, 404);
   } catch (n) {
     return console.error(JSON.stringify({ event: "api_error", path: t.pathname, message: n instanceof Error ? n.message : String(n) })), l({ error: "\u4F3A\u670D\u5668\u932F\u8AA4" }, 500);
